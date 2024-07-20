@@ -7,21 +7,21 @@
 
 local jimbomod = SMODS.current_mod
 
-SMODS.Atlas({key = 'Jokers', path = 'Jokers.png', px = 71, py = 95})
+SMODS.Atlas({ key = 'Jokers', path = 'Jokers.png', px = 71, py = 95 })
 --this is from bunco i had NO IDEA how to add sprites i forgot please dont judge me im new!!!!!!!!!!!!!!!!!!
 
 
 --Googly Joker
-local googly = SMODS.Joker{
+local googly = SMODS.Joker {
     key = 'Googly',
     loc_txt = {
         name = "Googly Joker",
         text = {
-            "For each time first card in ", "hand is scored, gives {C:chips}+#1#{}"," Chips, {C:mult}#2# Mult{} or {X:mult,C:white} X#3# {} Mult","{C:inactive}(Currently {C:attention}#4# time(s) {}{C:inactive})"
+            "For each time first card in ", "hand is scored, gives {C:chips}+#1#{}", " Chips, {C:mult}#2# Mult{} or {X:mult,C:white} X#3# {} Mult", "{C:inactive}(Currently {C:attention}#4# time(s) {}{C:inactive})"
         }
     },
     rarity = 3,
-    config = {extra = {a_chips = 15, a_mult = 3, x_mult= 0.1, triggers = 0,retriggers = 1}},
+    config = { extra = { a_chips = 15, a_mult = 3, x_mult = 0.1, triggers = 0, retriggers = 1 } },
     pos = { x = 0, y = 0 },
     atlas = 'Jokers',
     cost = 5,
@@ -31,7 +31,7 @@ local googly = SMODS.Joker{
     eternal_compat = true,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.a_chips,center.ability.extra.a_mult,center.ability.extra.x_mult,center.ability.extra.triggers,}}
+        return { vars = { center.ability.extra.a_chips, center.ability.extra.a_mult, center.ability.extra.x_mult, center.ability.extra.triggers, } }
     end,
 }
 
@@ -44,43 +44,42 @@ googly.calculate = function(self, card, context)
     if context.joker_main then
         local list = {
             {
-                Xmult_mod = 1 + card.ability.extra.x_mult * card.ability.extra.triggers, 
+                Xmult_mod = 1 + card.ability.extra.x_mult * card.ability.extra.triggers,
                 card = card,
                 message = localize {
                     type = 'variable',
                     key = 'a_xmult',
-                    vars = {card.ability.extra.x_mult * card.ability.extra.triggers + 1}
+                    vars = { card.ability.extra.x_mult * card.ability.extra.triggers + 1 }
                 }
             },
             {
-                mult_mod = card.ability.extra.a_mult * card.ability.extra.triggers, 
+                mult_mod = card.ability.extra.a_mult * card.ability.extra.triggers,
                 card = card,
                 message = localize {
                     type = 'variable',
                     key = 'a_mult',
-                    vars = { card.ability.extra.a_mult * card.ability.extra.triggers}
+                    vars = { card.ability.extra.a_mult * card.ability.extra.triggers }
                 }
             },
             {
-                chip_mod = card.ability.extra.a_chips * card.ability.extra.triggers, 
+                chip_mod = card.ability.extra.a_chips * card.ability.extra.triggers,
                 card = card,
                 message = localize {
                     type = 'variable',
                     key = 'a_chips',
-                    vars = { card.ability.extra.a_chips * card.ability.extra.triggers}
+                    vars = { card.ability.extra.a_chips * card.ability.extra.triggers }
                 }
             },
         }
-        local rng = pseudorandom_element(list,pseudoseed('jimbosadd'))
+        local rng = pseudorandom_element(list, pseudoseed('jimbosadd'))
         return rng
     end
-    
 end
 
 googly:register()
 
 ---Sad Lad
-local sadlad = SMODS.Joker{
+local sadlad = SMODS.Joker {
     key = 'sadlad',
     loc_txt = {
         name = "Sad Lad",
@@ -89,7 +88,7 @@ local sadlad = SMODS.Joker{
         }
     },
     rarity = 1,
-    config = {extra = {a_chips = 20}},
+    config = { extra = { a_chips = 20 } },
     pos = { x = 1, y = 0 },
     atlas = 'Jokers',
     cost = 3,
@@ -99,7 +98,7 @@ local sadlad = SMODS.Joker{
     eternal_compat = true,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.a_chips,}}
+        return { vars = { center.ability.extra.a_chips, } }
     end,
 }
 
@@ -107,12 +106,12 @@ sadlad.calculate = function(self, card, context)
     if context.individual and context.cardarea == G.play then
         if context.other_card:is_suit('Clubs') or context.other_card:is_suit('Spades') then
             return {
-                chips = card.ability.extra.a_chips, 
+                chips = card.ability.extra.a_chips,
                 card = card,
                 message = localize {
                     type = 'variable',
                     key = 'a_chips',
-                    vars = { card.ability.extra.a_chips}
+                    vars = { card.ability.extra.a_chips }
                 }
             }
         end
@@ -123,7 +122,7 @@ end
 
 
 ---Clown
-local clown = SMODS.Joker{
+local clown = SMODS.Joker {
     key = 'digitalclown',
     loc_txt = {
         name = "Digital Clown",
@@ -132,7 +131,7 @@ local clown = SMODS.Joker{
         }
     },
     rarity = 3,
-    config = {extra = {chips = 1.2, facecard = 0}},
+    config = { extra = { chips = 1.2, facecard = 0 } },
     pos = { x = 2, y = 0 },
     atlas = 'Jokers',
     cost = 7,
@@ -142,11 +141,10 @@ local clown = SMODS.Joker{
     eternal_compat = true,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.chips}}
+        return { vars = { center.ability.extra.chips } }
     end,
 }
 clown.calculate = function(self, card, context)
-    
     if context.individual and context.cardarea == G.play then
         if context.other_card:is_face() then
             card.ability.extra.facecard = card.ability.extra.facecard + 1
@@ -165,10 +163,17 @@ clown.calculate = function(self, card, context)
             message = localize {
                 type = 'variable',
                 key = 'a_chips',
-                vars = {"X" ..chipsmultvis .. " Chips"}
+                vars = { "X" .. chipsmultvis .. " Chips" }
             },
         }
     end
+end
+
+-- JokerDisplay Support
+
+if _G["JokerDisplay"] then
+    local path = SMODS.current_mod.path
+    NFS.load(path .. "joker_display_definitions.lua")()
 end
 
 ----------------------------------------------
