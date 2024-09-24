@@ -455,6 +455,197 @@ local ouroboros = SMODS.Joker{
 }
 
 
+local cardinal = SMODS.Joker{
+    key = 'cardinal',
+    loc_txt = {
+        name = "Cardinal",
+        text = {
+            "Every played {C:attention}face card{}", 
+            "permanently gains", 
+            "{C:mult}+#1#{} Mult when scored"
+        }
+    },
+    config = {extra = {mult_mod = 1}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.mult_mod}}
+    end,
+    calculate = function(self,card,context)
+        if context.individual and context.cardarea == G.play then
+            if context.other_card:is_face() then
+                context.other_card.ability.mult = context.other_card.ability.mult + 2 or 2
+                return {
+                    extra = {message = localize('k_upgrade_ex'), colour = G.C.MULT},
+                    colour = G.C.MULT,
+                    card = card
+                }
+            end
+        end
+    end
+}
+
+
+local commercial = SMODS.Joker{
+    key = 'commercial',
+    loc_txt = {
+        name = "Commercial",
+        text = {
+            "First Joker in shop", 
+            "has {X:dark_edition,C:white}X#1#{} to all values",
+        }
+    },
+    config = {extra = {mult = 102, active = true}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 10,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.mult}}
+    end,
+    calculate = function(self,card,context)
+        if context.end_of_round then
+            card.ability.extra.active = true
+        end
+        if context.jimb_creating_card and card.ability.extra.active == true and not context.jimb_card.area then
+            jokerMult(context.jimb_card, card.ability.extra.mult)
+            card.ability.extra.active = false
+        end
+    end
+}
+
+local kunai = SMODS.Joker{
+    key = 'kunai',
+    loc_txt = {
+        name = "Kunai",
+        text = {
+            "When {C:attention}Blind{} is selected,",
+            "destroy {C:attention}leftmost Joker{} and gain",
+            "{C:mult}+Mult{} equal to sum of all values",
+            "{C:inactive}(Currently {C:mult}+#1#{} Mult{C:inactive})"
+
+        }
+    },
+    config = {extra = {mult = 0}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 10,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.mult}}
+    end,
+    calculate = function(self,card,context)
+        if context.setting_blind then
+            local num = 0
+            local newcard = G.jokers.cards[1]
+            if newcard.ability then
+                for k,v in pairs(newcard.ability) do
+                    if k ~= 'x_mult' and k~= 'order' and type(v) == 'number' then
+                        num = num + (v or newcard.ability[k])
+                        print(v .. "    WAWA   " .. k)
+                    end
+                    if k == 'x_mult' and v ~= 1 then
+                        num = num + (v or newcard.ability[k])
+                        print(v .. "    WAWA")
+                    end
+                end
+                if newcard.ability.extra then
+                    if type(newcard.ability.extra) == 'number' then num = num + newcard.ability.extra end
+                    if type(newcard.ability.extra) == 'table' then
+                        for i,v in pairs(newcard.ability.extra) do
+                            
+                            if type(newcard.ability.extra[i]) == 'number' then num = num + newcard.ability.extra[i] end
+                        end
+                    end
+                end
+            end
+            if G.jokers.cards[1] ~= card and not card.getting_sliced and not G.jokers.cards[1].ability.eternal and not G.jokers.cards[1].getting_sliced then 
+                local sliced_card = G.jokers.cards[1]
+                sliced_card.getting_sliced = true
+                G.GAME.joker_buffer = G.GAME.joker_buffer - 1
+                G.E_MANAGER:add_event(Event({func = function()
+                    G.GAME.joker_buffer = 0
+                    card.ability.extra.mult = card.ability.extra.mult + num
+                    card:juice_up(0.8, 0.8)
+                    sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
+                    play_sound('slice1', 0.96+math.random()*0.08)
+                return true end }))
+            end
+        end
+
+
+        if context.joker_main then
+            return {
+                mult_mod = card.ability.extra.mult,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_mult',
+                    vars = { card.ability.extra.mult }
+                },
+            }
+        end
+    end
+}
+
+local fabricwarp = SMODS.Joker{
+    key = 'fabricwarp',
+    loc_txt = {
+        name = "Fabric Warp",
+        text = {
+            "After #1# {C:dark_edition}Negative{} Jokers", 
+            "sold, sell this card for",
+            "{C:attention}-#2# Ante{}",
+            "{C:inactive}(Currently {C:attention}#3#{C:inactive})"
+        }
+    },
+    config = {extra = {jokers = 2, ante = 2, active = "Inactive"}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 10,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        info_queue[#info_queue+1] = G.P_CENTERS.e_negative
+        return {vars = {center.ability.extra.jokers,center.ability.extra.ante, center.ability.extra.active}}
+    end,
+    calculate = function(self,card,context)
+        if context.selling_card then
+            if context.card.edition and context.card.edition.negative then
+                card.ability.extra.jokers = card.ability.extra.jokers - 1
+                if card.ability.extra.jokers <= 0 then
+                    card.ability.extra.active = "Active"
+                end
+            end
+        end
+        if context.selling_self and card.ability.extra.active == "Active" then
+            ease_ante(card.ability.extra.ante * -1)
+        end
+    end
+}
+
+
 --[[
 Man.
 local aether = SMODS.Joker{
@@ -1016,6 +1207,36 @@ end
 
 
 
+--[[SMODS.Consumable {
+    key = 'link',
+    set = 'Spectral',
+    loc_txt = {
+        name = 'Link',
+        text = {
+            'Apply {C:dark_edition}Negative{}',' to a random Joker','Link two random Jokers'
+        }
+    },
+    config = {extra = {}},
+    pos = { x = 0, y = 6 },
+    soul_pos = { x = 69420, y = 0 },
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    atlas = 'Tarot',
+    loc_vars = function(self, info_queue, center)
+        return {vars = {}}
+    end,
+    can_use = function(self, card)
+        if #G.jokers.cards > 1 then
+            return true
+        end
+        return false
+    end,
+    use = function(self, card, area, copier)
+        
+    end
+}]]
+
 
 
 --------------------DECKS--------------------
@@ -1055,6 +1276,14 @@ SMODS.Atlas{
 end]]
 function jokerMult(card,mult)
     if not card.ability then return end
+    for k,v in pairs(card.ability) do
+        if k ~= 'x_mult' and type(v) == 'number' then
+            card.ability[k] = v*1.5 or card.ability[k]*1.5
+        end
+        if k == 'x_mult' and v ~= 1 then
+            card.ability[k] = v*1.5 or card.ability[k]*1.5
+        end
+    end
     if not card.ability.extra then return end
     if type(card.ability.extra) == 'number' then card.ability.extra = card.ability.extra*mult end
     if type(card.ability.extra) == 'table' then
@@ -1096,11 +1325,12 @@ local neondeck = SMODS.Back{
     end
 }
 local configs = neondeck.config.extra
-neondeck.trigger_effect = function(args)
+neondeck.trigger_effect = function(self,args)
     if not args then return end
     
+    if args.context == "jimb_card" then jokerMult(args.card,self.config.extra.mult) end
 
-    if to_big(G.GAME.chips) >= G.GAME.blind.chips then
+    if args.context == 'eval' then
         configs.jokers2 = G.jokers.cards
 
         G.jokers.cards = {}
@@ -1228,10 +1458,16 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     end
 
     --POST hook
-    local selected_back = saveTable and saveTable.BACK.name or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+    --[[local selected_back = saveTable and saveTable.BACK.name or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
     selected_back = get_deck_from_name(selected_back)
     if selected_back.name == "Neon Deck" then
         jokerMult(ret,selected_back.config.mult)
+    end]]
+    G.GAME.selected_back:trigger_effect{context = 'jimb_card', card = ret}
+    if G and G.jokers and G.jokers.cards then
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({jimb_creating_card = true, jimb_card = ret})
+        end
     end
     if (ret.edition and (ret.edition["jimb_anaglyphic"])) then
         jokerMult(ret,1.5)
@@ -1295,14 +1531,6 @@ if CardSleeves then
                     G.jokers.cards = configs.jokers
                     configs.jokers = configs.jokers2
 
-                    local key = 'p_arcana_mega_'..(math.random(1,2))
-                    local card = Card(G.play.T.x + G.play.T.w/2 - G.CARD_W*1.27/2,
-                    G.play.T.y + G.play.T.h/2-G.CARD_H*1.27/2, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, G.P_CENTERS[key], {bypass_discovery_center = true, bypass_discovery_ui = true})
-                    card.cost = 0
-                    card.from_tag = false
-                    G.FUNCS.use_card({config = {ref_table = card}})
-                    card:start_materialize()
-                    G.CONTROLLER.locks[lock] = nil
                     return true
 
                 end
