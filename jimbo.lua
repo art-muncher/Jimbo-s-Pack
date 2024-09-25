@@ -502,7 +502,7 @@ local commercial = SMODS.Joker{
             "has {X:dark_edition,C:white}X#1#{} to all values",
         }
     },
-    config = {extra = {mult = 102, active = true}},
+    config = {extra = {mult = 1.2, active = true}},
     rarity = 3,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
