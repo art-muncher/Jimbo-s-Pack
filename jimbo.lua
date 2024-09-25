@@ -424,7 +424,7 @@ local ouroboros = SMODS.Joker{
     unlocked = true,
     discovered = true,
     blueprint_compat = true,
-    eternal_compat = false,
+    eternal_compat = true,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
         for i = 1, 20 do
@@ -465,7 +465,7 @@ local cardinal = SMODS.Joker{
             "{C:mult}+#1#{} Mult when scored"
         }
     },
-    config = {extra = {mult_mod = 2}},
+    config = {extra = {mult_mod = 1}},
     rarity = 2,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
@@ -1318,9 +1318,6 @@ local neondeck = SMODS.Back{
         }
     },
     atlas = "Decks",
-    apply = function(back)
-        
-    end,
     loc_vars = function(self)
         return { vars = {self.config.extra.mult} }
     end
@@ -1450,7 +1447,7 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     --end
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 
-    if ouroborosActive then
+    if ouroborosActive and forced_key == 'j_jimb_ouroboros' then
         ret.ability.extra.truecost = ouroborosActive.cost + ret.ability.extra.cost
         ret.base_cost = ret.ability.extra.truecost
         ret:set_cost()
@@ -1672,7 +1669,45 @@ local the_hand = SMODS.Blind{
     end,
 }
 
-
+local vintage = SMODS.Blind{
+    key = "vintage_vanilla",
+    loc_txt = {
+ 		name = 'Vintage Vanilla',
+ 		text = { 'On odd hands debuff vanilla Jokers,', 'on even hands debuff modded Jokers' },
+ 	},
+    boss_colour = HEX('F3E5AB'),
+    dollars = 5,
+    mult = 2,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 0,
+        max = 10,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+    recalc_debuff = function(self, card, from_blind)
+		if card.ability.set == 'Joker' then
+            local num = 0
+            if (G.GAME.current_round.hands_left % 2 == 0) then
+                for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
+                    num = num + 1
+                    if G.P_CENTER_POOLS['Joker'][i].key == card.config.center.key and num > 150 then
+                        return true
+                    end
+                end
+            else
+                for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
+                    num = num + 1
+                    if G.P_CENTER_POOLS['Joker'][i].key == card.config.center.key and num < 150 then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+	end,
+}
 
 ----------------------------------------------
 ------------MOD CODE END----------------------
