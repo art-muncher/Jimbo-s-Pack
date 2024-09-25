@@ -416,7 +416,7 @@ local ouroboros = SMODS.Joker{
             "This Joker gains {X:mult,C:white}X#2#{} Mult", "and {C:money}#3#${} of cost when sold", "{C:green}Next Joker generated is Ouroboros{}", "{C:inactive}(Currently {X:mult,C:white}X#1#{} Mult{C:inactive})"
         }
     },
-    config = {extra = {Xmult = 1, Xmult_mod = 0.25, cost = 2}},
+    config = {extra = {Xmult = 1, Xmult_mod = 0.25, cost = 2, truecost = 4}},
     rarity = 3,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
@@ -424,7 +424,7 @@ local ouroboros = SMODS.Joker{
     unlocked = true,
     discovered = true,
     blueprint_compat = true,
-    eternal_compat = true,
+    eternal_compat = false,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
         for i = 1, 20 do
@@ -438,7 +438,7 @@ local ouroboros = SMODS.Joker{
     end,
     calculate = function(self,card,context)
         if context.selling_self then
-            ouroborosActive = {cost = card.ability.extra.cost, Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod}
+            ouroborosActive = {cost = card.ability.extra.truecost, Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod}
         end
         if context.joker_main then
             return {
@@ -465,7 +465,7 @@ local cardinal = SMODS.Joker{
             "{C:mult}+#1#{} Mult when scored"
         }
     },
-    config = {extra = {mult_mod = 1}},
+    config = {extra = {mult_mod = 2}},
     rarity = 2,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
@@ -521,6 +521,7 @@ local commercial = SMODS.Joker{
         end
         if context.jimb_creating_card and card.ability.extra.active == true and not context.jimb_card.area then
             jokerMult(context.jimb_card, card.ability.extra.mult)
+            context.jimb_card.cost = context.jimb_card.cost * card.ability.extra.mult
             card.ability.extra.active = false
         end
     end
@@ -1450,10 +1451,11 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 
     if ouroborosActive then
-        ret.cost = ret.cost + ouroborosActive.cost
+        ret.ability.extra.truecost = ouroborosActive.cost + ret.ability.extra.cost
+        ret.base_cost = ret.ability.extra.truecost
         ret:set_cost()
         ret.ability.extra.Xmult = ouroborosActive.Xmult
-        ret.cost = ret.cost + ouroborosActive.cost or 69420
+        
         ouroborosActive = nil
     end
 
@@ -1669,6 +1671,7 @@ local the_hand = SMODS.Blind{
         ease_hands_played(3)
     end,
 }
+
 
 
 ----------------------------------------------
