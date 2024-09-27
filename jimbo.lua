@@ -9,6 +9,7 @@
 
 local jimbomod = SMODS.current_mod
 
+
 SMODS.Atlas({key = 'Jokers', path = 'Jokers.png', px = 71, py = 95})
 SMODS.Atlas({key = 'Soulj', path = 'Soulj.png', px = 71, py = 95})
 SMODS.Atlas({key = 'Curse', path = 'Curses.png', px = 71, py = 95})
@@ -159,190 +160,26 @@ end
 
 
 
-
-
-
-local ubiquityactive = true
-
-
---superpos/ubiquity
-local superpos = SMODS.Joker{
-    key = 'ubiquity',
-    loc_txt = {
-        name = "Ubiquity",
-        text = {
-            "When boss blind is selected,", "create a {C:dark_edition}Negative{} copy of"," this joker. For every Ubiquity", " you have, gain {X:mult,C:white}#1#X{} Mult.","{C:inactive}(Currently {X:attention,C:white}#2#X{}{C:inactive})"
-        }
-    },
-    rarity = 3,
-    config = {extra = {Xmult = 1, Xmult_mod = 0.05,}},
-    pos = { x = 0, y = 0 },
-    soul_pos = {x = 0, y = 1},
-    atlas = 'Soulj',
-    cost = 5,
-    unlocked = true,
-    discovered = true,
-    blueprint_compat = false,
-    eternal_compat = true,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        info_queue[#info_queue+1] = G.P_CENTERS.e_negative
-        return {vars = {center.ability.extra.Xmult_mod, center.ability.extra.Xmult}}
-    end,
-
-    
-    calculate = function(self, card, context)
-        if context.setting_blind and not self.getting_sliced and context.blind.boss then
-                if ubiquityactive == true then
-                    ubiquityactive = false
-                    local newcard = copy_card(card, nil)
-                    newcard:set_edition({negative = true}, true)
-                    newcard:add_to_deck()
-                    G.jokers:emplace(newcard) 
-                    newcard.sell_cost = 0
-                    newcard.ability.extra.original = false
-                    return{}
-                end
-        end
-    
-        if context.joker_main then
-            card.ability.extra.Xmult = 1
-            for i = 1, #G.jokers.cards do
-                if G.jokers.cards[i].ability.name == card.ability.name then
-                    card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod
-                end
-            end
-            return {
-                Xmult_mod = card.ability.extra.Xmult,
-                card = card,
-                message = localize {
-                    type = 'variable',
-                    key = 'a_xmult',
-                    vars = { card.ability.extra.Xmult }
-                },
-            }
-        end
-    end,
-    calc_dollar_bonus = function(self,card)
-        ubiquityactive = true
-    end,
-}
-
-
-
-
-
-
-
-
-
---Cardboard Cutout
---[[]
-local cardboard = SMODS.Joker{
-    key = 'cardboard',
-    loc_txt = {
-        name = "Cardboard Cutout",
-        text = {
-            "Copies the ability of a random","Joker at end of round","{X:attention,C:white}#1#"
-        }
-    },
-    config = {extra = {fakejoker = nil, text = "wawa", }},
-    rarity = 2,
-    pos = {x = 0, y = 1},
-    atlas = 'Jokers',
-    cost = 8,
-    unlocked = true,
-    discovered = true,
-    blueprint_compat = true,
-    eternal_compat = true,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.text}}
-    end,
-    calculate = function(self,card,context)
-        if card.ability.extra.fakejoker then
-            local other_joker = card.ability.extra.fakejoker
-            card.ability.extra.text = other_joker.ability.name
-            context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
-            context.blueprint_card = context.blueprint_card or self
-            local other_joker_ret = other_joker:calculate_joker(context)
-            if other_joker_ret then 
-                other_joker_ret.card = context.blueprint_card or self
-                other_joker_ret.colour = G.C.BLUE
-                return other_joker_ret
-            end
-        end
-    end,
-    calc_dollar_bonus = function(self, card)
-        card.ability.extra.fakejoker = nil
-        local newcard = create_card('Joker', G.jokers, nil, nil, nil, nil, nil)
-        card.ability.extra.fakejoker = newcard
-        newcard = nil
-        --newcard:start_dissolve()
-    end,
-}]]
-
-
-
-
-
-
-
---3D Vision
-
-local vision = SMODS.Joker{
-    key = 'vision',
-    loc_txt = {
-        name = "3D Vision",
-        text = {
-            "Creates a {X:attention,C:white}Double{}{X:attention,C:white} Tag{}","when a blind is skipped",
-        }
-    },
-    config = {extra = {}},
-    rarity = 2,
-    pos = {x = 0, y = 0},
-    soul_pos = {x=1,y=1},
-    atlas = 'Soulj',
-    cost = 5,
-    unlocked = true,
-    discovered = true,
-    blueprint_compat = true,
-    eternal_compat = true,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.chosenname}}
-    end,
-}
-
-vision.calculate = function(self, card, context)
-    if context.skip_blind then
-        add_tag(Tag('tag_double'))
-        return{}
-    end
-end
-
-
 local danger = SMODS.Joker{
     key = 'sign',
     loc_txt = {
         name = "Danger Sign",
         text = {
             "{X:mult,C:white}X#1#{} Mult if no discards","have been used this round"
-        }
+        },
     },
     config = {extra = {Xmult = 2}},
-    rarity = 2,
+    rarity = 1,
     pos = {x = 1, y = 1},
     atlas = 'Jokers',
     cost = 5,
-    unlocked = true,
     discovered = true,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.Xmult}}
-    end,
+    end
 }
 
 danger.calculate = function(self, card, context)
@@ -358,10 +195,6 @@ danger.calculate = function(self, card, context)
         }
     end
 end
-
-
-
-
 
 local gum = SMODS.Joker{
     key = 'gum',
@@ -407,53 +240,6 @@ gum.calculate = function(self, card, context)
     end
 end
 
-local ouroborosActive = nil
-local ouroboros = SMODS.Joker{
-    key = 'ouroboros',
-    loc_txt = {
-        name = "Ouroboros",
-        text = {
-            "This Joker gains {X:mult,C:white}X#2#{} Mult", "and {C:money}#3#${} of cost when sold", "{C:green}Next Joker generated is Ouroboros{}", "{C:inactive}(Currently {X:mult,C:white}X#1#{} Mult{C:inactive})"
-        }
-    },
-    config = {extra = {Xmult = 1, Xmult_mod = 0.25, cost = 2, truecost = 4}},
-    rarity = 3,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
-    cost = 4,
-    unlocked = true,
-    discovered = true,
-    blueprint_compat = true,
-    eternal_compat = true,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        for i = 1, 20 do
-            info_queue[#info_queue + 1] = {
-                set = "Joker",
-                key = "j_jimb_ouroboros",
-                specific_vars = {center.ability.extra.Xmult,center.ability.extra.Xmult_mod,center.ability.extra.cost},
-            }
-        end
-        return {vars = {center.ability.extra.Xmult,center.ability.extra.Xmult_mod,center.ability.extra.cost}}
-    end,
-    calculate = function(self,card,context)
-        if context.selling_self then
-            ouroborosActive = {cost = card.ability.extra.truecost, Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod}
-        end
-        if context.joker_main then
-            return {
-                Xmult_mod = card.ability.extra.Xmult,
-                card = card,
-                message = localize {
-                    type = 'variable',
-                    key = 'a_xmult',
-                    vars = { card.ability.extra.Xmult }
-                },
-            }
-        end
-    end
-}
-
 
 local cardinal = SMODS.Joker{
     key = 'cardinal',
@@ -465,7 +251,7 @@ local cardinal = SMODS.Joker{
             "{C:mult}+#1#{} Mult when scored"
         }
     },
-    config = {extra = {mult_mod = 1}},
+    config = {extra = {mult_mod = 2}},
     rarity = 2,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
@@ -492,40 +278,6 @@ local cardinal = SMODS.Joker{
     end
 }
 
-
-local commercial = SMODS.Joker{
-    key = 'commercial',
-    loc_txt = {
-        name = "Commercial",
-        text = {
-            "First Joker in shop", 
-            "has {X:dark_edition,C:white}X#1#{} to all values",
-        }
-    },
-    config = {extra = {mult = 1.2, active = true}},
-    rarity = 3,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
-    cost = 10,
-    unlocked = true,
-    discovered = true,
-    blueprint_compat = true,
-    eternal_compat = true,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.mult}}
-    end,
-    calculate = function(self,card,context)
-        if context.end_of_round then
-            card.ability.extra.active = true
-        end
-        if context.jimb_creating_card and card.ability.extra.active == true and not context.jimb_card.area then
-            jokerMult(context.jimb_card, card.ability.extra.mult)
-            context.jimb_card.cost = context.jimb_card.cost * card.ability.extra.mult
-            card.ability.extra.active = false
-        end
-    end
-}
 
 local kunai = SMODS.Joker{
     key = 'kunai',
@@ -606,6 +358,322 @@ local kunai = SMODS.Joker{
     end
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local oldfunc = copy_card
+copy_card = function(other, new_card, card_scale, playing_card, strip_edition)
+    local ret = oldfunc(other, new_card, card_scale, playing_card, strip_edition)
+    if other and other.config and other.config.center and other.config.center.key and other.config.center.key == 'j_invisible' then
+        check_for_unlock({type = 'invisDuped'})
+    end
+    return ret
+end
+
+local ubiquityactive = true
+
+
+--superpos/ubiquity
+local superpos = SMODS.Joker{
+    key = 'ubiquity',
+    loc_txt = {
+        name = "Ubiquity",
+        text = {
+            "When boss blind is selected,", "create a {C:dark_edition}Negative{} copy of"," this joker. For every Ubiquity", " you have, gain {X:mult,C:white}#1#X{} Mult.","{C:inactive}(Currently {X:attention,C:white}#2#X{}{C:inactive})"
+        },
+        unlock = {
+            'Duplicate an',
+            '{C:attention}Invisible Joker{}'
+        }
+    },
+    rarity = 3,
+    config = {extra = {Xmult = 1, Xmult_mod = 0.05,}},
+    pos = { x = 0, y = 0 },
+    soul_pos = {x = 0, y = 1},
+    atlas = 'Soulj',
+    cost = 5,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = false,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        info_queue[#info_queue+1] = G.P_CENTERS.e_negative
+        return {vars = {center.ability.extra.Xmult_mod, center.ability.extra.Xmult}}
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'invisDuped' then
+            unlock_card(self)
+        end
+    end,
+    
+    calculate = function(self, card, context)
+        if context.setting_blind and not self.getting_sliced and context.blind.boss then
+                if ubiquityactive == true then
+                    ubiquityactive = false
+                    local newcard = copy_card(card, nil)
+                    newcard:set_edition({negative = true}, true)
+                    newcard:add_to_deck()
+                    G.jokers:emplace(newcard) 
+                    newcard.sell_cost = 0
+                    newcard.ability.extra.original = false
+                    return{}
+                end
+        end
+    
+        if context.joker_main then
+            card.ability.extra.Xmult = 1
+            for i = 1, #G.jokers.cards do
+                if G.jokers.cards[i].ability.name == card.ability.name then
+                    card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod
+                end
+            end
+            return {
+                Xmult_mod = card.ability.extra.Xmult,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_xmult',
+                    vars = { card.ability.extra.Xmult }
+                },
+            }
+        end
+    end,
+    calc_dollar_bonus = function(self,card)
+        ubiquityactive = true
+    end,
+}
+
+
+
+
+
+
+
+
+
+
+local cardboard = SMODS.Joker{
+    key = 'cardboard',
+    loc_txt = {
+        name = "Cardboard Cutout",
+        text = {
+            "Copies the ability of", 'the last sold {C:attention}Joker{}',"{C:inactive}Won't persist between save and reload"
+        }
+    },
+    config = {extra = {fakejoker = nil}},
+    rarity = 2,
+    pos = {x = 0, y = 1},
+    atlas = 'Jokers',
+    cost = 8,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        if center.ability.extra.fakejoker and center.ability.extra.fakejoker.config and center.ability.extra.fakejoker.config.center and center.ability.extra.fakejoker.config.center.key then
+            info_queue[#info_queue + 1] = {
+                set = "Joker",
+                key = center.ability.extra.fakejoker.config.center.key or 'j_jimb_cardboard',
+                specific_vars = center.ability.extra.fakejoker.ability.extra or {'???','???','???','???'},
+            }
+        end
+        return {vars = {}}
+    end,
+    calculate = function(self,card,context)
+        if card.ability.extra.fakejoker and card.ability.extra.fakejoker.calculate_joker then
+            local other_joker = card.ability.extra.fakejoker
+            context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+            context.blueprint_card = context.blueprint_card or self
+            local other_joker_ret = other_joker:calculate_joker(context)
+            if other_joker_ret then 
+                other_joker_ret.card = context.blueprint_card or self
+                other_joker_ret.colour = G.C.BLUE
+                --return other_joker_ret
+            end
+        end
+        if context.selling_card and context.card.ability.set == 'Joker' then
+            card.ability.extra.fakejoker = context.card
+        end
+    end,
+}
+
+
+
+
+
+
+
+--3D Vision
+
+local vision = SMODS.Joker{
+    key = 'vision',
+    loc_txt = {
+        name = "3D Vision",
+        text = {
+            "Creates a {X:attention,C:white}Double{}{X:attention,C:white} Tag{}","when a blind is skipped",
+        },
+        unlock = {
+            'Win a run',
+            'with {C:attention}Anaglyph Deck{}'
+        }
+    },
+    config = {extra = {}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    soul_pos = {x=1,y=1},
+    atlas = 'Soulj',
+    cost = 5,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.chosenname}}
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Anaglyph Deck" then
+                unlock_card(self)
+            end
+        end
+    end
+}
+
+vision.calculate = function(self, card, context)
+    if context.skip_blind then
+        add_tag(Tag('tag_double'))
+        return{}
+    end
+end
+
+local ouroborosActive = nil
+local ouroboros = SMODS.Joker{
+    key = 'ouroboros',
+    loc_txt = {
+        name = "Ouroboros",
+        text = {
+            "This Joker gains {X:mult,C:white}X#2#{} Mult", 
+            "and {C:money}#3#${} of cost when sold", 
+            "{C:green}Next Joker generated is Ouroboros{}", 
+            "{C:inactive}(Currently {X:mult,C:white}X#1#{} Mult{C:inactive})"
+        },
+        unlock = {
+            'Win a run with',
+            '{C:attention}Planted Deck{}',
+        }
+    },
+    config = {extra = {Xmult = 1, Xmult_mod = 0.25, cost = 2, truecost = 4}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+
+        for i = 1, 20 do
+            info_queue[#info_queue + 1] = {
+                set = "Joker",
+                key = "j_jimb_ouroboros",
+                specific_vars = {center.ability.extra.Xmult,center.ability.extra.Xmult_mod,center.ability.extra.cost},
+            }
+        end
+        return {vars = {center.ability.extra.Xmult,center.ability.extra.Xmult_mod,center.ability.extra.cost}}
+    end,
+    calculate = function(self,card,context)
+        if context.selling_self then
+            ouroborosActive = {cost = card.ability.extra.truecost, Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod}
+        end
+        if context.joker_main then
+            return {
+                Xmult_mod = card.ability.extra.Xmult,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_xmult',
+                    vars = { card.ability.extra.Xmult }
+                },
+            }
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Planted Deck" then
+                unlock_card(self)
+            end
+        end
+    end
+}
+
+
+local commercial = SMODS.Joker{
+    key = 'commercial',
+    loc_txt = {
+        name = "Commercial",
+        text = {
+            "First Joker in shop", 
+            "has {X:dark_edition,C:white}X#1#{} to all values",
+        },
+        unlock = {
+            'Win a run with',
+            '{C:attention}Neon Deck{}'
+        }
+    },
+    config = {extra = {mult = 1.2, active = true}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 10,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.mult}}
+    end,
+    calculate = function(self,card,context)
+        if context.end_of_round then
+            card.ability.extra.active = true
+        end
+        if context.jimb_creating_card and card.ability.extra.active == true and not context.jimb_card.area then
+            jokerMult(context.jimb_card, card.ability.extra.mult)
+            context.jimb_card.cost = context.jimb_card.cost * card.ability.extra.mult
+            card.ability.extra.active = false
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Neon Deck" then
+                unlock_card(self)
+            end
+        end
+    end
+}
+
 local fabricwarp = SMODS.Joker{
     key = 'fabricwarp',
     loc_txt = {
@@ -615,6 +683,10 @@ local fabricwarp = SMODS.Joker{
             "sold, sell this card for",
             "{C:attention}-#2# Ante{}",
             "{C:inactive}(Currently {C:attention}#3#{C:inactive})"
+        },
+        unlock = {
+            'Win a run with',
+            '{C:attention}Archeologist Deck{}'
         }
     },
     config = {extra = {jokers = 2, ante = 2, active = "Inactive"}},
@@ -622,7 +694,7 @@ local fabricwarp = SMODS.Joker{
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
     cost = 10,
-    unlocked = true,
+    unlocked = false,
     discovered = true,
     blueprint_compat = true,
     eternal_compat = true,
@@ -642,6 +714,15 @@ local fabricwarp = SMODS.Joker{
         end
         if context.selling_self and card.ability.extra.active == "Active" then
             ease_ante(card.ability.extra.ante * -1)
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Archeologist Deck" then
+                unlock_card(self)
+            end
         end
     end
 }
@@ -1276,7 +1357,6 @@ SMODS.Atlas{
         end
 end]]
 function jokerMult(card,mult)
-    if not card.ability then return end
     for k,v in pairs(card.ability) do
         if k ~= 'x_mult' and type(v) == 'number' then
             card.ability[k] = v*1.5 or card.ability[k]*1.5
@@ -1286,7 +1366,7 @@ function jokerMult(card,mult)
         end
     end
     if not card.ability.extra then return end
-    if type(card.ability.extra) == 'number' then card.ability.extra = card.ability.extra*mult end
+    --if type(card.ability.extra) == 'number' then card.ability.extra = card.ability.extra*mult end
     if type(card.ability.extra) == 'table' then
         for i,v in pairs(card.ability.extra) do
             
@@ -1307,7 +1387,7 @@ local neondeck = SMODS.Back{
         text = {
         "Switch between two joker",
         "slots at the end of round",
-        "{X:dark_edition,C:white}X#1#{} Card Values"
+        "{X:dark_edition,C:white}X#1#{} card values"
         }
     },
     config = {
@@ -1361,16 +1441,20 @@ local CAI = {
 
 
 
-
 local plantdeck = SMODS.Back{
     key = "planted",
     name = "Planted Deck",
+    unlocked = false,
     pos = {x = 0, y = 0},
     loc_txt = {
         name = "Planted Deck",
         text = {
         "Every run uses only one seed",
         "Seed changes every 10 runs",
+        },
+        unlock = {
+            'Win a seeded',
+            'run',
         }
     },
     config = {
@@ -1381,7 +1465,34 @@ local plantdeck = SMODS.Back{
         }
     },
     atlas = "Decks",
+    check_for_unlock = function(self, args)
+        if args.type == 'win_seeded' and args.isSeeded then
+            unlock_card(self)
+        end
+    end
 }
+
+local oldfunc = win_game
+win_game = function()
+    if G.GAME.seeded then
+        check_for_unlock({type = 'win_seeded'})
+    end
+    local ret = oldfunc()
+    return ret
+end
+
+local plantDeckLock = check_for_unlock
+check_for_unlock = function(args)
+    if args.type == 'win_seeded' then
+        args.isSeeded = true
+        G.GAME.seeded = nil
+    end
+    local ret = plantDeckLock(args)
+    if args.isSeeded then
+        G.GAME.seeded = true
+    end
+    return ret
+end
 
 
 
@@ -1389,12 +1500,17 @@ local archeologist = SMODS.Back{
     key = "archeologist",
     name = "Archeologist Deck",
     pos = {x = 0, y = 0},
+    unlocked = false,
     loc_txt = {
         name = "Archeologist Deck",
         text = {
         "Start at {C:attention}Ante #1#{}",
         "{C:mult}#2#{} discards"
+        },
+        unlock = {
+            'Reach {C:attention}Ante 0{}',
         }
+
     },
     config = {
         extra = {
@@ -1404,12 +1520,19 @@ local archeologist = SMODS.Back{
     },
     atlas = "Decks",
     apply = function(back) 
-        --ease_ante(-2)
-        G.GAME.round_resets.ante = back.config.extra.ante
+        ease_ante(back.config.extra.ante-1)
+        --G.GAME.round_resets.ante = back.config.extra.ante
         G.GAME.round_resets.discards = G.GAME.round_resets.discards - back.config.extra.discards
     end,
     loc_vars = function(self)
         return { vars = {self.config.extra.ante,self.config.extra.discards} }
+    end,
+    check_for_unlock = function(self,args)
+        if args.type == 'ante_up' then
+            if args.ante >= 0 then
+                unlock_card(self)
+            end
+        end
     end
 }
 
@@ -1435,6 +1558,17 @@ Game.start_run = function(e, args)
     return ret
 end
 
+local oldfunc = Card.set_ability
+Card.set_ability = function(self,a,b,c)
+    local ret = oldfunc(self,a,b,c)
+
+    if G.GAME.selected_back then G.GAME.selected_back:trigger_effect{context = 'jimb_card', card = self} end
+    if G and G.jokers and G.jokers.cards then
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({jimb_creating_card = true, jimb_card = self})
+        end
+    end
+end
 
 local oldfunc = create_card
 create_card = function(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
@@ -1448,12 +1582,15 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 
     if ouroborosActive and forced_key == 'j_jimb_ouroboros' then
-        ret.ability.extra.truecost = ouroborosActive.cost + ret.ability.extra.cost
+        if ret.ability.extra and ret.ability.extra.truecost and ouroborosActive.cost then ret.ability.extra.truecost = ouroborosActive.cost + ret.ability.extra.cost end
         ret.base_cost = ret.ability.extra.truecost
         ret:set_cost()
-        ret.ability.extra.Xmult = ouroborosActive.Xmult
+        if ret.ability.extra and ret.ability.extra.Xmult and ouroborosActive.Xmult then ret.ability.extra.Xmult = ouroborosActive.Xmult end
         
         ouroborosActive = nil
+    end
+    if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_jimb_zone' then
+        jokerMult(ret,0.75)
     end
 
     --POST hook
@@ -1462,13 +1599,13 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     if selected_back.name == "Neon Deck" then
         jokerMult(ret,selected_back.config.mult)
     end]]
-    G.GAME.selected_back:trigger_effect{context = 'jimb_card', card = ret}
-    if G and G.jokers and G.jokers.cards then
-        for i = 1, #G.jokers.cards do
-            G.jokers.cards[i]:calculate_joker({jimb_creating_card = true, jimb_card = ret})
-        end
-    end
-    if (ret.edition and (ret.edition["jimb_anaglyphic"])) then
+    return ret
+end
+
+local oldfunc = Card.set_edition
+Card.set_edition = function(self,a,b,c)
+    local ret = oldfunc(self,a,b,c)
+    if (a and (a["jimb_anaglyphic"])) then
         jokerMult(ret,1.5)
     end
     return ret
@@ -1644,11 +1781,37 @@ SMODS.Edition({
 --------------------BLINDS---------------------
 --------------------BLINDS---------------------
 --------------------BLINDS---------------------
+--[[local oldfunc = get_new_boss
+function get_new_boss()
+    local isCalm = false
+    if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss then
+        if G.GAME.round_resets.blind_choices.Boss == 'bl_jimb_calm' then
+            isCalm = true
+        end
+    end
 
+    local ret = oldfunc()
+    --G.GAME.round_resets.blind_choices.Small = 'bl_small'
+    --G.GAME.round_resets.blind_choices.Big = 'bl_big'
+    if ret == 'bl_jimb_cerberus' then
+        G.GAME.round_resets.blind_choices.Small = 'bl_jimb_sarvara'
+        G.GAME.round_resets.blind_choices.Big = 'bl_jimb_melanos'
+        --reset_blinds()
+        G.GAME.round_resets.blind_choices.Boss = 'bl_jimb_calm'
+    end
+    if isCalm == true then
+        G.GAME.round_resets.blind_choices.Small = 'bl_jimb_storm'
+        G.GAME.round_resets.blind_choices.Big = 'bl_jimb_storm'
+        G.GAME.round_resets.blind_states = {Small = 'Upcoming', Big = 'Upcoming', Boss = 'Select'}
+        return 'bl_jimb_storm'
+    end
+    --if ret == 'bl_jimb_storm' then return get_new_boss() end
+    return ret
+end]]
 local the_hand = SMODS.Blind{
     key = "the_hand",
     loc_txt = {
- 		name = 'The Hand',
+ 		name = 'Royal Hand',
  		text = { '+3 Hands, +1.5X score', 'requirement per hand' },
  	},
     boss_colour = HEX('015482'),
@@ -1673,9 +1836,42 @@ local vintage = SMODS.Blind{
     key = "vintage_vanilla",
     loc_txt = {
  		name = 'Vintage Vanilla',
- 		text = { 'On odd hands debuff vanilla Jokers,', 'on even hands debuff modded Jokers' },
+ 		text = { '1 in 3 chance for', ' vanilla Jokers to be debuffed' },
  	},
     boss_colour = HEX('F3E5AB'),
+    dollars = 5,
+    mult = 2,
+    config = {jokers = {}},
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 0,
+        max = 10,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+    recalc_debuff = function(self, card, from_blind)
+        self.config.jokers = {}
+		if card.ability.set == 'Joker' then
+            local num = 0
+            for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
+                num = num + 1
+                if G.P_CENTER_POOLS['Joker'][i].key == card.config.center.key and num < 150 and pseudorandom('vintage') < 1/3 then
+                    return true
+                end
+            end
+        end
+        return false
+	end
+}
+
+local luckylady = SMODS.Blind{
+    key = "lady_luck",
+    loc_txt = {
+ 		name = 'Lady Luck',
+ 		text = { '1 in 10 chance for a card', ' to be debuffed'},
+ 	},
+    boss_colour = HEX('0C9E5A'),
     dollars = 5,
     mult = 2,
     discovered = true,
@@ -1687,27 +1883,118 @@ local vintage = SMODS.Blind{
     },
     pos = { x = 0, y = 30 },
     recalc_debuff = function(self, card, from_blind)
-		if card.ability.set == 'Joker' then
-            local num = 0
-            if (G.GAME.current_round.hands_left % 2 == 0) then
-                for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
-                    num = num + 1
-                    if G.P_CENTER_POOLS['Joker'][i].key == card.config.center.key and num > 150 then
-                        return true
-                    end
-                end
-            else
-                for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
-                    num = num + 1
-                    if G.P_CENTER_POOLS['Joker'][i].key == card.config.center.key and num < 150 then
-                        return true
-                    end
-                end
-            end
+        if pseudorandom('ladyluck') < 1/10 then
+            return true
         end
         return false
 	end,
 }
+
+SMODS.Achievement{
+    loc_txt = {
+        name = "Do It All Again",
+        description = "Win a run with Planted Deck",
+    },
+    key = 'plant_win',
+    unlock_condition = function(self,args)
+
+    end,
+}
+
+--[[local calm = SMODS.Blind{
+    key = "calm",
+    loc_txt = {
+ 		name = 'The Calm',
+ 		text = { "Don't score over 2X", 'required score...' },
+ 	},
+    boss_colour = HEX('4F6367'),
+    dollars = 5,
+    mult = 1,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 7,
+        max = 7,
+        showdown = false
+    },
+    pos = { x = 0, y = 30 },
+}
+
+local storm = SMODS.Blind{
+    key = "storm",
+    loc_txt = {
+ 		name = 'The Storm',
+ 		text = { "It's all over for you" },
+ 	},
+    boss_colour = HEX('4F6367'),
+    dollars = 5,
+    mult = 2,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 69420,
+        max = 69420,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+}
+
+local sarvara = SMODS.Blind{
+    key = "sarvara",
+    loc_txt = {
+ 		name = 'Echidna',
+ 		text = { "idfk", },
+ 	},
+    boss_colour = HEX('D3D3D3'),
+    dollars = 5,
+    mult = 1,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 69420,
+        max = 69420,
+        showdown = false
+    },
+    pos = { x = 0, y = 30 },
+}
+
+local melanos = SMODS.Blind{
+    key = "melanos",
+    loc_txt = {
+ 		name = 'Typhon',
+ 		text = { "Apply effect of previous blind", },
+ 	},
+    boss_colour = HEX('FF0000'),
+    dollars = 5,
+    mult = 1.5,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 69420,
+        max = 69420,
+        showdown = false
+    },
+    pos = { x = 0, y = 30 },
+}
+
+local cerberus = SMODS.Blind{
+    key = "cerberus",
+    loc_txt = {
+ 		name = 'Cerberus',
+ 		text = { "Apply effect of previous blind", },
+ 	},
+    boss_colour = HEX('4F6367'),
+    dollars = 5,
+    mult = 2,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 69420,
+        max = 69420,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+}]]
 
 ----------------------------------------------
 ------------MOD CODE END----------------------
