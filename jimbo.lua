@@ -212,7 +212,7 @@ local gum = SMODS.Joker{
     unlocked = true,
     discovered = true,
     blueprint_compat = true,
-    eternal_compat = true,
+    eternal_compat = false,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.mult,center.ability.extra.mult_mod,center.ability.extra.remaining}}
@@ -604,7 +604,7 @@ local ouroboros = SMODS.Joker{
     unlocked = false,
     discovered = false,
     blueprint_compat = true,
-    eternal_compat = true,
+    eternal_compat = false,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
 
@@ -767,7 +767,7 @@ local fabricwarp = SMODS.Joker{
     unlocked = false,
     discovered = true,
     blueprint_compat = true,
-    eternal_compat = true,
+    eternal_compat = false,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
         info_queue[#info_queue+1] = G.P_CENTERS.e_negative
@@ -818,13 +818,12 @@ SMODS.Challenge{
     deck = { type = "Challenge Deck" },
     rules = { 
         custom = {
-            {id = 'no_reward_specific', value = 'Big'},
             {id = 'no_shop', value = 'Big'},
-            {id = 'no_reward_specific', value = 'Small'},
             {id = 'no_shop', value = 'Small'},
             {id = 'no_reroll',},
         }, 
-        modifiers = {}
+        modifiers = {
+            {id = 'joker_slots', value = 10},}
     },
     jokers = {},
     consumeables = {},
@@ -1728,12 +1727,30 @@ G.FUNCS.cash_out = function(e)
                     return true
                     end
                 }))
+
                 return
             end
         end
+        
     end
     return ret
 end
+local oldfunc = G.UIDEF.shop
+G.UIDEF.shop = function()
+    --local ret = oldfunc()
+    if G.GAME.modifiers.jimb_no_shops then
+        --for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do print(k .. '   ?') end
+        for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do
+            if blindtype == k .. ' Blind' then
+                return {n=G.UIT.ROOT, config = {align = 'cl', colour = G.C.CLEAR}, nodes={}}
+            end
+        end
+        
+    end
+    local ret = oldfunc()
+    return ret
+end
+
 local oldfunc = G.FUNCS.can_reroll
 G.FUNCS.can_reroll = function(e)
     local ret = oldfunc(e)
