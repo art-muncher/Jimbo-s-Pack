@@ -557,7 +557,7 @@ local cardboard = SMODS.Joker{
                 --return other_joker_ret
             end
         end
-        if context.selling_card and context.card.ability.set == 'Joker' then
+        if context.selling_card and context.card.ability.set == 'Joker' and context.card.ability.name ~= card.ability.name then
             card.ability.extra.fakejoker = context.card
         end
         
@@ -798,7 +798,7 @@ local fabricwarp = SMODS.Joker{
 
 
 
-local fabricwarp = SMODS.Joker{
+local vipcard = SMODS.Joker{
     key = 'vipcard',
     loc_txt = {
         name = "VIP Card",
@@ -841,6 +841,47 @@ local fabricwarp = SMODS.Joker{
     end,
     check_for_unlock = function(self, args)
         if args.type == 'jimb_win_challenge' and G.GAME.jimb_challenge == 'c_jimb_shopping_spree' then
+            unlock_card(self)
+        end
+    end
+}
+
+local shoplifter = SMODS.Joker{
+    key = 'shoplifter',
+    loc_txt = {
+        name = "Shoplifter",
+        text = {
+            '{C:green}#1# in #2# chance{} for cards', 'to cost {C:money}0${}'
+        },
+        unlock = {
+            'Beat {C:inactive}up{} the {C:attention}Homeless Man',
+            'Challenge'
+        }
+    },
+    config = {extra = {odds = 3}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        info_queue[#info_queue+1] = G.P_CENTERS.e_negative
+        return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_creating_card then
+            if pseudorandom('shoplifter') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                context.jimb_card.base_cost = 0
+                context.jimb_card:set_cost()
+            end
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'jimb_win_challenge' and G.GAME.jimb_challenge == 'c_jimb_homeless' then
             unlock_card(self)
         end
     end
