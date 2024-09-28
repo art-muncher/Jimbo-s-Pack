@@ -312,11 +312,9 @@ local kunai = SMODS.Joker{
                 for k,v in pairs(newcard.ability) do
                     if k ~= 'x_mult' and k~= 'order' and type(v) == 'number' then
                         num = num + (v or newcard.ability[k])
-                        print(v .. "    WAWA   " .. k)
                     end
                     if k == 'x_mult' and v ~= 1 then
                         num = num + (v or newcard.ability[k])
-                        print(v .. "    WAWA")
                     end
                 end
                 if newcard.ability.extra then
@@ -470,6 +468,10 @@ local cardboard = SMODS.Joker{
         name = "Cardboard Cutout",
         text = {
             "Copies the ability of", 'the last sold {C:attention}Joker{}',"{C:inactive}Won't persist between save and reload"
+        },
+        unlock = {
+            'Have a {C:blue}copying{} {C:attention} Joker',
+            'copy a {C:blue}copying{} {C:attention} Joker'
         }
     },
     config = {extra = {fakejoker = nil}},
@@ -477,7 +479,7 @@ local cardboard = SMODS.Joker{
     pos = {x = 0, y = 1},
     atlas = 'Jokers',
     cost = 8,
-    unlocked = true,
+    unlocked = false,
     discovered = true,
     blueprint_compat = true,
     eternal_compat = true,
@@ -508,7 +510,22 @@ local cardboard = SMODS.Joker{
             card.ability.extra.fakejoker = context.card
         end
     end,
+    check_for_unlock = function(self, args)
+        if args.type == 'jimb_cardboard' then
+            unlock_card(self)
+        end
+    end
 }
+
+local oldfunc = Card.calculate_joker
+Card.calculate_joker = function(self,context)
+    local ret = oldfunc(self,context)
+
+    if context and context.blueprint and context.blueprint > 1 then
+        check_for_unlock({type = 'jimb_cardboard'})
+    end
+    return ret
+end
 
 
 
@@ -726,6 +743,110 @@ local fabricwarp = SMODS.Joker{
         end
     end
 }
+
+
+
+local fabricwarp = SMODS.Joker{
+    key = 'vipcard',
+    loc_txt = {
+        name = "VIP Card",
+        text = {
+            "{C:attention}+#1#{} cards in shop",'Decreases by {C:attention}#2#{} when', 'leaving shop'
+        },
+        unlock = {
+            'Beat the {C:attention}Shopping Spree',
+            'Challenge'
+        }
+    },
+    config = {extra = {cards = 3,decrease = 1}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        info_queue[#info_queue+1] = G.P_CENTERS.e_negative
+        return {vars = {center.ability.extra.cards,center.ability.extra.decrease}}
+    end,
+    add_to_deck = function(self,card)
+        change_shop_size(card.ability.extra.cards)
+    end,
+    remove_from_deck = function(self,card)
+        change_shop_size(-card.ability.extra.cards)
+    end,
+    calculate = function(self,card,context)
+        if context.ending_shop then
+            change_shop_size(-card.ability.extra.decrease)
+            card.ability.extra.cards = card.ability.extra.cards-card.ability.extra.decrease
+            if card.ability.extra.cards <= 0 then
+                card:start_dissolve()
+            end
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'jimb_win_challenge' and G.GAME.jimb_challenge == 'c_jimb_shopping_spree' then
+            unlock_card(self)
+        end
+    end
+}
+
+
+
+
+
+
+
+
+
+
+
+
+SMODS.Challenge{
+    key = 'shopping_spree',
+    name = 'Shopping Spree',
+    loc_txt = {
+        name = 'Shopping Spree',
+    },
+    deck = { type = "Challenge Deck" },
+    rules = { 
+        custom = {
+            {id = 'no_reward_specific', value = 'Big'},
+            {id = 'no_shop', value = 'Big'},
+            {id = 'no_reward_specific', value = 'Small'},
+            {id = 'no_shop', value = 'Small'},
+            {id = 'no_reroll',},
+        }, 
+        modifiers = {}
+    },
+    jokers = {},
+    consumeables = {},
+    vouchers = {
+        {id = 'v_overstock_norm'},
+        {id = 'v_overstock_plus'},
+        {id = 'v_overstock_plus'},
+        {id = 'v_overstock_plus'},
+    },
+    restrictions = { 
+        banned_cards = {
+            {id = 'v_reroll_surplus'},
+            {id = 'v_reroll_glut'},
+        }, 
+        banned_tags = {}, 
+        banned_other = {} },
+}
+
+
+
+
+
+
+
+
+
 
 
 --[[
@@ -1357,6 +1478,8 @@ SMODS.Atlas{
         end
 end]]
 function jokerMult(card,mult)
+    if not card then return end
+    if not mult then return end
     for k,v in pairs(card.ability) do
         if k ~= 'x_mult' and type(v) == 'number' then
             card.ability[k] = v*1.5 or card.ability[k]*1.5
@@ -1409,7 +1532,7 @@ neondeck.trigger_effect = function(self,args)
     if args.context == "jimb_card" then jokerMult(args.card,self.config.extra.mult) end
 
     if args.context == 'eval' then
-        configs.jokers2 = G.jokers.cards
+        --[[configs.jokers2 = G.jokers.cards
 
         G.jokers.cards = {}
         for i = 1, #configs.jokers do
@@ -1419,7 +1542,33 @@ neondeck.trigger_effect = function(self,args)
         end
 
         G.jokers.cards = configs.jokers
-        configs.jokers = configs.jokers2
+        configs.jokers = configs.jokers2]]
+
+        --G.GAME.neonJokers2 = G.jokers.cards
+        G.GAME.neonJokers2 = {}
+        for i = 1, #G.jokers.cards do
+            G.GAME.neonJokers2[#G.GAME.neonJokers2+1] = {}
+            G.GAME.neonJokers2[#G.GAME.neonJokers2].key = G.jokers.cards[i].config.center.key
+            G.GAME.neonJokers2[#G.GAME.neonJokers2].ability = G.jokers.cards[i].ability
+            G.jokers.cards[i]:remove_from_deck()
+        end
+        G.GAME.neonJokers = G.GAME.neonJokers or {}
+
+
+        G.jokers.cards = {}
+        for i = 1, #G.GAME.neonJokers do
+            local card = create_card('Joker', G.jokers, nil, nil, nil, nil, G.GAME.neonJokers[i].key)
+            card.ability = G.GAME.neonJokers[i].ability
+
+            --G.GAME.neonJokers[i]:add_to_deck()
+            --G.GAME.neonJokers[i]:start_materialize({G.C.DARK_EDITION}, nil, 5)
+            G.jokers:emplace(card)
+            card:add_to_deck()
+            card:start_materialize({G.C.DARK_EDITION}, nil, 5)
+        end
+
+        --G.jokers.cards = G.GAME.neonJokers
+        G.GAME.neonJokers = G.GAME.neonJokers2
     end
 
 end
@@ -1487,7 +1636,20 @@ check_for_unlock = function(args)
         args.isSeeded = true
         G.GAME.seeded = nil
     end
+    if args.type == 'win_challenge' then
+        local newargs = args
+        newargs.type = 'jimb_win_challenge'
+        check_for_unlock(newargs)
+    end
+    if args.type  == 'jimb_win_challenge' then
+        G.GAME.jimb_challenge = G.GAME.challenge
+        G.GAME.challenge = nil
+    end
     local ret = plantDeckLock(args)
+    if args.type == 'jimb_win_challenge' then
+        G.GAME.challenge = G.GAME.jimb_challenge
+        G.GAME.jimb_challenge = nil
+    end
     if args.isSeeded then
         G.GAME.seeded = true
     end
@@ -1536,6 +1698,48 @@ local archeologist = SMODS.Back{
     end
 }
 
+local blindtype = 'Small'
+local oldfunc = end_round
+end_round = function()
+    local ret = oldfunc()
+    blindtype = G.GAME.blind.name
+    return ret
+end
+
+local oldfunc = G.FUNCS.cash_out
+G.FUNCS.cash_out = function(e)
+    local ret = oldfunc(e)
+
+    if G.GAME.modifiers.jimb_no_shops then
+        --for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do print(k .. '   ?') end
+        for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do
+            if blindtype == k .. ' Blind' then
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = 1,
+                    func = function()
+                    G.STATE_COMPLETE = false
+                    G.STATE = G.STATES.BLIND_SELECT
+                    G.CONTROLLER.locks.toggle_shop = nil
+                    return true
+                    end
+                }))
+                return
+            end
+        end
+    end
+    return ret
+end
+local oldfunc = G.FUNCS.can_reroll
+G.FUNCS.can_reroll = function(e)
+    local ret = oldfunc(e)
+    if G.GAME.modifiers.no_reroll then
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button = nil
+    end
+    return ret
+  end
+
 
 local oldfunc = Game.start_run
 Game.start_run = function(e, args)
@@ -1555,6 +1759,28 @@ Game.start_run = function(e, args)
         G.GAME.seeded = false
     end
     ease_ante(0)
+
+    if args.challenge then
+        G.GAME.challenge = args.challenge.id
+        G.GAME.challenge_tab = args.challenge
+        local _ch = args.challenge
+        if _ch.rules then
+            if _ch.rules.custom then
+                for k, v in ipairs(_ch.rules.custom) do
+                    if v.id == 'no_shop' then 
+                        G.GAME.modifiers.jimb_no_shops = G.GAME.modifiers.jimb_no_shops or {}
+                        G.GAME.modifiers.jimb_no_shops[v.value] = true
+                        --G.GAME.modifiers.jimb_no_shops.test_val = 'hi'
+                        --G.GAME.modifiers.jimb_no_shops.test_val2 = 'hello'
+                        --G.GAME.modifiers.jimb_no_shops[v.value] = true
+                    end
+                    if v.id == 'no_reroll' then
+                        G.GAME.modifiers.no_reroll = true
+                    end
+                end
+            end
+        end
+    end
     return ret
 end
 
@@ -1605,8 +1831,8 @@ end
 local oldfunc = Card.set_edition
 Card.set_edition = function(self,a,b,c)
     local ret = oldfunc(self,a,b,c)
-    if (a and (a["jimb_anaglyphic"])) then
-        jokerMult(ret,1.5)
+    if (self.edition and (self.edition["jimb_anaglyphic"])) then
+        jokerMult(self,1.5)
     end
     return ret
 end
@@ -1996,5 +2222,29 @@ local cerberus = SMODS.Blind{
     pos = { x = 0, y = 30 },
 }]]
 
+--[[function set_main_menu_UI()
+
+end
+
+
+local oldfunc = Game.main_menu
+	Game.main_menu = function(change_context)
+		local ret = oldfunc(change_context)
+		
+
+		G.SPLASH_BACK:define_draw_steps({{
+			shader = 'splash',
+			send = {
+				{name = 'time', ref_table = G.TIMERS, ref_value = 'REAL_SHADER'},
+				{name = 'vort_speed', val = 0.4},
+				{name = 'colour_1', ref_table = G.C, ref_value = 'BLUE'},
+				{name = 'colour_2', ref_table = G.C, ref_value = 'DARK_EDITION'},
+			}}})
+		--G.SPLASH_LOGO.T.w = G.SPLASH_LOGO.T.w * 1.1
+		--G.SPLASH_LOGO.T.h = G.SPLASH_LOGO.T.h * 1.1
+		return ret
+	end
+    
+cryptid banner shit]]
 ----------------------------------------------
 ------------MOD CODE END----------------------
