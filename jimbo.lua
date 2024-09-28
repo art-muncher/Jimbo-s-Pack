@@ -1796,7 +1796,7 @@ local oldfunc = end_round
 end_round = function()
     local ret = oldfunc()
     blindtype = G.GAME.blind.name
-    if G.GAME.blind.name ~= 'Small Blind' and G.GAME.blind.name ~= 'Big Blind' then G.GAME.blind.name = 'Boss Blind' end
+    if blindtype ~= 'Small Blind' and blindtype ~= 'Big Blind' then blindtype = 'Boss Blind' end
     if G.GAME.modifiers.jimb_scavenger then
         add_tag(Tag('tag_buffoon'))
     end
