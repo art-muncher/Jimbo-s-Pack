@@ -267,7 +267,7 @@ local cardinal = SMODS.Joker{
     calculate = function(self,card,context)
         if context.individual and context.cardarea == G.play then
             if context.other_card:is_face() then
-                context.other_card.ability.mult = context.other_card.ability.mult + 2 or 2
+                context.other_card.ability.mult = context.other_card.ability.mult + card.ability.extra.mult_mod or card.ability.extra.mult_mod
                 return {
                     extra = {message = localize('k_upgrade_ex'), colour = G.C.MULT},
                     colour = G.C.MULT,
@@ -275,6 +275,57 @@ local cardinal = SMODS.Joker{
                 }
             end
         end
+    end
+}
+
+local unscored = 0
+local cultist = SMODS.Joker{
+    key = 'cultist',
+    loc_txt = {
+        name = "Cultist",
+        text = {
+            "Destroy all {C:attention}unscoring cards{}", 
+            "{C:attention}Scored{} cards gain {X:mult,C:white}X#1#{} Mult", 
+            "per {C:attention}unscoring card"
+        }
+    },
+    config = {extra = {mult_mod = 0.15}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.mult_mod}}
+    end,
+    calculate = function(self,card,context)
+        if context.cardarea == G.jokers and context.before then
+			for k, v in pairs(context.full_hand) do
+                local unscoring = true
+				for _k,_v in pairs(context.scoring_hand) do
+                    if v == _v then
+                        unscoring = false
+                    end
+                end
+                if unscoring == true then
+                    v:start_dissolve()
+                    unscored = unscored + 1
+                end
+			end
+		end
+            if context.individual and context.cardarea == G.play then
+                    context.other_card.ability.x_mult = context.other_card.ability.x_mult + card.ability.extra.mult_mod*unscored or card.ability.extra.mult_mod*unscored
+                    unscored = 0
+                    return {
+                        extra = {message = localize('k_upgrade_ex'), colour = G.C.MULT},
+                        colour = G.C.MULT,
+                        card = card
+                    }
+            end
     end
 }
 
@@ -807,7 +858,9 @@ function init_localization()
 end
 
 G.localization.misc.v_text.ch_c_no_reroll = {"You cannot {C:attention}reroll"}
-    G.localization.misc.v_text.ch_c_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
+G.localization.misc.v_text.ch_c_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
+
+G.localization.misc.v_text.ch_c_jimb_scavenger = {"Open a {C:attention}Mega Buffoon Pack{} at end of round"}
 
 SMODS.Challenge{
     key = 'shopping_spree',
@@ -837,6 +890,43 @@ SMODS.Challenge{
         banned_cards = {
             {id = 'v_reroll_surplus'},
             {id = 'v_reroll_glut'},
+        }, 
+        banned_tags = {}, 
+        banned_other = {} },
+}
+
+
+SMODS.Challenge{
+    key = 'homeless',
+    name = 'Homeless Man',
+    loc_txt = {
+        name = 'Homeless Man',
+    },
+    deck = { type = "Challenge Deck" },
+    rules = { 
+        custom = {
+            {id = 'no_shop', value = 'Boss'},
+            {id = 'no_shop', value = 'Big'},
+            {id = 'no_shop', value = 'Small'},
+            {id = 'no_reward'},
+            {id = 'no_extra_hand_money'},
+            {id = 'no_interest'},
+            {id = 'jimb_scavenger'}
+        }, 
+        modifiers = {
+            {id = 'discards', value = 2},
+            {id = 'hands', value = 2},
+            {id = 'dollars', value = -math.exp(123,456)},
+        }
+    },
+    jokers = {},
+    consumeables = {},
+    vouchers = {
+        {id = 'v_wasteful'},
+        {id = 'v_grabber'},
+    },
+    restrictions = { 
+        banned_cards = {
         }, 
         banned_tags = {}, 
         banned_other = {} },
@@ -1706,6 +1796,10 @@ local oldfunc = end_round
 end_round = function()
     local ret = oldfunc()
     blindtype = G.GAME.blind.name
+    if G.GAME.blind.name ~= 'Small Blind' and G.GAME.blind.name ~= 'Big Blind' then G.GAME.blind.name = 'Boss Blind' end
+    if G.GAME.modifiers.jimb_scavenger then
+        add_tag(Tag('tag_buffoon'))
+    end
     return ret
 end
 
@@ -1797,6 +1891,9 @@ Game.start_run = function(e, args)
                     end
                     if v.id == 'no_reroll' then
                         G.GAME.modifiers.no_reroll = true
+                    end
+                    if v.id == 'jimb_scavenger' then
+                        G.GAME.modifiers.jimb_scavenger = true
                     end
                 end
             end
