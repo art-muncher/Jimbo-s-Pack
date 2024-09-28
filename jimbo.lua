@@ -467,7 +467,7 @@ local cardboard = SMODS.Joker{
     loc_txt = {
         name = "Cardboard Cutout",
         text = {
-            "Copies the ability of", 'the last sold {C:attention}Joker{}',"{C:inactive}Won't persist between save and reload"
+            "Copies the ability of", 'the last sold {C:attention}Joker{}',"{C:inactive}Won't persist between run reload"
         },
         unlock = {
             'Have a {C:blue}copying{} {C:attention} Joker',
@@ -509,6 +509,7 @@ local cardboard = SMODS.Joker{
         if context.selling_card and context.card.ability.set == 'Joker' then
             card.ability.extra.fakejoker = context.card
         end
+        
     end,
     check_for_unlock = function(self, args)
         if args.type == 'jimb_cardboard' then
@@ -798,12 +799,15 @@ local fabricwarp = SMODS.Joker{
 
 
 
+local oldfunc = init_localization
+function init_localization()
+    oldfunc()
+    G.localization.misc.v_text.ch_c_no_reroll = {"You cannot {C:attention}reroll"}
+    G.localization.misc.v_text.ch_c_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
+end
 
-
-
-
-
-
+G.localization.misc.v_text.ch_c_no_reroll = {"You cannot {C:attention}reroll"}
+    G.localization.misc.v_text.ch_c_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
 
 SMODS.Challenge{
     key = 'shopping_spree',
