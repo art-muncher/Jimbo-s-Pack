@@ -1145,15 +1145,15 @@ local phonebook = SMODS.Joker{
 local sanitizer = SMODS.Joker{
     key = 'sanitizer',
     loc_txt = {
-        name = "Sanitizer",
+        name = "Hand Sanitizer",
         text = {
-            '{X:edition,C:white}X#1#{} blind size','Increases by {X:edition,C:white}X#2#{} when hand played'
+            '{X:blue,C:white}+#1#{} Hands, decreases','by {X:blue,C:white}#2#{} when leaving shop'
         },
         unlock = {
-            'Score a hand {X:edition,C:white}X100{} higher than','current blind requirement'
+            'Score a hand','{X:edition,C:white}X100{} higher than','current blind requirement'
         }
     },
-    config = {extra = {req = 0.3, inc = 0.1}},
+    config = {extra = {hands = 3, dec = 1}},
     rarity = 2,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
@@ -1164,12 +1164,17 @@ local sanitizer = SMODS.Joker{
     eternal_compat = false,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.req, center.ability.extra.inc}}
+        return {vars = {center.ability.extra.hands, center.ability.extra.dec}}
     end,
     calculate = function(self,card,context)
         if context.setting_blind then
-            G.GAME.blind.chips = G.GAME.blind.chips * card.ability.extra.req
-            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            ease_hands_played(card.ability.extra.hands)
+        end
+        if context.ending_shop then
+            card.ability.extra.hands = card.ability.extra.hands - card.ability.extra.dec
+            if card.ability.extra.hands <= 0 then
+                card:start_dissolve()
+            end
         end
     end,
     check_for_unlock = function(self, args)
