@@ -1112,7 +1112,7 @@ local phonebook = SMODS.Joker{
             end
             if faces == false then
                 local last_mult =card.ability.extra.Xmult
-                card.ability.extra.Xmult = 0
+                card.ability.extra.Xmult = 1
                 if last_mult > 0 then 
                     return {
                         card = card,
