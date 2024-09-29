@@ -1147,7 +1147,7 @@ local sanitizer = SMODS.Joker{
     loc_txt = {
         name = "Hand Sanitizer",
         text = {
-            '{X:blue,C:white}+#1#{} Hands, decreases','by {X:blue,C:white}#2#{} when leaving shop'
+            '{C:blue}+#1#{} Hands, decreases','by {C:blue}#2#{} when leaving shop'
         },
         unlock = {
             'Score a hand','{X:edition,C:white}X100{} higher than','current blind requirement'
@@ -1173,6 +1173,51 @@ local sanitizer = SMODS.Joker{
         if context.ending_shop then
             card.ability.extra.hands = card.ability.extra.hands - card.ability.extra.dec
             if card.ability.extra.hands <= 0 then
+                card:start_dissolve()
+            end
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'chip_score' then
+            if args.chips >= G.GAME.blind.chips * 100 then
+                unlock_card(self)
+            end
+        end
+    end
+}
+
+local pepperspray = SMODS.Joker{
+    key = 'spray',
+    loc_txt = {
+        name = "Pepper Spray",
+        text = {
+            '{X:edition,C:white}X#1#{} blind size, increases','by {X:blue,C:white}#2#{} when hand played'
+        },
+        unlock = {
+            'Score a hand','{X:edition,C:white}X100{} higher than','current blind requirement'
+        }
+    },
+    config = {extra = {hands = 0.3, dec = 0.1}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.hands, center.ability.extra.dec}}
+    end,
+    calculate = function(self,card,context)
+        if context.setting_blind then
+            G.GAME.blind.chips = G.GAME.blind.chips * card.ability.extra.hands
+            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+        end
+        if context.joker_main then
+            card.ability.extra.hands = card.ability.extra.hands + card.ability.extra.dec
+            if card.ability.extra.hands <= 1 then
                 card:start_dissolve()
             end
         end
