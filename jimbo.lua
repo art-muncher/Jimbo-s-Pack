@@ -364,8 +364,8 @@ local kunai = SMODS.Joker{
     },
     config = {extra = {mult = 0}},
     rarity = 3,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
+    pos = {x = 2, y = 1},
+    atlas = 'Jokers',
     cost = 10,
     unlocked = true,
     discovered = true,
@@ -983,7 +983,6 @@ local nilll = {
     '0',
     'blind',
     'It feels like something is cursed...',
-    ''
 }
 local nill = '???'
 local nill2 = '???'
@@ -1155,8 +1154,8 @@ local sanitizer = SMODS.Joker{
     },
     config = {extra = {hands = 3, dec = 1}},
     rarity = 2,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
+    pos = {x = 0, y = 2},
+    atlas = 'Jokers',
     cost = 6,
     unlocked = false,
     discovered = true,
@@ -1191,7 +1190,7 @@ local pepperspray = SMODS.Joker{
     loc_txt = {
         name = "Pepper Spray",
         text = {
-            '{X:edition,C:white}X#1#{} blind size, increases','by {X:blue,C:white}#2#{} when hand played'
+            '{X:edition,C:white}X#1#{} blind size, increases','by {X:edition,C:white}#2#{} when hand played'
         },
         unlock = {
             'Score a hand','{X:edition,C:white}X100{} higher than','current blind requirement'
@@ -1199,8 +1198,8 @@ local pepperspray = SMODS.Joker{
     },
     config = {extra = {hands = 0.3, dec = 0.1}},
     rarity = 2,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
+    pos = {x = 1, y = 2},
+    atlas = 'Jokers',
     cost = 6,
     unlocked = false,
     discovered = true,
