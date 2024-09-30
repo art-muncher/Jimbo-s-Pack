@@ -990,7 +990,7 @@ local nill3 = '???'
 nill = nilll[math.random(1,#nilll)]
 
 
-local nilss = SMODS.Joker{
+--[[local nilss = SMODS.Joker{
     key = 'nil_',
     loc_txt = {
         name = "nil_",
@@ -1002,7 +1002,7 @@ local nilss = SMODS.Joker{
         }
     },
     config = {extra = {num1 = 1,}},
-    rarity = 5,
+    rarity = 4,
     pos = {x = 0, y = 0.5},
     atlas = 'Jokers',
     cost = 6,
@@ -1067,7 +1067,7 @@ local nilss = SMODS.Joker{
     end,
     calculate = function(self,card,context)
         if context.jimb_creating_card then
-            card.ability.extra.num1 = math.random(-125,225)/100
+            card.ability.extra.num1 = math.random(-125,325)/100
             jokerMult(context.jimb_card,card.ability.extra.num1, operationfuncs[math.random(1,#operationfuncs)])
         end
     end,
@@ -1076,8 +1076,200 @@ local nilss = SMODS.Joker{
             print('unlock broken')
         end
     end,
+    in_pool = function(self)
+        return false
+    end
 
+}]]
+SMODS.Consumable {
+    key = 'nil_',
+    set = 'Spectral',
+    loc_txt = {
+        name = "{C:edition}nil_{}",
+        text = {
+            ''
+        },
+        unlock = {
+            'Critical bug found:','please report to {X:black,C:white}#12#{}', '{C:dark_edition} ' .. nilll[math.random(1,#nilll)] .. '???' .. nilll[math.random(1,#nilll)] .. 'X' .. nilll[math.random(1,#nilll)] .. 'nil_' .. nilll[math.random(1,#nilll)] .. '?' .. nilll[math.random(1,#nilll)] .. ' '
+        }
+    },
+    config = {extra = {num1 = 1,}},
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    joker = true,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center,a)
+        local loc_mult = ' '..(localize('k_mult'))..' '
+        return {
+            vars = {center.ability.extra.num1,center.ability.extra.num2,center.ability.extra.num3},
+            main_start = {
+                {
+                    n=G.UIT.T, 
+                    config={
+                        text = '  +',
+                        colour = G.C.MULT, 
+                        scale = 0.32
+                    }
+                },
+                {
+                    n=G.UIT.O, 
+                    config={
+                        object = DynaText({
+                            string = "nil_", 
+                            colours = {G.C.RED},
+                            pop_in_rate = 9999999, 
+                            silent = true, 
+                            random_element = true, 
+                            pop_delay = 0.5, 
+                            scale = 0.32, 
+                            min_cycle_time = 0
+                        })
+                        
+                    }
+                },
+                {
+                    n=G.UIT.O, 
+                    config={
+                        object = DynaText({
+                            string = {
+                                {
+                                    string = "???", 
+                                    colour = G.C.JOKER_GREY
+                                },
+                                {
+                                    string = "???", 
+                                    colour = G.C.RED
+                                },
+                            nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)], nilll[math.random(1,#nilll)]
+                        },
+                colours = {G.C.DARK_EDITION},
+                pop_in_rate = 9999999, 
+                silent = true, 
+                random_element = true, 
+                pop_delay = 0.2011, 
+                scale = 0.32, 
+                min_cycle_time = 0})}},
+            }
+        }
+    end,
+    can_use = function(self,card)
+        if card.area == G.jokers then return false end
+    end,
+    use = function(self, card)
+        if card.area == G.jokers then return end
+        local card = copy_card(card,nil)
+        card:add_to_deck()
+        G.jokers:emplace(card)
+        play_sound('card1', 0.8, 0.6)
+        play_sound('generic1')
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_creating_card then
+            card.ability.extra.num1 = math.random(-125,325)/100
+            jokerMult(context.jimb_card,card.ability.extra.num1, operationfuncs[math.random(1,#operationfuncs)])
+        end
+    end,
+    in_pool = function(self,card,wawa)
+        return false
+    end,
 }
+
+SMODS.Consumable {
+    key = 'amalgam',
+    set = 'Spectral',
+    loc_txt = {
+        name = "{C:edition}Amalgam{}",
+        text = {
+            'When leaving shop,',
+            ' destroy a random joker and', 
+            '{C:attention}copy its abilities',
+            "{C:mult}It's hiding something..."
+        },
+    },
+    config = {extra = {odds = 3000,jokers = {}}},
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    joker = true,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    can_use = function(self,card)
+        return true
+    end,
+    use = function(self, card)
+        if card.area == G.jokers then return end
+        for i = 1, #G.jokers.cards do
+            if G.jokers.cards[i].ability.name == card.ability.name then
+                G.jokers.cards[i]:juice_up(0.8, 0.8)
+                return
+            end
+        end
+        local card = copy_card(card,nil)
+        card:add_to_deck()
+        G.jokers:emplace(card)
+        play_sound('card1', 0.8, 0.6)
+        play_sound('generic1')
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_creating_card then
+            if pseudorandom('amalgam') < G.GAME.probabilities.normal/card.ability.extra.odds and not context.jimb_card.restart then
+                context.jimb_card:start_dissolve()
+            end
+        end
+        for i = 1, #card.ability.extra.jokers do
+            if card.ability.extra.jokers[i].calculate_joker then
+                local other_joker = card.ability.extra.jokers[i]
+                context.blueprint_card = context.blueprint_card or self
+                local other_joker_ret = other_joker:calculate_joker(context)
+                if other_joker_ret then 
+                    other_joker_ret.card = context.blueprint_card or self
+                    other_joker_ret.colour = G.C.BLUE
+                    --return other_joker_ret
+                end
+            end
+        end
+        if context.ending_shop then
+            local eligibleJokers = {}
+            for i = 1, #G.jokers.cards do
+                if G.jokers.cards[i].ability.name ~= card.ability.name then eligibleJokers[#eligibleJokers+1] = G.jokers.cards[i] end
+            end
+            if #eligibleJokers == 0 then return end
+            local newcard = pseudorandom_element(eligibleJokers,pseudoseed('amalgam'))
+            card.ability.extra.jokers[#card.ability.extra.jokers+1] = newcard
+            newcard:start_dissolve()
+            card.ability.extra.odds = card.ability.extra.odds/2
+        end
+    end,
+    in_pool = function(self,card,wawa)
+        return false
+    end,
+}
+
+
+
+local G_UIDEF_use_and_sell_buttons_ref = G.UIDEF.use_and_sell_buttons
+function G.UIDEF.use_and_sell_buttons(card)
+    if (card.area == G.pack_cards and G.pack_cards) and card.ability.consumeable and card.ability.set == 'Spectral' and card.config.center.joker then
+        return {
+            n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "bm", minw = 0.5*card.T.w - 0.15, maxw = 0.9*card.T.w - 0.15, minh = 0.3*card.T.h, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_select_card'}, nodes={
+                {n=G.UIT.T, config={text = localize('b_select'),colour = G.C.UI.TEXT_LIGHT, scale = 0.45, shadow = true}}
+              }},
+            }}
+    end
+	return G_UIDEF_use_and_sell_buttons_ref(card)
+end
+
+
+
 
 local phonebook = SMODS.Joker{
     key = 'phonebook',
@@ -1821,6 +2013,7 @@ Game.start_run = function(e, args)
         end
     end
     G.GAME.scoredface = 0
+
     return ret
 end
 
@@ -1846,8 +2039,23 @@ Card.set_ability = function(self,a,b,c)
     end
 end
 
+local spectraljokers = {
+    'c_jimb_nil_',
+    'c_jimb_amalgam',
+}
+
 local oldfunc = create_card
 create_card = function(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
+    local randSpectral = pseudorandom_element(spectraljokers,pseudoseed('spectraljokers'))
+    if not forced_key and soulable and (not G.GAME.banned_keys[randSpectral]) then
+        if (_type == 'Joker') and
+        not (G.GAME.used_jokers[randSpectral] and not next(find_joker("Showman")))  then
+            if pseudorandom('_'.._type..G.GAME.round_resets.ante) > 0.998 then
+                forced_key = randSpectral
+            end
+        end
+    end
+
 
     if ouroborosActive then
         forced_key = 'j_jimb_ouroboros'
