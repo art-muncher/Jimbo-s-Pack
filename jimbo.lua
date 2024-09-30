@@ -957,6 +957,9 @@ local shoplifter = SMODS.Joker{
     end
 }
 
+
+
+
 local HELPME = 'fix me'
 local nilll = {
     'fix me',
@@ -1158,7 +1161,7 @@ SMODS.Consumable {
         }
     end,
     can_use = function(self,card)
-        if card.area == G.jokers then return false end
+        return false
     end,
     use = function(self, card)
         if card.area == G.jokers then return end
@@ -1202,7 +1205,7 @@ SMODS.Consumable {
     eternal_compat = false,
     perishable_compat = true,
     can_use = function(self,card)
-        return true
+        return false
     end,
     use = function(self, card)
         if card.area == G.jokers then return end
