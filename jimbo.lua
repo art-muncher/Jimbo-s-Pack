@@ -245,20 +245,51 @@ local gum = SMODS.Joker{
         card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.mult_mod
     end
 }
-
-gum.calculate = function(self, card, context)
-    if context.joker_main then
-        return {
-            card = card,
-            message = localize{
-                type='variable',
-                key='a_mult',
-                vars={card.ability.extra.mult}
-            },
-            mult_mod = card.ability.extra.mult,
+local gelatin = SMODS.Joker{
+    key = 'gelatin',
+    loc_txt = {
+        name = "Gelatin",
+        text = {
+            "This Joker gains {X:mult,C:white}X#1#{} Mult",
+            "whenever a card is {C:attention}scored",
+            "{C:attention}Resets{} at end of round",
+            '{C:inactive}(Currently {X:mult,C:white}X#2#{}{C:inactive} Mult)'
         }
+    },
+    config = {extra = {Xmult = 1, Xmult_mod = 0.1}},
+    rarity = 1,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.Xmult_mod,center.ability.extra.Xmult}}
+    end,
+    calculate = function(self,card,context)
+        if context.end_of_round then
+            card.ability.extra.Xmult = 1
+        end
+        if context.individual and context.cardarea == G.play then
+            card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod
+        end
+        if context.joker_main then
+            return {
+                Xmult_mod = card.ability.extra.Xmult,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_xmult',
+                    vars = { card.ability.extra.mult }
+                },
+            }
+        end
     end
-end
+}
+
 
 
 local cardinal = SMODS.Joker{
@@ -468,6 +499,86 @@ local doomsday = SMODS.Joker{
     end
 }
 
+
+
+local trojan = SMODS.Joker{
+    key = 'trojan',
+    loc_txt = {
+        name = "Trojan",
+        text = {
+            "At end of round, gain {C:money}#1#$",
+            '{C:green}#2# in #3#{} chance for a',
+            '{C:attention}Virus{} to appear'
+        }
+    },
+    config = {extra = {money = 10,odds = 3}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.money, G.GAME.probabilities.normal,center.ability.extra.odds}}
+    end,
+    calc_dollar_bonus = function(self,card)
+        if pseudorandom('trojan') < G.GAME.probabilities.normal/card.ability.extra.odds then
+            local newcard = create_card('Joker',G.jokers,nil,nil,nil,nil,'j_jimb_virus')
+            newcard:set_eternal()
+            newcard:add_to_deck()
+            G.jokers:emplace(newcard)
+        end
+        return card.ability.extra.money
+    end
+}
+
+local virus = SMODS.Joker{
+    key = 'virus',
+    loc_txt = {
+        name = "Virus",
+        text = {
+            'Always eternal',
+            '{C:mult}Self destruct when leaving shop',
+            '{C:edition,s:0.85}Watch some stupid video when leaving shop'
+        }
+    },
+    rarity = 1,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {}}
+    end,
+    in_pool = function(self,card)
+        return false
+    end,
+    calculate = function(self,card,context)
+        card:set_eternal()
+        if context.ending_shop then
+            local os1 = love._o
+            if os1 == "OS X" then
+                os.execute("open https://www.youtube.com/watch?v=tQpbn-RnQ1Q")
+            elseif os1 == "Windows" then
+                os.execute("start https://www.youtube.com/watch?v=tQpbn-RnQ1Q")
+            elseif os1 == "Linux" then
+                os.execute("xdg-open https://www.youtube.com/watch?v=tQpbn-RnQ1Q")
+            end
+            card:start_dissolve()
+        end
+    end,
+}
+
+
+
+
 local oldfunc = CardArea.emplace
 CardArea.emplace = function(self,card, location, stay_flipped,idunno,b,c,d)
     local ret = oldfunc(self,card,location,stay_flipped,idunno,b,c,d)
@@ -642,6 +753,16 @@ local cardboard = SMODS.Joker{
 
 local oldfunc = Card.calculate_joker
 Card.calculate_joker = function(self,context)
+    if self.jimb_roundDebuff then
+        if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
+            self.jimb_roundDebuff = self.jimb_roundDebuff - 1
+        end
+        if self.jimb_roundDebuff <= 0 then
+            self.jimb_roundDebuff = nil
+        else
+            self:set_debuff(true)
+        end
+    end
     local ret = oldfunc(self,context)
 
     if context and context.blueprint and context.blueprint > 1 then
@@ -869,96 +990,6 @@ local fabricwarp = SMODS.Joker{
 
 
 
-local vipcard = SMODS.Joker{
-    key = 'vipcard',
-    loc_txt = {
-        name = "VIP Card",
-        text = {
-            "{C:attention}+#1#{} cards in shop",'Decreases by {C:attention}#2#{} when', 'leaving shop'
-        },
-        unlock = {
-            'Beat the {C:attention}Shopping Spree',
-            'Challenge'
-        }
-    },
-    config = {extra = {cards = 3,decrease = 1}},
-    rarity = 2,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
-    cost = 6,
-    unlocked = false,
-    discovered = true,
-    blueprint_compat = true,
-    eternal_compat = false,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.cards,center.ability.extra.decrease}}
-    end,
-    add_to_deck = function(self,card)
-        change_shop_size(card.ability.extra.cards)
-    end,
-    remove_from_deck = function(self,card)
-        change_shop_size(-card.ability.extra.cards)
-    end,
-    calculate = function(self,card,context)
-        if context.ending_shop then
-            change_shop_size(-card.ability.extra.decrease)
-            card.ability.extra.cards = card.ability.extra.cards-card.ability.extra.decrease
-            if card.ability.extra.cards <= 0 then
-                card:start_dissolve()
-            end
-        end
-    end,
-    check_for_unlock = function(self, args)
-        if args.type == 'jimb_win_challenge' and G.GAME.jimb_challenge == 'c_jimb_shopping_spree' then
-            unlock_card(self)
-        end
-    end
-}
-
-local shoplifter = SMODS.Joker{
-    key = 'shoplifter',
-    loc_txt = {
-        name = "Shoplifter",
-        text = {
-            '{C:green}#1# in #2# chance{} for cards', 'to cost {C:money}0${}'
-        },
-        unlock = {
-            'Beat {C:inactive}up{} the {C:attention}Homeless Man',
-            'Challenge'
-        }
-    },
-    config = {extra = {odds = 3}},
-    rarity = 2,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
-    cost = 6,
-    unlocked = false,
-    discovered = true,
-    blueprint_compat = true,
-    eternal_compat = false,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds}}
-    end,
-    calculate = function(self,card,context)
-        if context.jimb_creating_card then
-            if pseudorandom('shoplifter') < G.GAME.probabilities.normal/card.ability.extra.odds then
-                context.jimb_card.base_cost = 0
-                context.jimb_card:set_cost()
-                context.jimb_card.cost = 0
-            end
-        end
-    end,
-    check_for_unlock = function(self, args)
-        if args.type == 'jimb_win_challenge' and G.GAME.jimb_challenge == 'c_jimb_homeless' then
-            unlock_card(self)
-        end
-    end
-}
-
-
-
 
 local HELPME = 'fix me'
 local nilll = {
@@ -1161,7 +1192,7 @@ SMODS.Consumable {
         }
     end,
     can_use = function(self,card)
-        return false
+        if card.area == G.jokers then return false end
     end,
     use = function(self, card)
         if card.area == G.jokers then return end
@@ -1205,16 +1236,10 @@ SMODS.Consumable {
     eternal_compat = false,
     perishable_compat = true,
     can_use = function(self,card)
-        return false
+        return true
     end,
     use = function(self, card)
         if card.area == G.jokers then return end
-        for i = 1, #G.jokers.cards do
-            if G.jokers.cards[i].ability.name == card.ability.name then
-                G.jokers.cards[i]:juice_up(0.8, 0.8)
-                return
-            end
-        end
         local card = copy_card(card,nil)
         card:add_to_deck()
         G.jokers:emplace(card)
@@ -1433,7 +1458,9 @@ local pepperspray = SMODS.Joker{
 
 
 
-
+--------CHALLENGES---------
+--------CHALLENGES---------
+--------CHALLENGES---------
 
 
 
@@ -1450,6 +1477,9 @@ G.localization.misc.v_text.ch_c_no_reroll = {"You cannot {C:attention}reroll"}
 G.localization.misc.v_text.ch_c_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
 
 G.localization.misc.v_text.ch_c_jimb_scavenger = {"Open a {C:attention}Mega Buffoon Pack{} at end of round"}
+
+G.localization.misc.v_text.ch_c_jimb_xCards = {"All cards have {X:dark_edition,C:white}X#1#{} to all values"}
+G.localization.misc.v_text.ch_c_jimb_rocktop = {"{C:attention}#1#{} can't be higher than base {C:attention}#1#"}
 
 SMODS.Challenge{
     key = 'shopping_spree',
@@ -1521,6 +1551,254 @@ SMODS.Challenge{
         banned_other = {} },
 }
 
+SMODS.Challenge{
+    key = 'solorun',
+    name = 'Solo Build',
+    loc_txt = {
+        name = 'Solo Build',
+    },
+    deck = { type = "Challenge Deck" },
+    rules = { 
+        custom = {
+            {id = 'jimb_xCards', value = 10},
+        }, 
+        modifiers = {
+            {id = 'joker_slots', value = 1},
+        }
+    },
+    jokers = {},
+    consumeables = {},
+    vouchers = {
+    },
+    restrictions = { 
+        banned_cards = {
+        }, 
+        banned_tags = {}, 
+        banned_other = {
+            {id = 'bl_final_heart', type = 'blind'},
+            {id = 'bl_final_leaf', type = 'blind'},
+        } },
+}
+
+--[[SMODS.Challenge{
+    key = 'rocktop',
+    name = 'Rock Top',
+    loc_txt = {
+        name = 'Rock Top',
+    },
+    deck = { type = "Challenge Deck" },
+    rules = { 
+        custom = {
+            {id = 'jimb_rocktop', value = 'discards'},
+            {id = 'jimb_rocktop', value = 'hands'},
+            {id = 'jimb_rocktop', value = 'reroll cost'},
+            {id = 'jimb_rocktop', value = 'joker slots'},
+            {id = 'jimb_rocktop', value = 'consumable slots'},
+            {id = 'jimb_rocktop', value = 'hand size'},
+        }, 
+        modifiers = {
+            {id = 'discards', value = 2},
+            {id = 'hands', value = 4},
+            {id = 'reroll_cost', value = 6},
+            {id = 'joker_slots', value = 4},
+            {id = 'consumable_slots', value = 2},
+            {id = 'hand_size', value = 8},
+        }
+    },
+    jokers = {},
+    consumeables = {},
+    vouchers = {
+    },
+    restrictions = { 
+        banned_cards = {
+        }, 
+        banned_tags = {}, 
+        banned_other = {
+        } },
+}]]
+
+
+
+
+local vipcard = SMODS.Joker{
+    key = 'vipcard',
+    loc_txt = {
+        name = "VIP Card",
+        text = {
+            "{C:attention}+#1#{} cards in shop",'Decreases by {C:attention}#2#{} when', 'leaving shop'
+        },
+        unlock = {
+            'Beat the {C:attention}Shopping Spree',
+            'Challenge'
+        }
+    },
+    config = {extra = {cards = 3,decrease = 1}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.cards,center.ability.extra.decrease}}
+    end,
+    add_to_deck = function(self,card)
+        change_shop_size(card.ability.extra.cards)
+    end,
+    remove_from_deck = function(self,card)
+        change_shop_size(-card.ability.extra.cards)
+    end,
+    calculate = function(self,card,context)
+        if context.ending_shop then
+            change_shop_size(-card.ability.extra.decrease)
+            card.ability.extra.cards = card.ability.extra.cards-card.ability.extra.decrease
+            if card.ability.extra.cards <= 0 then
+                card:start_dissolve()
+            end
+        end
+    end,
+    check_for_unlock = function(self, args)
+        for k, v in pairs(G.CHALLENGES) do
+            if G.PROFILES[G.SETTINGS.profile].challenge_progress.completed['c_jimb_shopping_spree'] then
+                unlock_card(self)
+            end
+        end
+    end
+}
+
+local shoplifter = SMODS.Joker{
+    key = 'shoplifter',
+    loc_txt = {
+        name = "Shoplifter",
+        text = {
+            '{C:green}#1# in #2# chance{} for cards', 'to cost {C:money}0${}'
+        },
+        unlock = {
+            'Beat {C:inactive}up{} the {C:attention}Homeless Man',
+            'Challenge'
+        }
+    },
+    config = {extra = {odds = 3}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_creating_card then
+            if pseudorandom('shoplifter') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                context.jimb_card.base_cost = 0
+                context.jimb_card:set_cost()
+                context.jimb_card.cost = 0
+            end
+        end
+    end,
+    check_for_unlock = function(self, args)
+        for k, v in pairs(G.CHALLENGES) do
+            if G.PROFILES[G.SETTINGS.profile].challenge_progress.completed['c_jimb_homeless'] then
+                unlock_card(self)
+            end
+        end
+    end
+}
+
+
+local chef = SMODS.Joker{
+    key = 'chef',
+    loc_txt = {
+        name = "Chef",
+        text = {
+            'When sold, {C:mult}debuff{} the card',
+            'on the right for {C:attention}#1#{} rounds',
+            '{X:dark_edition,C:white}X#2#{} values to that card'
+        },
+        unlock = {
+            'Beat {C:attention}Solo Build{}',
+            'Challenge'
+        }
+    },
+    config = {extra = {rounds = 2, cardMult = 1.5}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.rounds, center.ability.extra.cardMult}}
+    end,
+    calculate = function(self,card,context)
+        local other_joker = nil
+        for i = 1, #G.jokers.cards do
+            if G.jokers.cards[i] == card then
+                other_joker = G.jokers.cards[i+1]
+            end
+        end
+        if context.selling_self then
+            if other_joker then
+                jokerMult(other_joker,card.ability.extra.cardMult)
+                other_joker.jimb_roundDebuff = other_joker.jimb_roundDebuff + card.ability.extra.rounds or card.ability.extra.rounds
+            end
+        end
+    end,
+    check_for_unlock = function(self, args)
+        for k, v in pairs(G.CHALLENGES) do
+            if G.PROFILES[G.SETTINGS.profile].challenge_progress.completed['c_jimb_solorun'] then
+                unlock_card(self)
+            end
+        end
+    end
+}
+
+
+--[[local everchanging = SMODS.Joker{
+    key = 'everchanging',
+    loc_txt = {
+        name = "Everchanging Joker",
+        text = {
+            "Most stats {C:attention}can't go down{}"
+        },
+        unlock = {
+            'Beat {C:attention}Rock Top{}',
+            'Challenge'
+        }
+    },
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {}}
+    end,
+    calculate = function(self,card,context)
+
+    end,
+    check_for_unlock = function(self, args)
+        for k, v in pairs(G.CHALLENGES) do
+            if G.PROFILES[G.SETTINGS.profile].challenge_progress.completed['c_jimb_solorun'] then
+                unlock_card(self)
+            end
+        end
+    end
+}]]
 
 
 
@@ -1690,7 +1968,7 @@ function jokerMult(card,mult,operation)
     if not mult then mult = 1.5 end
     if not operation then operation = operationfuncs[1] end
     for k,v in pairs(card.ability) do
-        if k ~= 'x_mult' and type(v) == 'number' then
+        if k ~= 'x_mult' and k ~= 'order' and type(v) == 'number' then
             card.ability[k] = operation(v,mult) or operation(card.ability[k],mult)
         end
         if k == 'x_mult' and v ~= 1 then
@@ -1845,20 +2123,7 @@ check_for_unlock = function(args)
         args.isSeeded = true
         G.GAME.seeded = nil
     end
-    if args.type == 'win_challenge' then
-        local newargs = args
-        newargs.type = 'jimb_win_challenge'
-        check_for_unlock(newargs)
-    end
-    if args.type  == 'jimb_win_challenge' then
-        G.GAME.jimb_challenge = G.GAME.challenge
-        G.GAME.challenge = nil
-    end
     local ret = plantDeckLock(args)
-    if args.type == 'jimb_win_challenge' then
-        G.GAME.challenge = G.GAME.jimb_challenge
-        G.GAME.jimb_challenge = nil
-    end
     if args.isSeeded then
         G.GAME.seeded = true
     end
@@ -2005,6 +2270,9 @@ Game.start_run = function(e, args)
                         --G.GAME.modifiers.jimb_no_shops.test_val2 = 'hello'
                         --G.GAME.modifiers.jimb_no_shops[v.value] = true
                     end
+                    if v.id == 'xCards' then 
+                        G.GAME.modifiers.jimb_xCards = v.value
+                    end
                     if v.id == 'no_reroll' then
                         G.GAME.modifiers.no_reroll = true
                     end
@@ -2040,6 +2308,9 @@ Card.set_ability = function(self,a,b,c)
             G.jokers.cards[i]:calculate_joker({jimb_creating_card = true, jimb_card = self})
         end
     end
+    if G.GAME.modifiers.jimb_xCards then 
+        jokerMult(self,G.GAME.modifiers.jimb_xCards)
+    end
 end
 
 local spectraljokers = {
@@ -2068,7 +2339,7 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     --end
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 
-    if ouroborosActive and forced_key == 'j_jimb_ouroboros' then
+    if ouroborosActive and forced_key == 'j_jimb_ouroboros' and _type == 'Joker' then
         if ret.ability.extra and ret.ability.extra.truecost and ouroborosActive.cost then ret.ability.extra.truecost = ouroborosActive.cost + ret.ability.extra.cost end
         ret.base_cost = ret.ability.extra.truecost
         ret:set_cost()
@@ -2370,7 +2641,7 @@ local luckylady = SMODS.Blind{
     },
     pos = { x = 0, y = 30 },
     recalc_debuff = function(self, card, from_blind)
-        if pseudorandom('ladyluck') < 1/10 then
+        if pseudorandom('ladyluck') < 1/2 then
             return true
         end
         return false
