@@ -575,6 +575,50 @@ local virus = SMODS.Joker{
         end
     end,
 }
+local sketch = SMODS.Joker{
+    key = 'sketch',
+    loc_txt = {
+        name = "Sketch Joker",
+        text = {
+            'When sold, the next two cards',
+            'generated are {C:attention}#1#{}',
+            'Joker changes at end of round'
+        }
+    },
+    config = {extra = {
+        joker = nil,
+    }},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        if center.ability.extra.joker then
+            return {vars = {center.ability.extra.joker.key}}
+        else
+            return {vars = {"???"}}
+        end
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_card_gain then
+            if not card.ability.extra.joker then card.ability.extra.joker = pseudorandom_element(G.P_CENTER_POOLS['Joker'],pseudoseed('sketch')) end
+        end
+        if context.selling_self then
+            G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.ability.extra.joker.key,}
+            G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.ability.extra.joker.key,}
+        end
+        if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
+            card.ability.extra.joker = pseudorandom_element(G.P_CENTER_POOLS['Joker'],pseudoseed('sketch'))
+        end
+    end,
+}
+
+
 
 
 
@@ -862,7 +906,9 @@ local ouroboros = SMODS.Joker{
     end,
     calculate = function(self,card,context)
         if context.selling_self then
-            ouroborosActive = {cost = card.ability.extra.truecost, Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod}
+            --ouroborosActive = {cost = card.ability.extra.truecost, Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod}
+            card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod
+            G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.config.center.key,ability = card.ability,cost = card.ability.extra.truecost + card.ability.extra.cost}
         end
         if context.joker_main then
             return {
@@ -2284,7 +2330,9 @@ Game.start_run = function(e, args)
         end
     end
     G.GAME.scoredface = 0
-
+    G.GAME.next_Gen_Cards = G.GAME.next_Gen_Cards or {
+        --{key = 'j_joker',ability = nil},
+    }
     return ret
 end
 
@@ -2331,21 +2379,24 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     end
 
 
-    if ouroborosActive then
-        forced_key = 'j_jimb_ouroboros'
+    --if ouroborosActive then
+    --    forced_key = 'j_jimb_ouroboros'
+    --end
+    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and _type == 'Joker' then
+        forced_key = G.GAME.next_Gen_Cards[1].key
     end
     
     
     --end
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 
-    if ouroborosActive and forced_key == 'j_jimb_ouroboros' and _type == 'Joker' then
-        if ret.ability.extra and ret.ability.extra.truecost and ouroborosActive.cost then ret.ability.extra.truecost = ouroborosActive.cost + ret.ability.extra.cost end
-        ret.base_cost = ret.ability.extra.truecost
+    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and forced_key == G.GAME.next_Gen_Cards[1].key and _type == 'Joker' then
+        if G.GAME.next_Gen_Cards[1].cost then
+        ret.base_cost = G.GAME.next_Gen_Cards[1].cost
+        end
         ret:set_cost()
-        if ret.ability.extra and ret.ability.extra.Xmult and ouroborosActive.Xmult then ret.ability.extra.Xmult = ouroborosActive.Xmult end
-        
-        ouroborosActive = nil
+        if G.GAME.next_Gen_Cards[1].ability then ret.ability = G.GAME.next_Gen_Cards[1].ability end
+        table.remove(G.GAME.next_Gen_Cards,1)
     end
     if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_jimb_zone' then
         jokerMult(ret,0.75)
@@ -2662,11 +2713,22 @@ SMODS.Achievement{
 local oldfunc = Game.main_menu
 	Game.main_menu = function(change_context)
 		local ret = oldfunc(change_context)
-		
+        local SC_scale = 1.1*(G.debug_splash_size_toggle and 0.8 or 1)
+        local CAI = {
+            TITLE_TOP_W = G.CARD_W,
+            TITLE_TOP_H = G.CARD_H,
+        }
 
+        
+        --local card = Card(G.title_top.T.x, G.title_top.T.y, 1.2*G.CARD_W*SC_scale, 1.2*G.CARD_H*SC_scale, nil, G.P_CENTERS.j_joker)
+        --G.title_top:emplace(card,1)
+        --SC = Card(G.ROOM.T.w/2 - SC_scale*G.CARD_W/2, 10. + G.ROOM.T.h/2 - SC_scale*G.CARD_H/2, SC_scale*G.CARD_W, SC_scale*G.CARD_H, G.P_CARDS.empty, G.P_CENTERS['j_joker'])
+        G.title_top.cards[1]:set_ability(G.P_CENTERS.j_joker, true)
+        G.title_top.cards[1].children.front = nil
+        G.title_top.cards[1]:set_sprites(G.P_CENTERS.j_joker)
+        --G.title_top.cards[1]:set_sprites(G.P_CENTERS.j_joker, nil)
+        --G.title_top.cards[1] = Card(G.ROOM.T.w/2 - SC_scale*G.CARD_W/2, 10. + G.ROOM.T.h/2 - SC_scale*G.CARD_H/2, SC_scale*G.CARD_W, SC_scale*G.CARD_H, G.P_CARDS.empty, G.P_CENTERS['j_joker'])
 		check_for_unlock({type = 'run_started'})
-		--G.SPLASH_LOGO.T.w = G.SPLASH_LOGO.T.w * 1.1
-		--G.SPLASH_LOGO.T.h = G.SPLASH_LOGO.T.h * 1.1
 		return ret
 	end
 
