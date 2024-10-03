@@ -283,7 +283,7 @@ local gelatin = SMODS.Joker{
                 message = localize {
                     type = 'variable',
                     key = 'a_xmult',
-                    vars = { card.ability.extra.mult }
+                    vars = { card.ability.extra.Xmult }
                 },
             }
         end
@@ -908,7 +908,8 @@ local ouroboros = SMODS.Joker{
         if context.selling_self then
             --ouroborosActive = {cost = card.ability.extra.truecost, Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod}
             card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod
-            G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.config.center.key,ability = card.ability,cost = card.ability.extra.truecost + card.ability.extra.cost}
+            card.ability.extra.truecost = card.ability.extra.truecost + card.ability.extra.cost
+            G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.config.center.key,ability = card.ability,cost = card.ability.extra.truecost}
         end
         if context.joker_main then
             return {
