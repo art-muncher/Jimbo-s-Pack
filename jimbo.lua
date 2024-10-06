@@ -12,7 +12,6 @@ local jimbomod = SMODS.current_mod
 SMODS.Atlas({key = 'Jokers', path = 'Jokers.png', px = 71, py = 95})
 SMODS.Atlas({key = 'Soulj', path = 'Soulj.png', px = 71, py = 95})
 SMODS.Atlas({key = 'Curse', path = 'Curses.png', px = 71, py = 95})
-SMODS.Atlas({key = 'Exotic', path = 'atlasexotic.png', px = 71, py = 95})
 SMODS.Atlas({key = 'Tarot', path = 'Tarots.png', px = 71, py = 95})
 SMODS.Atlas{
     key = "Mega",
@@ -20,6 +19,8 @@ SMODS.Atlas{
     px = 710,
     py = 1520
 }
+
+
 
 
 local operationfuncs = {
@@ -243,6 +244,19 @@ local gum = SMODS.Joker{
             card:start_dissolve()
         end
         card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.mult_mod
+    end,
+    calculate = function(self,card,context)
+        if context.joker_main then
+            return {
+                mult_mod = card.ability.extra.mult,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_mult',
+                    vars = { card.ability.extra.mult }
+                },
+            }
+        end
     end
 }
 local gelatin = SMODS.Joker{
@@ -286,6 +300,85 @@ local gelatin = SMODS.Joker{
                     vars = { card.ability.extra.Xmult }
                 },
             }
+        end
+    end
+}
+
+
+local wine = SMODS.Joker{
+    key = 'wine',
+    loc_txt = {
+        name = "Wine",
+        text = {
+            "{C:mult}+#1#{} to {C:mult}#2#{} Mult",
+            "Decreases by {C:mult}#3#{}", 
+            "at the end of round",
+            "{C:inactive,s:0.8}Negative is equal to",
+            "{C:inactive,s:0.8}half of max mult",
+        }
+    },
+    config = {extra = {mult = 50, mult_mod = 5}},
+    rarity = 1,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.mult, center.ability.extra.mult * -0.5, center.ability.extra.mult_mod}}
+    end,
+    calc_dollar_bonus = function(self, card)
+        card.ability.extra.mult = card.ability.extra.mult - card.ability.extra.mult_mod
+        if card.ability.extra.mult <= 0 then
+            card:start_dissolve()
+        end
+    end,
+    calculate = function(self,card,context)
+        if context.joker_main then
+            local temp_Mult = pseudorandom('wine', card.ability.extra.mult, card.ability.extra.mult * -0.5)
+            return {
+                mult_mod = temp_Mult,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_mult',
+                    vars = { card.ability.extra.mult }
+                },
+            }
+        end
+    end
+}
+
+local beer = SMODS.Joker{
+    key = 'beer',
+    loc_txt = {
+        name = "Beer",
+        text = {
+            "When sold, the",
+            "next {C:attention}Joker created{} has",
+            "{X:dark_edition,C:white}X#1#{} to all values"
+        }
+    },
+    config = {extra = {}},
+    rarity = 2,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.cardVal or "???"}}
+    end,
+    calculate = function(self,card,context)
+        if not card.ability.extra.cardVal then card.ability.extra.cardVal = pseudorandom("beer",5,20)/10 end
+        if context.selling_self then
+            G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {abilityMult = card.ability.extra.cardVal, specType == 'Joker'}
         end
     end
 }
@@ -621,6 +714,12 @@ local sketch = SMODS.Joker{
 
 
 
+local oldfunc = G.FUNCS.toggle_shop
+G.FUNCS.toggle_shop = function(self,e)
+    if G.GAME.jimb_prism then G.GAME.jimb_prism = nil end
+    local ret = oldfunc(self,e)
+    return ret
+end
 
 
 local oldfunc = CardArea.emplace
@@ -630,6 +729,9 @@ CardArea.emplace = function(self,card, location, stay_flipped,idunno,b,c,d)
         for i = 1, #G.jokers.cards do
             G.jokers.cards[i]:calculate_joker({jimb_card_gain = true, jimb_card = card, area = self})
         end
+    end
+    if G.GAME.jimb_prism and G.jokers and card.area == G.jokers then
+        jokerMult(card,G.GAME.jimb_prism)
     end
     return ret
 end
@@ -805,6 +907,21 @@ Card.calculate_joker = function(self,context)
             self.jimb_roundDebuff = nil
         else
             self:set_debuff(true)
+        end
+    end
+    if self.debuff then
+        return nil
+    end
+    if self.ability.set == "Cine" then
+        self.ability.progress = self.ability.progress or 0
+        if (self.config.center.reward == "c_jimb_prism" and context.selling_card) then
+            local num = 0
+            for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
+                num = num + 1
+                if G.P_CENTER_POOLS['Joker'][i].key == context.card.config.center.key and num > 150 then
+                    return Reverie.progress_cine_quest(self)
+                end
+            end
         end
     end
     local ret = oldfunc(self,context)
@@ -2077,6 +2194,82 @@ if Cryptid then
 
 end
 
+if Reverie then
+    SMODS.Atlas({key = 'Cine', path = 'cines.png', px = 71, py = 95})
+    local exch_prism = SMODS.Consumable {
+        key = 'prism_exchange',
+        set = 'Cine',
+        loc_txt = {
+            name = "Exchange Coupon",
+                text = {
+                    "Converts to {C:cine}Neon Prism{} after",
+                    "selling atleast {C:attention}#1#{} {C:legendary}Modded Jokers{}",
+                    "{C:inactive}(Currently {C:attention}#2#{C:inactive}/#1#)"
+                }
+        },
+        config = {extra = {goal = 5, current = 0}},
+        pos = { x = 0, y = 0 },
+        cost = 6,
+        unlocked = true,
+        reward = 'c_jimb_prism',
+        discovered = true,
+        atlas = 'Cine',
+        loc_vars = function(self, info_queue, center)
+            return {vars = {center.ability.extra.goal,(center.ability.progress or 0)}}
+        end,
+        can_use = function(self, card)
+            if card.ability.extra.goal <= (card.ability.progress or 0) then 
+                return true
+            end
+            return false
+        end,
+    }
+
+    local prism = SMODS.Consumable {
+        key = 'prism',
+        set = 'Cine',
+        loc_txt = {
+            name = "Neon Prism",
+                text = {
+                    "During this shop,",
+                    "all Jokers gained have {X:dark_edition,C:white}X#1#{} values",
+                    "{C:red}+$#2#{} reroll cost"
+                }
+        },
+        config = {extra = {values = 2}},
+        pos = { x = 0, y = 1 },
+        cost = 6,
+        unlocked = true,
+        discovered = true,
+        atlas = 'Cine',
+        loc_vars = function(self, info_queue, center)
+            return {vars = {center.ability.extra.values,center.ability.extra.values*5}}
+        end,
+        can_use = function(wawa,wawa,wawa)
+            if G.shop_jokers then
+                return true
+            else
+                return false
+            end
+        end,
+        use = function(self,card)
+            if G.GAME.jimb_prism then
+                G.GAME.jimb_prism = G.GAME.jimb_prism * card.ability.extra.values
+            else
+                G.GAME.jimb_prism = card.ability.extra.values
+            end
+            calculate_reroll_cost(true)
+        end
+    }
+    local calculate_reroll_cost_ref = calculate_reroll_cost
+    function calculate_reroll_cost(skip_increment)
+        calculate_reroll_cost_ref(skip_increment)
+        if G.GAME.jimb_prism then
+            G.GAME.current_round.reroll_cost = G.GAME.current_round.reroll_cost + G.GAME.jimb_prism*5
+        end
+    end
+end
+
 
 
 
@@ -2318,6 +2511,7 @@ end
 local oldfunc = G.FUNCS.cash_out
 G.FUNCS.cash_out = function(e)
     local ret = oldfunc(e)
+    G.GAME.jimb_prism = nil
 
     if G.GAME.modifiers.jimb_jimb_no_shops then
         --for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do print(k .. '   ?') end
@@ -2485,13 +2679,24 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     --end
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 
-    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and forced_key == G.GAME.next_Gen_Cards[1].key and _type ~= 'Base' then
+    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 then
+
+        if G.GAME.next_Gen_Cards[1].specType and G.GAME.next_Gen_Cards[1].specType ~= _type then
+            return ret
+        end
+
+        if forced_key and forced_key == G.GAME.next_Gen_Cards[1].key and _type ~= 'Base' then
+            if G.GAME.next_Gen_Cards[1].ability then ret.ability = G.GAME.next_Gen_Cards[1].ability end
+        end
+
         if G.GAME.next_Gen_Cards[1].cost then
-        ret.base_cost = G.GAME.next_Gen_Cards[1].cost
+            ret.base_cost = G.GAME.next_Gen_Cards[1].cost
         end
         ret:set_cost()
-        if G.GAME.next_Gen_Cards[1].ability then ret.ability = G.GAME.next_Gen_Cards[1].ability end
 
+        if G.GAME.next_Gen_Cards[1].abilityMult then
+            jokerMult(ret,G.GAME.next_Gen_Cards[1].abilityMult)
+        end
         table.remove(G.GAME.next_Gen_Cards,1)
     end
 
