@@ -388,8 +388,8 @@ local kunai = SMODS.Joker{
         text = {
             "When {C:attention}Blind{} is selected,",
             "destroy {C:attention}leftmost Joker{} and gain",
-            "{C:mult}+Mult{} equal to sum of all values",
-            "{C:inactive}(Currently {C:mult}+#1#{} Mult{C:inactive})"
+            "{C:chips}+Chips{} equal to sum of all values",
+            "{C:inactive}(Currently {C:chips}+#1#{} Chips{C:inactive})"
 
         }
     },
@@ -446,11 +446,11 @@ local kunai = SMODS.Joker{
 
         if context.joker_main then
             return {
-                mult_mod = card.ability.extra.mult,
+                chip_mod = card.ability.extra.mult,
                 card = card,
                 message = localize {
                     type = 'variable',
-                    key = 'a_mult',
+                    key = 'a_chips',
                     vars = { card.ability.extra.mult }
                 },
             }
@@ -1177,7 +1177,7 @@ SMODS.Consumable {
     config = {extra = {num1 = 1,}},
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 6,
+    cost = 20,
     joker = true,
     unlocked = true,
     discovered = false,
@@ -1275,7 +1275,7 @@ SMODS.Consumable {
     config = {extra = {odds = 3000,jokers = {}}},
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 6,
+    cost = 20,
     joker = true,
     unlocked = true,
     discovered = false,
@@ -1327,6 +1327,86 @@ SMODS.Consumable {
         return false
     end,
 }
+
+
+
+--[[SMODS.Consumable {
+    key = 'armageddon',
+    set = 'Spectral',
+    loc_txt = {
+        name = "{C:edition}Armageddon{}",
+        text = {
+            '{C:mult}It{} comes to your deck',
+        },
+    },
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 20,
+    joker = true,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    can_use = function(self,card)
+        return true
+    end,
+    use = function(self, card)
+        if card.area == G.jokers then return end
+        local card = copy_card(card,nil)
+        card:add_to_deck()
+        G.jokers:emplace(card)
+        play_sound('card1', 0.8, 0.6)
+        play_sound('generic1')
+    end,
+    calculate = function(self,card,context)
+        
+    end,
+    in_pool = function(self,card,wawa)
+        return false
+    end,
+}
+]]
+
+--[[SMODS.Consumable {
+    key = 'wrath',
+    set = 'Spectral',
+    loc_txt = {
+        name = "{C:edition}Wrath{}",
+        text = {
+            'Lower a random non-{C:dark_edition}Joker Slot',
+            'stat when round ends',
+            'Increase {C:dark_edition}Joker Slots{} by 1',
+            'when round ends'
+        },
+    },
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 20,
+    joker = true,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
+    can_use = function(self,card)
+        return true
+    end,
+    use = function(self, card)
+        if card.area == G.jokers then return end
+        local card = copy_card(card,nil)
+        card:add_to_deck()
+        G.jokers:emplace(card)
+        play_sound('card1', 0.8, 0.6)
+        play_sound('generic1')
+    end,
+    calculate = function(self,card,context)
+        
+    end,
+    in_pool = function(self,card,wawa)
+        return false
+    end,
+}]]
 
 
 
@@ -1797,7 +1877,11 @@ local chef = SMODS.Joker{
         if context.selling_self then
             if other_joker then
                 jokerMult(other_joker,card.ability.extra.cardMult)
-                other_joker.jimb_roundDebuff = other_joker.jimb_roundDebuff + card.ability.extra.rounds or card.ability.extra.rounds
+                if other_joker.jimb_roundDebuff then
+                    other_joker.jimb_roundDebuff = (other_joker.jimb_roundDebuff + card.ability.extra.rounds)
+                else
+                    other_joker.jimb_roundDebuff = card.ability.extra.rounds
+                end
             end
         end
     end,
@@ -2343,6 +2427,7 @@ function eval_card(card, context)
     if context.cardarea == G.play then
         G.GAME.scoredface = G.GAME.scoredface + 1
     end
+    G.GAME.blind:jimb_cardScore(card,context)
     return ret
 end
 
@@ -2351,6 +2436,11 @@ local oldfunc = Card.set_ability
 Card.set_ability = function(self,a,b,c)
     local ret = oldfunc(self,a,b,c)
 
+    self:ability_change(self,self)
+    return ret
+end
+
+function Card:ability_change(self)
     if G.GAME.selected_back then G.GAME.selected_back:trigger_effect{context = 'jimb_card', card = self} end
     if G and G.jokers and G.jokers.cards then
         for i = 1, #G.jokers.cards do
@@ -2359,6 +2449,10 @@ Card.set_ability = function(self,a,b,c)
     end
     if G.GAME.modifiers.jimb_xCards then 
         jokerMult(self,G.GAME.modifiers.jimb_xCards)
+    end
+
+    if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_jimb_zone' then
+        jokerMult(self,0.75)
     end
 end
 
@@ -2383,7 +2477,7 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     --if ouroborosActive then
     --    forced_key = 'j_jimb_ouroboros'
     --end
-    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and _type == 'Joker' then
+    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and _type ~= 'Base' then
         forced_key = G.GAME.next_Gen_Cards[1].key
     end
     
@@ -2391,16 +2485,14 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     --end
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
 
-    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and forced_key == G.GAME.next_Gen_Cards[1].key and _type == 'Joker' then
+    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and forced_key == G.GAME.next_Gen_Cards[1].key and _type ~= 'Base' then
         if G.GAME.next_Gen_Cards[1].cost then
         ret.base_cost = G.GAME.next_Gen_Cards[1].cost
         end
         ret:set_cost()
         if G.GAME.next_Gen_Cards[1].ability then ret.ability = G.GAME.next_Gen_Cards[1].ability end
+
         table.remove(G.GAME.next_Gen_Cards,1)
-    end
-    if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_jimb_zone' then
-        jokerMult(ret,0.75)
     end
 
     --POST hook
@@ -2591,35 +2683,66 @@ SMODS.Edition({
 --------------------BLINDS---------------------
 --------------------BLINDS---------------------
 --------------------BLINDS---------------------
---[[local oldfunc = get_new_boss
+local oldfunc = get_new_boss
 function get_new_boss()
-    local isCalm = false
+    --[[local isCalm = false
     if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss then
         if G.GAME.round_resets.blind_choices.Boss == 'bl_jimb_calm' then
             isCalm = true
         end
-    end
+    end]]
 
     local ret = oldfunc()
-    --G.GAME.round_resets.blind_choices.Small = 'bl_small'
-    --G.GAME.round_resets.blind_choices.Big = 'bl_big'
-    if ret == 'bl_jimb_cerberus' then
-        G.GAME.round_resets.blind_choices.Small = 'bl_jimb_sarvara'
-        G.GAME.round_resets.blind_choices.Big = 'bl_jimb_melanos'
+    G.GAME.round_resets.blind_choices.Small = 'bl_small'
+    G.GAME.round_resets.blind_choices.Big = 'bl_big'
+    if ret == 'bl_jimb_cerberus3' then
+        G.GAME.round_resets.blind_choices.Small = 'bl_jimb_cerberus1'
+        G.GAME.round_resets.blind_choices.Big = 'bl_jimb_cerberus2'
         --reset_blinds()
-        G.GAME.round_resets.blind_choices.Boss = 'bl_jimb_calm'
+        --G.GAME.round_resets.blind_choices.Boss = 'bl_jimb_calm'
+        return 'bl_jimb_cerberus3'
     end
-    if isCalm == true then
+    --[[if isCalm == true then
         G.GAME.round_resets.blind_choices.Small = 'bl_jimb_storm'
         G.GAME.round_resets.blind_choices.Big = 'bl_jimb_storm'
         G.GAME.round_resets.blind_states = {Small = 'Upcoming', Big = 'Upcoming', Boss = 'Select'}
         return 'bl_jimb_storm'
-    end
+    end]]
     --if ret == 'bl_jimb_storm' then return get_new_boss() end
     return ret
-end]]
-local the_hand = SMODS.Blind{
-    key = "the_hand",
+end
+
+
+function Blind:jimb_cardScore(card,context)
+    if context.cardarea == G.play then
+        if G.GAME.blind.name == 'bl_jimb_cerberus1' then
+            --G.GAME.blind.chips = G.GAME.blind.chips + G.GAME.starting_params.ante_scaling*(self.mult*0.01)
+            for k,v in pairs(G.P_BLINDS[G.GAME.round_resets.blind_choices]) do
+                G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips = G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips + G.GAME.starting_params.ante_scaling*(G.P_BLINDS[G.GAME.round_resets.blind_choices][k].mult*0.01)
+            end
+            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.GAME.blind:juice_up()
+        end
+        if G.GAME.blind.name == 'bl_jimb_cerberus2' then
+            for k,v in pairs(G.GAME.round_resets.blind_choices) do
+                G.GAME.round_resets.blind_choices[k].chips = G.GAME.round_resets.blind_choices[k].chips + G.GAME.starting_params.ante_scaling*(self.mult*0.02)
+            end
+            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.GAME.blind:juice_up()
+        end
+        if G.GAME.blind.name == 'bl_jimb_cerberus3' then
+            for k,v in pairs(G.P_BLINDS[G.GAME.round_resets.blind_choices]) do
+                G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips = G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips + G.GAME.starting_params.ante_scaling*(G.P_BLINDS[G.GAME.round_resets.blind_choices][k].mult*0.04)
+            end
+            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.GAME.blind:juice_up()
+        end
+    end
+end
+
+
+local royal_hand = SMODS.Blind{
+    key = "royal_hand",
     loc_txt = {
  		name = 'Royal Hand',
  		text = { '+3 Hands, +1.5X score', 'requirement per hand' },
@@ -2640,6 +2763,25 @@ local the_hand = SMODS.Blind{
         G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
         ease_hands_played(3)
     end,
+}
+
+local zone = SMODS.Blind{
+    key = "zone",
+    loc_txt = {
+ 		name = 'The Zone',
+ 		text = { 'Cards created this Ante','have 0.75X values' },
+ 	},
+    boss_colour = HEX('967BB6'),
+    dollars = 5,
+    mult = 2,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 1,
+        max = 69420,
+        showdown = false
+    },
+    pos = { x = 0, y = 30 },
 }
 
 local vintage = SMODS.Blind{
@@ -2700,6 +2842,84 @@ local luckylady = SMODS.Blind{
 	end,
 }
 
+local cerberus = SMODS.Blind{
+    key = "cerberus1",
+    loc_txt = {
+        name = 'Silver Cerberus',
+        text = { 
+            "All blinds gain",
+            "0.01X base blind size",
+            "when a card scores"
+       },
+    },
+    boss_colour = HEX('4F6367'),
+    dollars = 3,
+    mult = 1,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 69420,
+        max = 69420,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+    in_pool = function(self,wawa,wawa2)
+        return false
+    end
+}
+
+local cerberus2 = SMODS.Blind{
+    key = "cerberus2",
+    loc_txt = {
+        name = 'Dusk Cerberus',
+        text = { 
+            "All blinds gain",
+            "0.02X base blind size",
+            "when a card scores"
+       },
+    },
+    boss_colour = HEX('4F6367'),
+    dollars = 4,
+    mult = 1.2,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 69420,
+        max = 69420,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+    in_pool = function(self,wawa,wawa2)
+        return false
+    end
+}
+
+local cerberus3 = SMODS.Blind{
+    key = "cerberus3",
+    loc_txt = {
+ 		name = 'Raven Cerberus',
+ 		text = { 
+            "All blinds gain",
+            "0.04X base blind size",
+            "when a card scores"
+       },
+ 	},
+    boss_colour = HEX('4F6367'),
+    dollars = 5,
+    mult = 1.5,
+    discovered = true,
+    has_played = false,
+    boss = {
+        min = 69420,
+        max = 69420,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+    in_pool = function(self,wawa,wawa2)
+        return false
+    end
+}
+
 SMODS.Achievement{
     loc_txt = {
         name = "Do It All Again",
@@ -2732,6 +2952,12 @@ local oldfunc = Game.main_menu
 		check_for_unlock({type = 'run_started'})
 		return ret
 	end
+
+
+--
+
+
+
 
 --[[local calm = SMODS.Blind{
     key = "calm",
