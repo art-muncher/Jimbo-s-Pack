@@ -2261,6 +2261,8 @@ if Reverie then
             calculate_reroll_cost(true)
         end
     }
+    prism.use = Reverie.use_cine
+
     local calculate_reroll_cost_ref = calculate_reroll_cost
     function calculate_reroll_cost(skip_increment)
         calculate_reroll_cost_ref(skip_increment)
@@ -2268,6 +2270,20 @@ if Reverie then
             G.GAME.current_round.reroll_cost = G.GAME.current_round.reroll_cost + G.GAME.jimb_prism*5
         end
     end
+end
+local oldfunc = Card.use_consumeable
+function Card:use_consumeable(area, copier)
+    local is_reverie = self.ability.name == "Reverie"
+    if (is_reverie) then
+        if G.GAME.jimb_prism then
+            G.GAME.jimb_prism = G.GAME.jimb_prism * 2
+        else
+            G.GAME.jimb_prism = 2
+        end
+        calculate_reroll_cost(true)
+    end
+    local ret = oldfunc(self,center,card,area,copier)
+    return ret
 end
 
 
