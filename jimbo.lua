@@ -1596,12 +1596,12 @@ local pepperspray = SMODS.Joker{
 local oldfunc = init_localization
 function init_localization()
     oldfunc()
-    G.localization.misc.v_text.ch_c_no_reroll = {"You cannot {C:attention}reroll"}
-    G.localization.misc.v_text.ch_c_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
+    G.localization.misc.v_text.ch_c_jimb_no_reroll = {"You cannot {C:attention}reroll"}
+    G.localization.misc.v_text.ch_c_jimb_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
 end
 
-G.localization.misc.v_text.ch_c_no_reroll = {"You cannot {C:attention}reroll"}
-G.localization.misc.v_text.ch_c_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
+G.localization.misc.v_text.ch_c_jimb_no_reroll = {"You cannot {C:attention}reroll"}
+G.localization.misc.v_text.ch_c_jimb_no_shop = {"{C:attention}#1# Blinds{} don't have shops"}
 
 G.localization.misc.v_text.ch_c_jimb_scavenger = {"Open a {C:attention}Mega Buffoon Pack{} at end of round"}
 
@@ -1617,9 +1617,9 @@ SMODS.Challenge{
     deck = { type = "Challenge Deck" },
     rules = { 
         custom = {
-            {id = 'no_shop', value = 'Big'},
-            {id = 'no_shop', value = 'Small'},
-            {id = 'no_reroll',},
+            {id = 'jimb_no_shop', value = 'Big'},
+            {id = 'jimb_no_shop', value = 'Small'},
+            {id = 'jimb_no_reroll',},
         }, 
         modifiers = {
             {id = 'joker_slots', value = 10},}
@@ -1651,9 +1651,9 @@ SMODS.Challenge{
     deck = { type = "Challenge Deck" },
     rules = { 
         custom = {
-            {id = 'no_shop', value = 'Boss'},
-            {id = 'no_shop', value = 'Big'},
-            {id = 'no_shop', value = 'Small'},
+            {id = 'jimb_no_shop', value = 'Boss'},
+            {id = 'jimb_no_shop', value = 'Big'},
+            {id = 'jimb_no_shop', value = 'Small'},
             {id = 'no_reward'},
             {id = 'no_extra_hand_money'},
             {id = 'no_interest'},
@@ -2319,9 +2319,9 @@ local oldfunc = G.FUNCS.cash_out
 G.FUNCS.cash_out = function(e)
     local ret = oldfunc(e)
 
-    if G.GAME.modifiers.jimb_no_shops then
-        --for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do print(k .. '   ?') end
-        for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do
+    if G.GAME.modifiers.jimb_jimb_no_shops then
+        --for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do print(k .. '   ?') end
+        for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do
             if blindtype == k .. ' Blind' then
                 G.E_MANAGER:add_event(Event({
                     trigger = 'after',
@@ -2344,9 +2344,9 @@ end
 local oldfunc = G.UIDEF.shop
 G.UIDEF.shop = function()
     --local ret = oldfunc()
-    if G.GAME.modifiers.jimb_no_shops then
-        --for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do print(k .. '   ?') end
-        for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do
+    if G.GAME.modifiers.jimb_jimb_no_shops then
+        --for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do print(k .. '   ?') end
+        for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do
             if blindtype == k .. ' Blind' then
                 return {n=G.UIT.ROOT, config = {align = 'cl', colour = G.C.CLEAR}, nodes={}}
             end
@@ -2360,7 +2360,7 @@ end
 local oldfunc = G.FUNCS.can_reroll
 G.FUNCS.can_reroll = function(e)
     local ret = oldfunc(e)
-    if G.GAME.modifiers.no_reroll then
+    if G.GAME.modifiers.jimb_no_reroll then
         e.config.colour = G.C.UI.BACKGROUND_INACTIVE
         e.config.button = nil
     end
@@ -2394,18 +2394,18 @@ Game.start_run = function(e, args)
         if _ch.rules then
             if _ch.rules.custom then
                 for k, v in ipairs(_ch.rules.custom) do
-                    if v.id == 'no_shop' then 
-                        G.GAME.modifiers.jimb_no_shops = G.GAME.modifiers.jimb_no_shops or {}
-                        G.GAME.modifiers.jimb_no_shops[v.value] = true
-                        --G.GAME.modifiers.jimb_no_shops.test_val = 'hi'
-                        --G.GAME.modifiers.jimb_no_shops.test_val2 = 'hello'
-                        --G.GAME.modifiers.jimb_no_shops[v.value] = true
+                    if v.id == 'jimb_no_shop' then 
+                        G.GAME.modifiers.jimb_jimb_no_shops = G.GAME.modifiers.jimb_jimb_no_shops or {}
+                        G.GAME.modifiers.jimb_jimb_no_shops[v.value] = true
+                        --G.GAME.modifiers.jimb_jimb_no_shops.test_val = 'hi'
+                        --G.GAME.modifiers.jimb_jimb_no_shops.test_val2 = 'hello'
+                        --G.GAME.modifiers.jimb_jimb_no_shops[v.value] = true
                     end
                     if v.id == 'xCards' then 
                         G.GAME.modifiers.jimb_xCards = v.value
                     end
-                    if v.id == 'no_reroll' then
-                        G.GAME.modifiers.no_reroll = true
+                    if v.id == 'jimb_no_reroll' then
+                        G.GAME.modifiers.jimb_no_reroll = true
                     end
                     if v.id == 'jimb_scavenger' then
                         G.GAME.modifiers.jimb_scavenger = true
