@@ -1642,7 +1642,7 @@ local sanitizer = SMODS.Joker{
     end,
     check_for_unlock = function(self, args)
         if args.type == 'chip_score' then
-            if args.chips >= G.GAME.blind.chips * 100 then
+            if G.GAME.chips >= G.GAME.blind.chips * 100 then
                 unlock_card(self)
             end
         end
