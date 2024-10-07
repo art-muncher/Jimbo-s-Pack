@@ -1687,7 +1687,7 @@ local pepperspray = SMODS.Joker{
     end,
     check_for_unlock = function(self, args)
         if args.type == 'chip_score' then
-            if args.chips >= G.GAME.blind.chips * 100 then
+            if G.GAME.chips >= G.GAME.blind.chips * 100 then
                 unlock_card(self)
             end
         end
@@ -2529,9 +2529,9 @@ G.FUNCS.cash_out = function(e)
     local ret = oldfunc(e)
     G.GAME.jimb_prism = nil
 
-    if G.GAME.modifiers.jimb_jimb_no_shops then
+    if G.GAME.modifiers and G.GAME.modifiers.jimb_no_shops then
         --for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do print(k .. '   ?') end
-        for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do
+        for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do
             if blindtype == k .. ' Blind' then
                 G.E_MANAGER:add_event(Event({
                     trigger = 'after',
@@ -2551,20 +2551,22 @@ G.FUNCS.cash_out = function(e)
     end
     return ret
 end
-local oldfunc = G.UIDEF.shop
-G.UIDEF.shop = function()
-    --local ret = oldfunc()
-    if G.GAME.modifiers.jimb_jimb_no_shops then
-        --for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do print(k .. '   ?') end
-        for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do
-            if blindtype == k .. ' Blind' then
-                return {n=G.UIT.ROOT, config = {align = 'cl', colour = G.C.CLEAR}, nodes={}}
+if G.UIDEF.shop then
+    local oldfunc = G.UIDEF.shop
+    G.UIDEF.shop = function(self)
+        --local ret = oldfunc()
+        if G.GAME.modifiers and G.GAME.modifiers.jimb_no_shops then
+            --for k,v in pairs(G.GAME.modifiers.jimb_jimb_no_shops) do print(k .. '   ?') end
+            for k,v in pairs(G.GAME.modifiers.jimb_no_shops) do
+                if blindtype == k .. ' Blind' then
+                    return {n=G.UIT.ROOT, config = {align = 'cl', colour = G.C.CLEAR}, nodes={}}
+                end
             end
+            
         end
-        
+        local ret = oldfunc(self)
+        return ret
     end
-    local ret = oldfunc()
-    return ret
 end
 
 local oldfunc = G.FUNCS.can_reroll
@@ -2605,8 +2607,8 @@ Game.start_run = function(e, args)
             if _ch.rules.custom then
                 for k, v in ipairs(_ch.rules.custom) do
                     if v.id == 'jimb_no_shop' then 
-                        G.GAME.modifiers.jimb_jimb_no_shops = G.GAME.modifiers.jimb_jimb_no_shops or {}
-                        G.GAME.modifiers.jimb_jimb_no_shops[v.value] = true
+                        G.GAME.modifiers.jimb_no_shops = G.GAME.modifiers.jimb_no_shops or {}
+                        G.GAME.modifiers.jimb_no_shops[v.value] = true
                         --G.GAME.modifiers.jimb_jimb_no_shops.test_val = 'hi'
                         --G.GAME.modifiers.jimb_jimb_no_shops.test_val2 = 'hello'
                         --G.GAME.modifiers.jimb_jimb_no_shops[v.value] = true
