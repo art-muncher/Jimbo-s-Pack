@@ -78,7 +78,7 @@ local googly = SMODS.Joker{
     atlas = 'Jokers',
     cost = 5,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = false,
     eternal_compat = true,
     perishable_compat = true,
@@ -115,7 +115,7 @@ local sadlad = SMODS.Joker{
     atlas = 'Jokers',
     cost = 3,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = false,
     eternal_compat = true,
     perishable_compat = true,
@@ -158,7 +158,7 @@ local clown = SMODS.Joker{
     atlas = 'Jokers',
     cost = 7,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = false,
     eternal_compat = true,
     perishable_compat = true,
@@ -194,7 +194,7 @@ local danger = SMODS.Joker{
     pos = {x = 1, y = 1},
     atlas = 'Jokers',
     cost = 5,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -231,7 +231,7 @@ local gum = SMODS.Joker{
     atlas = 'Soulj',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -272,11 +272,11 @@ local gelatin = SMODS.Joker{
     },
     config = {extra = {Xmult = 1, Xmult_mod = 0.1}},
     rarity = 1,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
+    pos = {x = 2, y = 2},
+    atlas = 'Jokers',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -319,11 +319,11 @@ local wine = SMODS.Joker{
     },
     config = {extra = {mult = 50, mult_mod = 5}},
     rarity = 1,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
+    pos = {x = 0, y = 3},
+    atlas = 'Jokers',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -364,11 +364,11 @@ local beer = SMODS.Joker{
     },
     config = {extra = {}},
     rarity = 2,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
+    pos = {x = 1, y = 3},
+    atlas = 'Jokers',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -401,7 +401,7 @@ local cardinal = SMODS.Joker{
     atlas = 'Soulj',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -439,7 +439,7 @@ local cultist = SMODS.Joker{
     atlas = 'Soulj',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -492,7 +492,7 @@ local kunai = SMODS.Joker{
     atlas = 'Jokers',
     cost = 10,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -551,6 +551,70 @@ local kunai = SMODS.Joker{
     end
 }
 
+local butterknife = SMODS.Joker{
+    key = 'butterknife',
+    loc_txt = {
+        name = "Butter Knife",
+        text = {
+            "When {C:attention}Blind{} is selected,",
+            "apply {C:attention}Perishable{} to Joker to the right",
+            "and add {C:attention}double{} its sell",
+            "value to {C:chips}Chips",
+            "{C:inactive}(Currently {C:chips}+#1#{C:inactive} Chips)"
+        }
+    },
+    config = {extra = {mult = 0}},
+    rarity = 2,
+    pos = {x = 2, y = 3},
+    atlas = 'Jokers',
+    cost = 10,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.mult}}
+    end,
+    calculate = function(self,card,context)
+        if context.setting_blind then
+            local num = 0
+            local my_pos = nil
+            for i = 1, #G.jokers.cards do
+                if G.jokers.cards[i] == card then my_pos = i; break end
+            end
+            if my_pos and G.jokers.cards[my_pos+1] and not card.getting_sliced and not G.jokers.cards[my_pos+1].getting_sliced and not G.jokers.cards[my_pos+1].debuffed then 
+                local sliced_card = G.jokers.cards[my_pos+1]
+                if not G.jokers.cards[my_pos+1].ability.perishable then
+                    sliced_card:set_perishable(true)
+                end
+                --G.GAME.joker_buffer = G.GAME.joker_buffer - 1
+                G.E_MANAGER:add_event(Event({func = function()
+                    --G.GAME.joker_buffer = 0
+                    card.ability.extra.mult = card.ability.extra.mult + sliced_card.sell_cost*2
+                    card:juice_up(0.8, 0.8)
+                    --sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
+                    play_sound('slice1', 0.96+math.random()*0.08)
+                return true end }))
+                card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_chips', vars = {card.ability.mult+2*sliced_card.sell_cost}}, colour = G.C.BLUE, no_juice = true})
+            end
+        end
+
+
+        if context.joker_main then
+            return {
+                chip_mod = card.ability.extra.mult,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_chips',
+                    vars = { card.ability.extra.mult }
+                },
+            }
+        end
+    end
+}
+
 local doomsday = SMODS.Joker{
     key = 'doomsday',
     loc_txt = {
@@ -569,7 +633,7 @@ local doomsday = SMODS.Joker{
     atlas = 'Soulj',
     cost = 10,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -610,7 +674,7 @@ local trojan = SMODS.Joker{
     atlas = 'Soulj',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -643,7 +707,7 @@ local virus = SMODS.Joker{
     atlas = 'Soulj',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -686,7 +750,7 @@ local sketch = SMODS.Joker{
     atlas = 'Soulj',
     cost = 4,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -781,7 +845,7 @@ local superpos = SMODS.Joker{
     atlas = 'Soulj',
     cost = 5,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = false,
     eternal_compat = true,
     perishable_compat = true,
@@ -859,7 +923,7 @@ local cardboard = SMODS.Joker{
     atlas = 'Jokers',
     cost = 8,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -959,7 +1023,7 @@ local vision = SMODS.Joker{
     atlas = 'Soulj',
     cost = 5,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -1071,7 +1135,7 @@ local commercial = SMODS.Joker{
     atlas = 'Soulj',
     cost = 10,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -1120,7 +1184,7 @@ local fabricwarp = SMODS.Joker{
     atlas = 'Soulj',
     cost = 10,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = true,
     perishable_compat = true,
@@ -1205,7 +1269,7 @@ nill = nilll[math.random(1,#nilll)]
     atlas = 'Jokers',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -1560,7 +1624,7 @@ local phonebook = SMODS.Joker{
     atlas = 'Soulj',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -1622,7 +1686,7 @@ local sanitizer = SMODS.Joker{
     atlas = 'Jokers',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -1666,7 +1730,7 @@ local pepperspray = SMODS.Joker{
     atlas = 'Jokers',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -1882,7 +1946,7 @@ local vipcard = SMODS.Joker{
     atlas = 'Soulj',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -1931,7 +1995,7 @@ local shoplifter = SMODS.Joker{
     atlas = 'Soulj',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -1977,7 +2041,7 @@ local chef = SMODS.Joker{
     atlas = 'Soulj',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -2029,7 +2093,7 @@ local chef = SMODS.Joker{
     atlas = 'Soulj',
     cost = 6,
     unlocked = false,
-    discovered = true,
+    discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
     perishable_compat = true,
@@ -2071,7 +2135,7 @@ if Cryptid then
         atlas = 'Mega',--CHANGE THIS
         cost = 12,
         unlocked = true,
-        discovered = true,
+        discovered = false,
         blueprint_compat = true,
         eternal_compat = true,
         perishable_compat = true,
@@ -2127,7 +2191,7 @@ if Cryptid then
         atlas = 'Exotic',
         cost = 50,
         unlocked = true,
-        discovered = true,
+        discovered = false,
         blueprint_compat = true,
         eternal_compat = true,
         perishable_compat = true,
@@ -2163,7 +2227,7 @@ if Cryptid then
         soul_pos = { x = 69420, y = 0 },
         cost = 6,
         unlocked = true,
-        discovered = true,
+        discovered = false,
         atlas = 'Tarot',
         loc_vars = function(self, info_queue, center)
             return {vars = {}}
@@ -2212,7 +2276,7 @@ if Reverie then
         cost = 6,
         unlocked = true,
         reward = 'c_jimb_prism',
-        discovered = true,
+        discovered = false,
         atlas = 'Cine',
         loc_vars = function(self, info_queue, center)
             return {vars = {center.ability.extra.goal,(center.ability.progress or 0)}}
@@ -2240,7 +2304,7 @@ if Reverie then
         pos = { x = 0, y = 1 },
         cost = 6,
         unlocked = true,
-        discovered = true,
+        discovered = false,
         atlas = 'Cine',
         loc_vars = function(self, info_queue, center)
             return {vars = {center.ability.extra.values,center.ability.extra.values*5}}
@@ -2836,7 +2900,7 @@ SMODS.Shader({ key = 'overexposed', path = 'overexposed.fs' })
     -- For edition that modify shape or transparency of the card.
     disable_base_shader = true,
     shader = "flipped",
-    discovered = true,
+    discovered = false,
     unlocked = true,
     config = {},
     in_shop = true,
@@ -2862,7 +2926,7 @@ SMODS.Edition({
     -- For edition that modify shape or transparency of the card.
     disable_base_shader = false,
     shader = "anaglyphic",
-    discovered = true,
+    discovered = false,
     unlocked = true,
     config = {},
     in_shop = true,
@@ -2889,7 +2953,7 @@ SMODS.Edition({
     -- For edition that modify shape or transparency of the card.
     disable_base_shader = false,
     shader = "anaglyphic",
-    discovered = true,
+    discovered = false,
     unlocked = true,
     config = {},
     in_shop = true,
@@ -2973,7 +3037,7 @@ local royal_hand = SMODS.Blind{
     boss_colour = HEX('015482'),
     dollars = 5,
     mult = 2,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 0,
@@ -2997,7 +3061,7 @@ local zone = SMODS.Blind{
     boss_colour = HEX('967BB6'),
     dollars = 5,
     mult = 2,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 1,
@@ -3017,7 +3081,7 @@ local vintage = SMODS.Blind{
     dollars = 5,
     mult = 2,
     config = {jokers = {}},
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 0,
@@ -3049,7 +3113,7 @@ local luckylady = SMODS.Blind{
     boss_colour = HEX('0C9E5A'),
     dollars = 5,
     mult = 2,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 0,
@@ -3078,7 +3142,7 @@ local cerberus = SMODS.Blind{
     boss_colour = HEX('4F6367'),
     dollars = 3,
     mult = 1,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 69420,
@@ -3104,7 +3168,7 @@ local cerberus2 = SMODS.Blind{
     boss_colour = HEX('4F6367'),
     dollars = 4,
     mult = 1.2,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 69420,
@@ -3130,7 +3194,7 @@ local cerberus3 = SMODS.Blind{
     boss_colour = HEX('4F6367'),
     dollars = 5,
     mult = 1.5,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 69420,
@@ -3191,7 +3255,7 @@ local oldfunc = Game.main_menu
     boss_colour = HEX('4F6367'),
     dollars = 5,
     mult = 1,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 7,
@@ -3210,7 +3274,7 @@ local storm = SMODS.Blind{
     boss_colour = HEX('4F6367'),
     dollars = 5,
     mult = 2,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 69420,
@@ -3229,7 +3293,7 @@ local sarvara = SMODS.Blind{
     boss_colour = HEX('D3D3D3'),
     dollars = 5,
     mult = 1,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 69420,
@@ -3248,7 +3312,7 @@ local melanos = SMODS.Blind{
     boss_colour = HEX('FF0000'),
     dollars = 5,
     mult = 1.5,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 69420,
@@ -3267,7 +3331,7 @@ local cerberus = SMODS.Blind{
     boss_colour = HEX('4F6367'),
     dollars = 5,
     mult = 2,
-    discovered = true,
+    discovered = false,
     has_played = false,
     boss = {
         min = 69420,
