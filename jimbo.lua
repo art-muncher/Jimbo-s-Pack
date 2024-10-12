@@ -1716,6 +1716,9 @@ SMODS.Consumable {
     in_pool = function(self,card,wawa)
         return false
     end,
+    can_use = function(self,card)
+        if card.area == G.jokers then return false end
+    end,
 }
 
 
