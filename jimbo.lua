@@ -2910,6 +2910,7 @@ Game.start_run = function(e, args)
     G.GAME.cardsGained = G.GAME.cardsGained or {
         --{key = 'j_joker',ability = nil},
     }
+    G.GAME.cerberusMult = 0
     return ret
 end
 
@@ -3198,6 +3199,9 @@ function get_new_boss()
     local ret = oldfunc()
     G.GAME.round_resets.blind_choices.Small = 'bl_small'
     G.GAME.round_resets.blind_choices.Big = 'bl_big'
+    --if G.GAME.round_resets.ante == 8 then
+        ret = 'bl_jimb_cerberus3'
+    --end
     if ret == 'bl_jimb_cerberus3' then
         G.GAME.round_resets.blind_choices.Small = 'bl_jimb_cerberus1'
         G.GAME.round_resets.blind_choices.Big = 'bl_jimb_cerberus2'
@@ -3220,23 +3224,28 @@ function Blind:jimb_cardScore(card,context)
     if context.cardarea == G.play then
         if G.GAME.blind.name == 'bl_jimb_cerberus1' then
             --G.GAME.blind.chips = G.GAME.blind.chips + G.GAME.starting_params.ante_scaling*(self.mult*0.01)
-            for k,v in pairs(G.P_BLINDS[G.GAME.round_resets.blind_choices]) do
-                G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips = G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips + G.GAME.starting_params.ante_scaling*(G.P_BLINDS[G.GAME.round_resets.blind_choices][k].mult*0.01)
-            end
+            --for k,v in pairs(G.P_BLINDS[G.GAME.round_resets.blind_choices]) do
+                --G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips = G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips + G.GAME.starting_params.ante_scaling*(G.P_BLINDS[G.GAME.round_resets.blind_choices][k].mult*0.01)
+            --end
+            G.GAME.blind.chips = G.GAME.blind.chips + G.GAME.starting_params.ante_scaling*0.01
             G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.GAME.cerberusMult = G.GAME.cerberusMult + 0.01
             G.GAME.blind:juice_up()
         end
         if G.GAME.blind.name == 'bl_jimb_cerberus2' then
-            for k,v in pairs(G.GAME.round_resets.blind_choices) do
-                G.GAME.round_resets.blind_choices[k].chips = G.GAME.round_resets.blind_choices[k].chips + G.GAME.starting_params.ante_scaling*(self.mult*0.02)
-            end
+            --for k,v in pairs(G.GAME.round_resets.blind_choices) do
+            --    G.GAME.round_resets.blind_choices[k].chips = G.GAME.round_resets.blind_choices[k].chips + G.GAME.starting_params.ante_scaling*(self.mult*0.02)
+            --end
+            G.GAME.blind.chips = G.GAME.blind.chips + G.GAME.starting_params.ante_scaling*1.5*0.02
             G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            G.GAME.cerberusMult = G.GAME.cerberusMult + 0.02
             G.GAME.blind:juice_up()
         end
         if G.GAME.blind.name == 'bl_jimb_cerberus3' then
-            for k,v in pairs(G.P_BLINDS[G.GAME.round_resets.blind_choices]) do
-                G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips = G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips + G.GAME.starting_params.ante_scaling*(G.P_BLINDS[G.GAME.round_resets.blind_choices][k].mult*0.04)
-            end
+            --for k,v in pairs(G.P_BLINDS[G.GAME.round_resets.blind_choices]) do
+            --    G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips = G.P_BLINDS[G.GAME.round_resets.blind_choices][k].chips + G.GAME.starting_params.ante_scaling*(G.P_BLINDS[G.GAME.round_resets.blind_choices][k].mult*0.04)
+            --end
+            G.GAME.blind.chips = G.GAME.blind.chips + G.GAME.starting_params.ante_scaling*2*0.04
             G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
             G.GAME.blind:juice_up()
         end
@@ -3383,7 +3392,7 @@ local cerberus2 = SMODS.Blind{
     },
     boss_colour = HEX('4F6367'),
     dollars = 4,
-    mult = 1.2,
+    mult = 1.5,
     discovered = false,
     has_played = false,
     boss = {
@@ -3394,7 +3403,11 @@ local cerberus2 = SMODS.Blind{
     pos = { x = 0, y = 30 },
     in_pool = function(self,wawa,wawa2)
         return false
-    end
+    end,
+    set_blind = function(self)
+        G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*1.5*G.GAME.cerberusMult
+        G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+    end,
 }
 
 local cerberus3 = SMODS.Blind{
@@ -3409,7 +3422,7 @@ local cerberus3 = SMODS.Blind{
  	},
     boss_colour = HEX('4F6367'),
     dollars = 5,
-    mult = 1.5,
+    mult = 2,
     discovered = false,
     has_played = false,
     boss = {
@@ -3418,8 +3431,12 @@ local cerberus3 = SMODS.Blind{
         showdown = true
     },
     pos = { x = 0, y = 30 },
-    in_pool = function(self,wawa,wawa2)
-        return false
+    set_blind = function(self)
+        G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*1.5*G.GAME.cerberusMult
+        G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+    end,
+    defeat = function(self)
+        G.GAME.cerberusMult = 0
     end
 }
 
