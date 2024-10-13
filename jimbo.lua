@@ -19,6 +19,7 @@ SMODS.Atlas{
     px = 710,
     py = 1520
 }
+SMODS.Atlas({key = 'Vouchers', path = 'Vouchers.png', px = 71, py = 95})
 
 
 
@@ -1721,6 +1722,102 @@ SMODS.Consumable {
     end,
 }
 
+local oldfunc = Card.redeem
+function Card:redeem()
+    local ret = oldfunc(self)
+    if self.ability.set == 'Spectral' then
+        stop_use()
+        if not self.config.center.discovered then
+            discover_card(self.config.center)
+        end
+        if self.shop_voucher then G.GAME.current_round.voucher = nil end 
+
+        self.states.hover.can = false
+        G.GAME.used_vouchers[self.config.center_key] = true
+        local top_dynatext = nil
+        local bot_dynatext = nil
+        
+        G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.4, func = function()
+                top_dynatext = DynaText({string = localize{type = 'name_text', set = self.config.center.set, key = self.config.center.key}, colours = {G.C.WHITE}, rotate = 1,shadow = true, bump = true,float=true, scale = 0.9, pop_in = 0.6/G.SPEEDFACTOR, pop_in_rate = 1.5*G.SPEEDFACTOR})
+                bot_dynatext = DynaText({string = localize('k_redeemed_ex'), colours = {G.C.WHITE}, rotate = 2,shadow = true, bump = true,float=true, scale = 0.9, pop_in = 1.4/G.SPEEDFACTOR, pop_in_rate = 1.5*G.SPEEDFACTOR, pitch_shift = 0.25})
+                self:juice_up(0.3, 0.5)
+                play_sound('card1')
+                play_sound('coin1')
+                self.children.top_disp = UIBox{
+                    definition =    {n=G.UIT.ROOT, config = {align = 'tm', r = 0.15, colour = G.C.CLEAR, padding = 0.15}, nodes={
+                                        {n=G.UIT.O, config={object = top_dynatext}}
+                                    }},
+                    config = {align="tm", offset = {x=0,y=0},parent = self}
+                }
+                self.children.bot_disp = UIBox{
+                        definition =    {n=G.UIT.ROOT, config = {align = 'tm', r = 0.15, colour = G.C.CLEAR, padding = 0.15}, nodes={
+                                            {n=G.UIT.O, config={object = bot_dynatext}}
+                                        }},
+                        config = {align="bm", offset = {x=0,y=0},parent = self}
+                    }
+            return true end }))
+        ease_dollars(-self.cost)
+        inc_career_stat('c_shop_dollars_spent', self.cost)
+        inc_career_stat('c_vouchers_bought', 1)
+        set_voucher_usage(self)
+        check_for_unlock({type = 'run_redeem'})
+        G.GAME.current_round.voucher = nil
+
+        self:apply_to_run()
+
+        delay(0.6)
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({buying_card = true, card = self})
+        end
+        if G.GAME.modifiers.inflation then 
+            G.GAME.inflation = G.GAME.inflation + 1
+            G.E_MANAGER:add_event(Event({func = function()
+              for k, v in pairs(G.I.CARD) do
+                  if v.set_cost then v:set_cost() end
+              end
+              return true end }))
+        end
+        G.E_MANAGER:add_event(Event({trigger = 'after', delay = 2.6, func = function()
+            top_dynatext:pop_out(4)
+            bot_dynatext:pop_out(4)
+            return true end }))
+        
+        G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.5, func = function()
+            self.children.top_disp:remove()
+            self.children.top_disp = nil
+            self.children.bot_disp:remove()
+            self.children.bot_disp = nil
+        return true end }))
+    end
+    return ret
+end
+
+SMODS.Consumable {
+    key = 'aether',
+    set = 'Spectral',
+    loc_txt = {
+        name = "{C:edition}Aether{}",
+        text = {
+            '{C:red}Deteriorate{} a random ressource by {C:red}#1#', 'and gain {C:dark_edition}+#1#{} Joker Slots','at the start of an Ante'
+        },
+    },
+    config = {extra = {joker_slots = 1,}},
+    pos = {x = 0, y = 0},
+    soul_pos = {x = 1, y = 0},
+    atlas = 'Vouchers',
+    cost = 20,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.joker_slots}}
+    end,
+    use = function(self, card)
+        card:redeem()
+    end,
+    in_pool = function(self,card,wawa)
+        return false
+    end,
+}
 
 
 --[[SMODS.Consumable {
@@ -2954,6 +3051,10 @@ local spectraljokers = {
     'c_jimb_amalgam',
 }
 
+local spectralvouchers = {
+    'c_jimb_aether',
+}
+
 local oldfunc = create_card
 create_card = function(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
     local randSpectral = pseudorandom_element(spectraljokers,pseudoseed('spectraljokers'))
@@ -2962,6 +3063,16 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
         not (G.GAME.used_jokers[randSpectral] and not next(find_joker("Showman")))  then
             if pseudorandom('_'.._type..G.GAME.round_resets.ante) > 0.998 then
                 forced_key = randSpectral
+            end
+        end
+    end
+
+    local randSpectralVoucher = pseudorandom_element(spectralvouchers,pseudoseed('spectralvouchers'))
+    if not forced_key and soulable and (not G.GAME.banned_keys[randSpectralVoucher]) then
+        if (_type == 'Voucher') and
+        not G.GAME.used_jokers[randSpectralVoucher] then
+            if pseudorandom('_'.._type..G.GAME.round_resets.ante) > 0 then
+                forced_key = randSpectralVoucher
             end
         end
     end
@@ -3200,7 +3311,6 @@ function get_new_boss()
     G.GAME.round_resets.blind_choices.Small = 'bl_small'
     G.GAME.round_resets.blind_choices.Big = 'bl_big'
     --if G.GAME.round_resets.ante == 8 then
-        ret = 'bl_jimb_cerberus3'
     --end
     if ret == 'bl_jimb_cerberus3' then
         G.GAME.round_resets.blind_choices.Small = 'bl_jimb_cerberus1'
