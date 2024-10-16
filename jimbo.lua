@@ -564,7 +564,7 @@ local butterknife = SMODS.Joker{
             "{C:inactive}(Currently {C:chips}+#1#{C:inactive} Chips)"
         }
     },
-    config = {extra = {mult = 0}},
+    config = {extra = {Xmoney = 3}},
     rarity = 2,
     pos = {x = 2, y = 3},
     atlas = 'Jokers',
@@ -872,7 +872,17 @@ end
 
 local oldfunc = CardArea.emplace
 CardArea.emplace = function(self,card, location, stay_flipped,idunno,b,c,d)
+    if card.ability.set == 'jimb_curses' and G.consumeables and self == G.consumeables then
+        G.jokers:emplace(card)
+        return
+    end
+    if G and G.jokers then 
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({pre_jimb_card_gain = true, jimb_card = card, area = self})
+        end
+    end
     local ret = oldfunc(self,card,location,stay_flipped,idunno,b,c,d)
+    
     if G and G.jokers then 
         for i = 1, #G.jokers.cards do
             G.jokers.cards[i]:calculate_joker({jimb_card_gain = true, jimb_card = card, area = self})
@@ -1160,7 +1170,7 @@ end
 local oldfunc = Card.save
 function Card:save()
     local cardTable = oldfunc(self)
-
+    if self.purified ~= nil then cardTable.purified = self.purified end
     if self.jimb_jokers then
         for i = 1, #self.jimb_jokers do
             cardTable.jimb_jokers = cardTable.jimb_jokers or {}
@@ -1175,7 +1185,7 @@ local oldfunc = Card.load
 function Card:load(cardTable, other_card)
 
     local ret = oldfunc(self,cardTable,other_card)
-
+    if cardTable.purified ~= nil then self.purified = cardTable.purified end
     if cardTable.jimb_jokers then
         for i = 1, #cardTable.jimb_jokers do
             local newcard = create_card('Joker', G.jokers, nil, nil, nil, nil, cardTable.jimb_jokers[i].key)
@@ -1410,6 +1420,761 @@ local fabricwarp = SMODS.Joker{
         end
     end
 }
+
+
+
+
+local oldfunc = Card.add_to_deck
+function Card:add_to_deck(from_debuff)
+    if self.ability.set == 'jimb_curses'and G.jokers and self.area == G.jokers then
+        self.purified = self.purified or false
+        self.no_sell = true
+        G.jokers.config.card_limit = G.jokers.config.card_limit + 1
+    end
+    local ret = oldfunc(self,from_debuff)
+    return ret
+end
+
+local oldfunc = Card.remove_from_deck
+function Card:remove_from_deck(debuff)
+    if self.ability.set == 'jimb_curses' and G.jokers and self.area == G.jokers then
+        G.jokers.config.card_limit = G.jokers.config.card_limit - 1
+    end
+    local ret = oldfunc(self,debuff)
+    return ret
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+function SMODS.current_mod.process_loc_text()
+    G.localization.descriptions.jimb_curses = G.localization.descriptions.jimb_curses or {}
+end
+
+SMODS.ConsumableType {
+	key = 'jimb_curses',
+	collection_rows = {4, 5},
+	primary_colour = G.C.BLACK,
+	secondary_colour = G.C.DARK_EDITION,
+	loc_txt = {
+		collection = 'Curses',
+		name = 'Curses'
+	},
+	shop_rate = 0
+}
+
+local oldfunc = G.FUNCS.can_sell_card
+G.FUNCS.can_sell_card = function(e)
+    if e.config.ref_table.ability and e.config.ref_table.no_sell then
+        e.config.colour = G.C.UI.BACKGROUND_INACTIVE
+        e.config.button = nil
+        return  
+    end
+    local ret = oldfunc(e)
+    return ret
+end
+
+local oldfunc = Card.start_dissolve
+function Card:start_dissolve(a,b,c,d)
+    local ret = oldfunc(self,a,b,c,d)
+    return ret
+end
+
+SMODS.UndiscoveredSprite{
+    key = 'jimb_curses',
+    atlas = 'Curse',
+    pos = {y = 0, x = 0}
+}
+
+SMODS.Consumable {
+    key = 'sanctuary',
+    set = 'Spectral',
+    loc_txt = {
+        name = '{C:edition}Sanctuary{}',
+        text = {
+            'Purify a selected {C:red}Curse{}',
+        }
+    },
+    config = {extra = {}},
+    pos = { x = 0, y = 6 },
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    atlas = 'Tarot',
+    loc_vars = function(self, info_queue, center)
+        return {vars = {}}
+    end,
+    can_use = function(self, card)
+        if G.jokers.highlighted[1] and G.jokers.highlighted[1].purified ~= nil and G.jokers.highlighted[1].purified == false then
+            return true
+        end
+        return false
+    end,
+    use = function(self, card, area, copier)
+        if area then area:remove_from_highlighted(card) end
+        if G.jokers.highlighted[1] and G.jokers.highlighted[1].purified ~= nil and G.jokers.highlighted[1].purified == false then
+            G.jokers.highlighted[1].purified = true
+            for i = 1, #G.jokers.cards do
+                G.jokers.cards[i]:calculate_joker({jimb_purify = true, card = G.jokers.highlighted[1],})
+            end
+        end
+    end,
+    in_pool = function(self,card,wawa)
+        if G and G.jokers then
+            for i = 1, #G.jokers.cards do
+                if G.jokers.cards[i].purified ~= nil and G.jokers.cards[i].purified == false then
+                    return true
+                end
+            end
+        end
+        return false
+    end,
+}
+
+local curseslist = {
+    'c_jimb_oxen',
+    'c_jimb_goad'
+}
+
+SMODS.Consumable {
+    key = 'sin',
+    set = 'Spectral',
+    loc_txt = {
+        name = '{C:edition}Sin{}',
+        text = {
+            'Create a random {C:red}Curse{}',
+        }
+    },
+    config = {extra = {}},
+    pos = { x = 1, y = 6 },
+    cost = 6,
+    unlocked = true,
+    discovered = true,
+    atlas = 'Tarot',
+    loc_vars = function(self, info_queue, center)
+        return {vars = {}}
+    end,
+    can_use = function(self, card)
+        return true
+    end,
+    use = function(self, card, area, copier)
+        --local newcard = create_card('Joker',G.jokers,nil,nil,nil,nil,pseudorandom_element(curseslist,pseudoseed('curseSpawn')))
+        local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
+        newcard:add_to_deck()
+        G.jokers:emplace(newcard)
+        --local newcard = create_card('Curses', G.jokers, nil, nil, nil, nil, nil)
+    end
+}
+
+local hook = SMODS.Consumable {
+    key = "hook",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {h_size = -1, active = true}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'hook_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'hook_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.h_size}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.h_size = 0 - card.ability.extra.h_size
+        end
+        if context.setting_blind then
+            card.ability.extra.active = true
+            G.hand:change_size(card.ability.extra.h_size)
+        end
+        if context.joker_main and card.ability.extra.active == true then
+            G.hand:change_size(0-card.ability.extra.h_size)
+            card.ability.extra.active = false
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local wall = SMODS.Consumable {
+    key = "wall",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {b_size = 1.375,pure = 0.875}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'wall_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'wall_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.b_size}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.b_size = card.ability.extra.pure
+        end
+        if context.setting_blind then
+            G.GAME.blind.chips = G.GAME.blind.chips * card.ability.extra.b_size
+            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local arm = SMODS.Consumable {
+    key = "arm",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'arm_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'arm_pure'
+        end
+        return {key = key1,vars = {}}
+    end,
+    calculate = function(self,card,context)
+        if context.joker_main and G.GAME.current_round.hands_left == 0 then
+            if card.purified == true then
+                level_up_hand(card, context.scoring_name, nil, 1)
+            else
+                level_up_hand(card, context.scoring_name, nil, -1)
+            end
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local water = SMODS.Consumable {
+    key = "water",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {discards = -1}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'water_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'water_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.discards}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discards
+            card.ability.extra.discards = card.ability.extra.discards * -1
+            G.GAME.round_resets.discards = G.GAME.round_resets.discards + card.ability.extra.discards
+        end
+    end,
+    add_to_deck = function(self,card)
+        G.GAME.round_resets.discards = G.GAME.round_resets.discards + card.ability.extra.discards
+    end,
+    remove_from_deck = function(self,card)
+        G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discards
+        G.jokers.config.card_limit = G.jokers.config.card_limit - 1
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local needle = SMODS.Consumable {
+    key = "needle",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {hands = -1}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'needle_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'needle_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.hands}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            G.GAME.round_resets.hands = G.GAME.round_resets.hands - card.ability.extra.hands
+            card.ability.extra.hands = card.ability.extra.hands * -1
+            G.GAME.round_resets.hands = G.GAME.round_resets.hands + card.ability.extra.hands
+        end
+    end,
+    add_to_deck = function(self,card)
+        G.GAME.round_resets.hands = G.GAME.round_resets.hands + card.ability.extra.hands
+    end,
+    remove_from_deck = function(self,card)
+        G.GAME.round_resets.hands = G.GAME.round_resets.hands - card.ability.extra.hands
+        G.jokers.config.card_limit = G.jokers.config.card_limit - 1
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local oxen = SMODS.Consumable {
+    key = "oxen",
+    purified = false,
+    loc_txt = {
+        name = "Oxen",
+        text = {
+            "Playing {C:attention}most played hand{}", "gives {C:money}#1#${}"
+        }
+    },
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {dollars = -3}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'oxen_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'oxen_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.dollars}}
+    end,
+    calculate = function(self,card,context)
+        if context.cardarea == G.jokers and context.before then
+            local reset = false
+            local play_more_than = (G.GAME.hands[context.scoring_name].played or 0)
+            for k, v in pairs(G.GAME.hands) do
+                if k ~= context.scoring_name and v.played >= play_more_than and v.visible then
+                    reset = true
+                end
+            end
+            if not reset then
+                ease_dollars(card.ability.extra.dollars)
+            end
+        end
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.dollars = 3
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local manacle = SMODS.Consumable {
+    key = "manacle",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {h_size = 8,extra_h_size = 0, pure = 7}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'manacle_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'manacle_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.h_size}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.h_size = card.ability.extra.pure
+        end
+        if card.purified == true then
+            if G.hand.config.card_limit < card.ability.extra.h_size then
+                card.ability.extra.extra_h_size = card.ability.extra.extra_h_size + (G.hand.config.card_limit - card.ability.extra.h_size)
+                G.hand.config.card_limit = card.ability.extra.h_size
+            end
+        else 
+            if G.hand.config.card_limit > card.ability.extra.h_size then
+                card.ability.extra.extra_h_size = card.ability.extra.extra_h_size + (G.hand.config.card_limit - card.ability.extra.h_size)
+                G.hand.config.card_limit = card.ability.extra.h_size
+            end
+        end
+    end,
+    remove_from_deck = function(self,card)
+        G.hand.config.card_limit = G.hand.config.card_limit + card.ability.extra.extra_h_size
+        G.jokers.config.card_limit = G.jokers.config.card_limit - 1
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local tooth = SMODS.Consumable {
+    key = "tooth",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {dollars = -1}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'tooth_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'tooth_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.dollars}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.dollars = card.ability.extra.dollars * -1
+        end
+        if context.individual and context.cardarea == G.play then
+            if card.purified == false then
+                if #context.scoring_hand > 4 and context.other_card == context.scoring_hand[5] then
+                    ease_dollars(card.ability.extra.dollars)
+                end
+            else
+                if context.other_card == context.scoring_hand[#context.scoring_hand] then
+                    ease_dollars(card.ability.extra.dollars)
+                end
+            end
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local zone = SMODS.Consumable {
+    key = "zone",
+    purified = false,
+    no_sell = true,
+    set = 'jimb_curses',
+    config = {extra = {cardMult = 0.9,pure = 1.1}},
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'zone_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'zone_pure'
+        end
+        return {key = key1,vars = {center.ability.extra.cardMult}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.cardMult = card.ability.extra.pure
+        end
+        if context.jimb_creating_card then
+            jokerMult(context.jimb_card, card.ability.extra)
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+--[[local goad = SMODS.Consumable {
+    key = "goad",
+    purified = false,
+    set = 'jimb_curses',
+    config = {extra = {}},
+    no_sell = true,
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'goad_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'goad_pure'
+        else
+            info_queue[#info_queue+1] = {key = "goad_pure", set = "jimb_curses"}
+            
+        end
+        return {key = key1,vars = {center.ability.extra.dollars}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_draw_card and context.card then
+            if context.card:is_suit("Spades") then
+                if card.purified == true then
+                    G.hand:change_size(1)
+                else
+                        --context.card:flip()
+                end
+            end
+        end
+    end,
+    in_pool = function(self,card,wawa)
+        return false
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}]]
+
+local goad = SMODS.Consumable {
+    key = "goad",
+    purified = false,
+    set = 'jimb_curses',
+    config = {extra = {}},
+    no_sell = true,
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'goad_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'goad_pure'
+        else
+            info_queue[#info_queue+1] = {key = "goad_pure", set = "jimb_curses"}
+            
+        end
+        return {key = key1,vars = {center.ability.extra.dollars}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            for i = 1, #G.deck.cards do
+                if G.deck.cards[i]:is_suit('Spades') and not (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
+                    G.deck.cards[i].flipping = 'b2f'
+                    G.deck.cards[i].facing='front'
+                end
+            end
+        end
+        if card.purified == true then
+            for i = 1, #G.deck.cards do
+                if G.deck.cards[i]:is_suit('Spades') and not (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
+                    G.deck.cards[i]:set_edition({negative = true}, true)
+                end
+            end
+            for i = 1, #G.hand.cards do
+                if G.hand.cards[i]:is_suit('Spades') and not (G.hand.cards[i].edition and G.hand.cards[i].edition.negative) then
+                    G.hand.cards[i]:set_edition({negative = true}, true)
+                end
+            end
+        else
+            for i = 1, #G.deck.cards do
+                if G.deck.cards[i]:is_suit('Spades') and not (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
+                    G.deck.cards[i].flipping = 'f2b'
+                    G.deck.cards[i].facing='back'
+                    
+                end
+            end
+        end
+    end,
+    remove_from_deck = function(self,card)
+        for i = 1, #G.deck.cards do
+            if G.deck.cards[i]:is_suit('Spades') and (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
+                G.deck.cards[i]:set_edition({}, true)
+            end
+        end
+        for i = 1, #G.hand.cards do
+            if G.hand.cards[i]:is_suit('Spades') and not (G.hand.cards[i].edition and G.hand.cards[i].edition.negative) then
+                G.hand.cards[i]:set_edition({}, true)
+            end
+        end
+        G.jokers.config.card_limit = G.jokers.config.card_limit - 1
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local head = SMODS.Consumable {
+    key = "head",
+    purified = false,
+    set = 'jimb_curses',
+    config = {extra = {Xmult = 0.9,pure = 1.1}},
+    no_sell = true,
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'head_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'head_pure'
+        else
+            info_queue[#info_queue+1] = {key = "head_pure", set = "jimb_curses"}
+            
+        end
+        return {key = key1,vars = {center.ability.extra.Xmult}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.Xmult = card.ability.extra.pure
+        end
+        if context.individual and context.cardarea == G.hand then
+            if context.other_card:is_suit('Hearts')then
+                mult = mult * card.ability.extra.Xmult
+                return {
+                    Xmult_mod = 1,
+                    card = card,
+                    message = localize {
+                        type = 'variable',
+                        key = 'a_Xmult',
+                        vars = { card.ability.extra.Xmult}
+                    }
+                }
+            end
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local club = SMODS.Consumable {
+    key = "club",
+    purified = false,
+    set = 'jimb_curses',
+    config = {extra = {chip_mod = 3, chips = 0}},
+    no_sell = true,
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'club_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'club_pure'
+        else
+            info_queue[#info_queue+1] = {key = "club_pure", set = "jimb_curses"}
+            
+        end
+        return {key = key1,vars = {center.ability.extra.chip_mod,center.ability.extra.chips}}
+    end,
+    calculate = function(self,card,context)
+        if context.individual and context.cardarea == G.play then
+            if context.other_card:is_suit('Clubs')then
+                if card.purified == true then
+                    card.ability.extra.chips = card.ability.extra.chips + card.ability.extra.chip_mod
+                else
+                    card.ability.extra.chips = card.ability.extra.chips - card.ability.extra.chip_mod
+                end
+            end
+        end
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.chips = 0
+        end
+        if context.joker_main then
+            hand_chips = hand_chips + card.ability.extra.chips
+            return {
+                chips = 0,
+                card = card,
+                message = localize {
+                    type = 'variable',
+                    key = 'a_chips',
+                    vars = { card.ability.extra.chips}
+                }
+            }
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+local window SMODS.Consumable {
+    key = "window",
+    purified = false,
+    set = 'jimb_curses',
+    config = {extra = {dollars = -1,pure = 1}},
+    no_sell = true,
+    atlas = 'Curse',
+    pos = { x = 1, y = 0},
+    cost = 7,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        local key1 = 'window_curse'
+        if center.purified ~= nil and center.purified == true then
+            key1 = 'window_pure'
+        else
+            info_queue[#info_queue+1] = {key = "window_pure", set = "jimb_curses"}
+            
+        end
+        return {key = key1,vars = {center.ability.extra.dollars}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_purify and context.card == card then
+            card.ability.extra.dollars = card.ability.extra.pure
+        end
+        if context.discard then
+            if context.other_card:is_suit('Diamonds') then
+                ease_dollars(card.ability.extra.dollars)
+            end
+        end
+    end,
+    can_use = function(self,card)
+        return false
+    end,
+}
+
+
+local oldfunc = CardArea.remove_card
+function CardArea:remove_card(card, discarded_only)
+    local ret = oldfunc(self,card,discarded_only)
+    if (G.jokers) then
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({jimb_removing_card_area = true, card = ret,area = self})
+        end
+    end
+    return ret
+end
+
+
+
+if G and G.hand and G.jokers then
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({jimb_draw_card = true, card = G.hand.cards[_i],})
+        end
+end
+
+
+
+
+
+
+
 
 
 
@@ -1738,7 +2503,7 @@ function Card:redeem()
         local bot_dynatext = nil
         
         G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.4, func = function()
-                top_dynatext = DynaText({string = localize{type = 'name_text', set = self.config.center.set, key = self.config.center.key}, colours = {G.C.WHITE}, rotate = 1,shadow = true, bump = true,float=true, scale = 0.9, pop_in = 0.6/G.SPEEDFACTOR, pop_in_rate = 1.5*G.SPEEDFACTOR})
+                top_dynatext = DynaText({string = localize{type = 'name_text', set = "Voucher", key = self.config.center.key}, colours = {G.C.WHITE}, rotate = 1,shadow = true, bump = true,float=true, scale = 0.9, pop_in = 0.6/G.SPEEDFACTOR, pop_in_rate = 1.5*G.SPEEDFACTOR})
                 bot_dynatext = DynaText({string = localize('k_redeemed_ex'), colours = {G.C.WHITE}, rotate = 2,shadow = true, bump = true,float=true, scale = 0.9, pop_in = 1.4/G.SPEEDFACTOR, pop_in_rate = 1.5*G.SPEEDFACTOR, pitch_shift = 0.25})
                 self:juice_up(0.3, 0.5)
                 play_sound('card1')
@@ -1756,8 +2521,8 @@ function Card:redeem()
                         config = {align="bm", offset = {x=0,y=0},parent = self}
                     }
             return true end }))
-        ease_dollars(-self.cost)
-        inc_career_stat('c_shop_dollars_spent', self.cost)
+        --ease_dollars(-self.cost)
+        --inc_career_stat('c_shop_dollars_spent', self.cost)
         inc_career_stat('c_vouchers_bought', 1)
         set_voucher_usage(self)
         check_for_unlock({type = 'run_redeem'})
@@ -1792,13 +2557,20 @@ function Card:redeem()
     return ret
 end
 
+local oldfunc = G.FUNCS.evaluate_round
+G.FUNCS.evaluate_round = function()
+    local ret = oldfunc()
+        G.jokers.config.card_limit = G.jokers.config.card_limit + G.GAME.aetherval
+    return ret
+end
+
 SMODS.Consumable {
     key = 'aether',
     set = 'Spectral',
     loc_txt = {
         name = "{C:edition}Aether{}",
         text = {
-            '{C:red}Deteriorate{} a random ressource by {C:red}#1#', 'and gain {C:dark_edition}+#1#{} Joker Slots','at the start of an Ante'
+            'Spawn a random {C:red}Curse{}', 'and gain {C:dark_edition}+#1#{} Joker Slots','at the start of an Ante'
         },
     },
     config = {extra = {joker_slots = 1,}},
@@ -1813,6 +2585,9 @@ SMODS.Consumable {
     end,
     use = function(self, card)
         card:redeem()
+    end,
+    can_use = function(self,card)
+        return true
     end,
     in_pool = function(self,card,wawa)
         return false
@@ -2027,7 +2802,7 @@ local pepperspray = SMODS.Joker{
     loc_txt = {
         name = "Pepper Spray",
         text = {
-            '{X:edition,C:white}X#1#{} blind size, increases','by {X:edition,C:white}#2#{} when hand played'
+            '{X:purple,C:white}X#1#{} blind size, increases','by {X:edition,C:white}#2#{} when hand played'
         },
         unlock = {
             'Score a hand','{X:edition,C:white}X100{} higher than','current blind requirement'
@@ -3007,7 +3782,8 @@ Game.start_run = function(e, args)
     G.GAME.cardsGained = G.GAME.cardsGained or {
         --{key = 'j_joker',ability = nil},
     }
-    G.GAME.cerberusMult = 0
+    G.GAME.cerberusMult = G.GAME.cerberusMult or 0
+    G.GAME.aetherval = G.GAME.aetherval or 0
     return ret
 end
 
@@ -3054,6 +3830,30 @@ local spectraljokers = {
 local spectralvouchers = {
     'c_jimb_aether',
 }
+local oldfunc = get_next_voucher_key
+function get_next_voucher_key()
+    local ret =oldfunc()
+    local randSpectralVoucher = pseudorandom_element(spectralvouchers,pseudoseed('spectralvouchers'))
+    if pseudorandom('_'.."Voucher"..G.GAME.round_resets.ante) > 1 then
+        ret = randSpectralVoucher
+    end
+    return ret
+end
+
+local oldfunc = G.FUNCS.buy_from_shop
+function G.FUNCS.buy_from_shop(e)
+    local ret = oldfunc(e)
+    local c1 = e.config.ref_table
+    if c1 and c1:is(Card) then
+        for i = 1, #spectralvouchers do
+            if spectralvouchers[i] == c1.config.center.key then
+                c1:redeem()
+                c1:start_dissolve()
+            end
+        end
+    end
+    return ret
+end
 
 local oldfunc = create_card
 create_card = function(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
@@ -3063,16 +3863,6 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
         not (G.GAME.used_jokers[randSpectral] and not next(find_joker("Showman")))  then
             if pseudorandom('_'.._type..G.GAME.round_resets.ante) > 0.998 then
                 forced_key = randSpectral
-            end
-        end
-    end
-
-    local randSpectralVoucher = pseudorandom_element(spectralvouchers,pseudoseed('spectralvouchers'))
-    if not forced_key and soulable and (not G.GAME.banned_keys[randSpectralVoucher]) then
-        if (_type == 'Voucher') and
-        not G.GAME.used_jokers[randSpectralVoucher] then
-            if pseudorandom('_'.._type..G.GAME.round_resets.ante) > 0 then
-                forced_key = randSpectralVoucher
             end
         end
     end
