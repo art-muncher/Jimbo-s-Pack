@@ -1508,7 +1508,7 @@ SMODS.Consumable {
     pos = { x = 0, y = 6 },
     cost = 6,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     atlas = 'Tarot',
     loc_vars = function(self, info_queue, center)
         return {vars = {}}
@@ -1558,7 +1558,7 @@ SMODS.Consumable {
     pos = { x = 1, y = 6 },
     cost = 6,
     unlocked = true,
-    discovered = true,
+    discovered = false,
     atlas = 'Tarot',
     loc_vars = function(self, info_queue, center)
         return {vars = {}}
@@ -2049,7 +2049,7 @@ local head = SMODS.Consumable {
                     card = card,
                     message = localize {
                         type = 'variable',
-                        key = 'a_Xmult',
+                        key = 'a_xmult',
                         vars = { card.ability.extra.Xmult}
                     }
                 }
@@ -2557,10 +2557,16 @@ function Card:redeem()
     return ret
 end
 
-local oldfunc = G.FUNCS.evaluate_round
-G.FUNCS.evaluate_round = function()
-    local ret = oldfunc()
-        G.jokers.config.card_limit = G.jokers.config.card_limit + G.GAME.aetherval
+local oldfunc = ease_ante
+ease_ante = function(num)
+    local ret = oldfunc(num)
+        print('hiii')
+        if G.GAME.used_vouchers['c_jimb_aether'] then
+            G.jokers.config.card_limit = G.jokers.config.card_limit + 1
+                local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
+                newcard:add_to_deck()
+                G.jokers:emplace(newcard)
+        end
     return ret
 end
 
@@ -3833,9 +3839,19 @@ local spectralvouchers = {
 local oldfunc = get_next_voucher_key
 function get_next_voucher_key()
     local ret =oldfunc()
-    local randSpectralVoucher = pseudorandom_element(spectralvouchers,pseudoseed('spectralvouchers'))
-    if pseudorandom('_'.."Voucher"..G.GAME.round_resets.ante) > 1 then
-        ret = randSpectralVoucher
+    local viableVouchers = {}
+    for i = 1, #spectralvouchers do
+        if G.GAME.used_vouchers[spectralvouchers[i]] then
+
+        else
+            viableVouchers[#viableVouchers+1] = spectralvouchers[i]
+        end
+    end
+    if #viableVouchers > 0 then
+        local randSpectralVoucher = pseudorandom_element(viableVouchers,pseudoseed('spectralvouchers'))
+        if randSpectralVoucher and pseudorandom('_'.."Voucher"..G.GAME.round_resets.ante) > 0.994 then
+            ret = randSpectralVoucher
+        end
     end
     return ret
 end
