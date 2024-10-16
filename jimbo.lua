@@ -1899,7 +1899,7 @@ local zone = SMODS.Consumable {
             card.ability.extra.cardMult = card.ability.extra.pure
         end
         if context.jimb_creating_card then
-            jokerMult(context.jimb_card, card.ability.extra)
+            jokerMult(context.jimb_card, card.ability.extra.cardMult)
         end
     end,
     can_use = function(self,card)
