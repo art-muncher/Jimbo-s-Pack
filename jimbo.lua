@@ -1529,6 +1529,11 @@ SMODS.Consumable {
         end
     end,
     in_pool = function(self,card,wawa)
+        local selected_back = (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+        selected_back = get_deck_from_name(selected_back)
+        if selected_back.name == "Sinner's Deck" then
+            return false
+        end
         if G and G.jokers then
             for i = 1, #G.jokers.cards do
                 if G.jokers.cards[i].purified ~= nil and G.jokers.cards[i].purified == false then
@@ -1584,6 +1589,9 @@ local hook = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1620,6 +1628,9 @@ local wall = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1651,6 +1662,9 @@ local arm = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1683,6 +1697,9 @@ local water = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1720,6 +1737,9 @@ local needle = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1763,6 +1783,9 @@ local oxen = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1803,6 +1826,9 @@ local manacle = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1846,6 +1872,9 @@ local tooth = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1885,6 +1914,9 @@ local zone = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1916,6 +1948,9 @@ local zone = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1946,6 +1981,20 @@ local zone = SMODS.Consumable {
         return false
     end,
 }]]
+local oldfunc = Card.is_suit
+function Card:is_suit(suit,bypass_debuff,flush_calc)
+    local hasCurse = false
+    if G and G.jokers then
+        for i = 1, #G.jokers.cards do
+            if G.jokers.cards[i].ability.name == 'c_jimb_goad' and G.jokers.cards[i].purified == false then hasCurse = true end
+        end
+    end
+    if (suit == 'Spades' and hasCurse == true) or (next(find_joker('Smeared Joker')) and suit == 'Clubs' and hasCurse == true) then
+        return false
+    end
+    local ret = oldfunc(self,suit,bypass_debuff,flush_calc)
+    return ret
+end
 
 local goad = SMODS.Consumable {
     key = "goad",
@@ -1956,6 +2005,9 @@ local goad = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -1988,25 +2040,17 @@ local goad = SMODS.Consumable {
                     G.hand.cards[i]:set_edition({negative = true}, true)
                 end
             end
-        else
-            for i = 1, #G.deck.cards do
-                if G.deck.cards[i]:is_suit('Spades') and not (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
-                    G.deck.cards[i].flipping = 'f2b'
-                    G.deck.cards[i].facing='back'
-                    
-                end
-            end
         end
     end,
     remove_from_deck = function(self,card)
         for i = 1, #G.deck.cards do
             if G.deck.cards[i]:is_suit('Spades') and (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
-                G.deck.cards[i]:set_edition({}, true)
+                G.deck.cards[i]:set_edition(nil, true)
             end
         end
         for i = 1, #G.hand.cards do
             if G.hand.cards[i]:is_suit('Spades') and not (G.hand.cards[i].edition and G.hand.cards[i].edition.negative) then
-                G.hand.cards[i]:set_edition({}, true)
+                G.hand.cards[i]:set_edition(nil, true)
             end
         end
         G.jokers.config.card_limit = G.jokers.config.card_limit - 1
@@ -2025,6 +2069,9 @@ local head = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -2070,6 +2117,9 @@ local club = SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -2122,6 +2172,9 @@ local window SMODS.Consumable {
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 7,
+    keep_on_use = function(self,card)
+        return true
+    end,
     unlocked = true,
     discovered = false,
     loc_vars = function(self, info_queue, center)
@@ -2683,6 +2736,58 @@ SMODS.Consumable {
 
 local G_UIDEF_use_and_sell_buttons_ref = G.UIDEF.use_and_sell_buttons
 function G.UIDEF.use_and_sell_buttons(card)
+    if card.ability.set == 'jimb_curses' then
+        local selected_back = (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+        selected_back = get_deck_from_name(selected_back)
+        if selected_back.name == "Sinner's Deck" then
+            if card.purified == false then
+                local use = 
+                {n=G.UIT.C, config={align = "cr"}, nodes={
+                
+                {n=G.UIT.C, config={ref_table = card, align = "cr",maxw = 1.25, padding = 0.1, r=0.08, minw = 1.25, minh = (card.area and card.area.config.type == 'joker') and 0 or 1, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_use_consumeable'}, nodes={
+                    {n=G.UIT.B, config = {w=0.1,h=0.6}},
+                    {n=G.UIT.T, config={text = "PURIFY 10$",colour = G.C.UI.TEXT_LIGHT, scale = 0.55, shadow = true}}
+                }}
+                }}
+
+                
+
+                local t = {
+                    n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                    {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={
+                        {n=G.UIT.R, config={align = 'cl'}, nodes={
+                        use
+                        }},
+                    }},
+                }}
+
+                return t
+            else
+
+                local use = 
+                {n=G.UIT.C, config={align = "cr"}, nodes={}}
+
+                
+
+                local t = {
+                    n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                    {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={
+                        {n=G.UIT.R, config={align = 'cl'}, nodes={
+                        use
+                        }},
+                    }},
+                }}
+
+                return t
+            end
+        else
+            return {n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={
+                  {n=G.UIT.R, config={align = 'cl'}, nodes={}},
+                }},
+            }}
+        end
+    end
     if (card.area == G.pack_cards and G.pack_cards) and card.ability.consumeable and card.ability.set == 'Spectral' and card.config.center.joker then
         return {
             n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
@@ -3427,6 +3532,15 @@ if Reverie then
 end
 local oldfunc = Card.use_consumeable
 function Card:use_consumeable(area, copier)
+    if self.ability.set == 'jimb_curses' then
+        if self and self.purified ~= nil and self.purified == false then
+            self.purified = true
+            for i = 1, #G.jokers.cards do
+                G.jokers.cards[i]:calculate_joker({jimb_purify = true, card = self,})
+            end
+        end
+        return
+    end
     local is_reverie = self.ability.name == "Reverie"
     if (is_reverie) then
         if G.GAME.jimb_prism then
@@ -3437,6 +3551,15 @@ function Card:use_consumeable(area, copier)
         calculate_reroll_cost(true)
     end
     local ret = oldfunc(self,center,card,area,copier)
+    return ret
+end
+
+local oldfunc = Card.can_use_consumeable
+function Card:can_use_consumeable(any_state, skip_check)
+    if self.ability.set == 'jimb_curses' and G.GAME.dollars >= 10 then
+        return true
+    end
+    local ret = oldfunc(self,any_state,skip_check)
     return ret
 end
 
@@ -3660,9 +3783,32 @@ local archeologist = SMODS.Back{
     end,
     check_for_unlock = function(self,args)
         if args.type == 'ante_up' then
-            if args.ante >= 0 then
+            if args.ante <= 0 then
                 unlock_card(self)
             end
+        end
+    end
+}
+
+local sindeck = SMODS.Back{
+    key = "sin",
+    name = "Sinner's Deck",
+    pos = {x = 0, y = 0},
+    loc_txt = {
+        name = "Sinner's Deck",
+        text = {
+        "Create a random {C:red}Curse{}",
+        "after defeating {C:attention}Boss Blind",
+        'You can {C:attention}purify{} {C:red}Curses{}'
+        }
+    },
+    atlas = "Decks",
+    trigger_effect = function(self,args)
+        if not args then return end
+        if args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+            local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
+            newcard:add_to_deck()
+            G.jokers:emplace(newcard)
         end
     end
 }
