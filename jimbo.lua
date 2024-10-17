@@ -1426,7 +1426,7 @@ local fabricwarp = SMODS.Joker{
 
 local oldfunc = Card.add_to_deck
 function Card:add_to_deck(from_debuff)
-    if self.ability.set == 'jimb_curses' and G.jokers then
+    if self.ability.set == 'jimb_curses' and G.jokers and self.area == G.jokers then
         self.purified = self.purified or false
         self.no_sell = true
         G.jokers.config.card_limit = G.jokers.config.card_limit + 1
@@ -1437,7 +1437,7 @@ end
 
 local oldfunc = Card.remove_from_deck
 function Card:remove_from_deck(debuff)
-    if self.ability.set == 'jimb_curses' and G.jokers then
+    if self.ability.set == 'jimb_curses' and G.jokers and self.area == G.jokers then
         G.jokers.config.card_limit = G.jokers.config.card_limit - 1
     end
     local ret = oldfunc(self,debuff)
