@@ -1588,7 +1588,10 @@ local hook = SMODS.Consumable {
     config = {extra = {h_size = -1, active = true}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1627,7 +1630,10 @@ local wall = SMODS.Consumable {
     config = {extra = {b_size = 1.375,pure = 0.875}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1661,7 +1667,10 @@ local arm = SMODS.Consumable {
     set = 'jimb_curses',
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1696,7 +1705,10 @@ local water = SMODS.Consumable {
     config = {extra = {discards = -1}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1736,7 +1748,10 @@ local needle = SMODS.Consumable {
     config = {extra = {hands = -1}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1782,7 +1797,10 @@ local oxen = SMODS.Consumable {
     config = {extra = {dollars = -3}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1825,7 +1843,10 @@ local manacle = SMODS.Consumable {
     config = {extra = {h_size = 8,extra_h_size = 0, pure = 7}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1871,7 +1892,10 @@ local tooth = SMODS.Consumable {
     config = {extra = {dollars = -1}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1913,7 +1937,10 @@ local zone = SMODS.Consumable {
     config = {extra = {cardMult = 0.9,pure = 1.1}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -1947,7 +1974,10 @@ local zone = SMODS.Consumable {
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -2004,7 +2034,10 @@ local goad = SMODS.Consumable {
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -2068,7 +2101,10 @@ local head = SMODS.Consumable {
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -2116,7 +2152,10 @@ local club = SMODS.Consumable {
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -2171,7 +2210,10 @@ local window SMODS.Consumable {
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
-    cost = 7,
+    cost = 0,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = true,
     keep_on_use = function(self,card)
         return true
     end,
@@ -2746,7 +2788,7 @@ function G.UIDEF.use_and_sell_buttons(card)
                 
                 {n=G.UIT.C, config={ref_table = card, align = "cr",maxw = 1.25, padding = 0.1, r=0.08, minw = 1.25, minh = (card.area and card.area.config.type == 'joker') and 0 or 1, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_use_consumeable'}, nodes={
                     {n=G.UIT.B, config = {w=0.1,h=0.6}},
-                    {n=G.UIT.T, config={text = "PURIFY 10$",colour = G.C.UI.TEXT_LIGHT, scale = 0.55, shadow = true}}
+                    {n=G.UIT.T, config={text = "PURIFY 20$",colour = G.C.UI.TEXT_LIGHT, scale = 0.55, shadow = true}}
                 }}
                 }}
 
@@ -3538,7 +3580,7 @@ function Card:use_consumeable(area, copier)
             for i = 1, #G.jokers.cards do
                 G.jokers.cards[i]:calculate_joker({jimb_purify = true, card = self,})
             end
-            ease_dollars(-10)
+            ease_dollars(-20)
         end
         return
     end
@@ -3557,7 +3599,7 @@ end
 
 local oldfunc = Card.can_use_consumeable
 function Card:can_use_consumeable(any_state, skip_check)
-    if self.ability.set == 'jimb_curses' and G.GAME.dollars >= 10 then
+    if self.ability.set == 'jimb_curses' and G.GAME.dollars >= 20 then
         return true
     end
     local ret = oldfunc(self,any_state,skip_check)
