@@ -3538,6 +3538,7 @@ function Card:use_consumeable(area, copier)
             for i = 1, #G.jokers.cards do
                 G.jokers.cards[i]:calculate_joker({jimb_purify = true, card = self,})
             end
+            ease_dollars(-10)
         end
         return
     end
