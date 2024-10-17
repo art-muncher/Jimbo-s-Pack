@@ -1426,7 +1426,7 @@ local fabricwarp = SMODS.Joker{
 
 local oldfunc = Card.add_to_deck
 function Card:add_to_deck(from_debuff)
-    if self.ability.set == 'jimb_curses' then
+    if self.ability.set == 'jimb_curses' and G.jokers then
         self.purified = self.purified or false
         self.no_sell = true
         G.jokers.config.card_limit = G.jokers.config.card_limit + 1
@@ -1437,7 +1437,7 @@ end
 
 local oldfunc = Card.remove_from_deck
 function Card:remove_from_deck(debuff)
-    if self.ability.set == 'jimb_curses' then
+    if self.ability.set == 'jimb_curses' and G.jokers then
         G.jokers.config.card_limit = G.jokers.config.card_limit - 1
     end
     local ret = oldfunc(self,debuff)
@@ -1730,6 +1730,8 @@ local water = SMODS.Consumable {
     end,
     add_to_deck = function(self,card)
         G.GAME.round_resets.discards = G.GAME.round_resets.discards + card.ability.extra.discards
+        card.purified = card.purified or false
+        card.no_sell = true
     end,
     remove_from_deck = function(self,card)
         G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discards
@@ -1773,6 +1775,8 @@ local needle = SMODS.Consumable {
     end,
     add_to_deck = function(self,card)
         G.GAME.round_resets.hands = G.GAME.round_resets.hands + card.ability.extra.hands
+        card.purified = card.purified or false
+        card.no_sell = true
     end,
     remove_from_deck = function(self,card)
         G.GAME.round_resets.hands = G.GAME.round_resets.hands - card.ability.extra.hands
