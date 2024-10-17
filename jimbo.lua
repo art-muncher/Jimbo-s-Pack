@@ -872,8 +872,12 @@ end
 
 local oldfunc = CardArea.emplace
 CardArea.emplace = function(self,card, location, stay_flipped,idunno,b,c,d)
-    if card.ability.set == 'jimb_curses' and G.consumeables and self == G.consumeables then
+    if card.ability.set == 'jimb_curses' and G.jokers and self == G.consumeables then
         G.jokers:emplace(card)
+        card.purified = self.purified or false
+        card.no_sell = true
+        G.jokers.config.card_limit = G.jokers.config.card_limit + 1
+        card.jimb_area = G.jokers
         return
     end
     if G and G.jokers then 
@@ -1424,7 +1428,7 @@ local fabricwarp = SMODS.Joker{
 
 
 
-local oldfunc = Card.add_to_deck
+--[[local oldfunc = Card.add_to_deck
 function Card:add_to_deck(from_debuff)
     if self.ability.set == 'jimb_curses' and G.jokers and self.area == G.jokers then
         self.purified = self.purified or false
@@ -1434,16 +1438,25 @@ function Card:add_to_deck(from_debuff)
     local ret = oldfunc(self,from_debuff)
     return ret
 end
+--]]
+--[[local oldfunc = Card.start_dissolve
+function Card:start_dissolve(a,b,c,d)
+    if self.ability.set == 'jimb_curses' and G.jokers then
+        self:juice_up()
+        return
+    end
+    local ret = oldfunc(self,a,b,c,d)
+    return ret
+end]]
 
 local oldfunc = Card.remove_from_deck
-function Card:remove_from_deck(debuff)
-    if self.ability.set == 'jimb_curses' and G.jokers and self.area == G.jokers then
+function Card:remove_from_deck(a,b,c,d)
+    if self.ability.set == 'jimb_curses' and G.jokers and self.jimb_area == G.jokers then
         G.jokers.config.card_limit = G.jokers.config.card_limit - 1
     end
-    local ret = oldfunc(self,debuff)
+    local ret = oldfunc(self,a,b,c,d)
     return ret
 end
-
 
 
 
@@ -1575,7 +1588,7 @@ SMODS.Consumable {
         --local newcard = create_card('Joker',G.jokers,nil,nil,nil,nil,pseudorandom_element(curseslist,pseudoseed('curseSpawn')))
         local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
         newcard:add_to_deck()
-        G.jokers:emplace(newcard)
+        G.consumeables:emplace(newcard)
         --local newcard = create_card('Curses', G.jokers, nil, nil, nil, nil, nil)
     end
 }
@@ -2664,7 +2677,7 @@ ease_ante = function(num)
             G.jokers.config.card_limit = G.jokers.config.card_limit + 1
                 local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
                 newcard:add_to_deck()
-                G.jokers:emplace(newcard)
+                G.consumeables:emplace(newcard)
         end
     return ret
 end
@@ -3855,7 +3868,7 @@ local sindeck = SMODS.Back{
         if args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
             local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
             newcard:add_to_deck()
-            G.jokers:emplace(newcard)
+            G.consumeables:emplace(newcard)
         end
     end
 }
