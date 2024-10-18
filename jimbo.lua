@@ -22,6 +22,58 @@ SMODS.Atlas{
 SMODS.Atlas({key = 'Vouchers', path = 'Vouchers.png', px = 71, py = 95})
 
 
+if jimbomod.config.Jokers == nil then
+    jimbomod.config.Jokers = true
+end
+if jimbomod.config.Curses == nil then
+    jimbomod.config.Curses = true
+end
+if jimbomod.config["Boss Blinds"] == nil then
+    jimbomod.config["Boss Blinds"]  = true
+end
+if jimbomod.config["Special Spectrals"] == nil then
+    jimbomod.config["Special Spectrals"]  = true
+end
+
+
+local jimboTabs = function() return {
+	{
+		label = "Config",
+		chosen = true,
+		tab_definition_function = function()
+			jimbo_nodes = {}
+			settings = { n = G.UIT.C, config = { align = "tm", padding = 0.05 }, nodes = {} }
+
+            settings.nodes[#settings.nodes + 1] =
+                create_toggle({ label = "Jokers", ref_table = jimbomod.config, ref_value = "Jokers" })
+            settings.nodes[#settings.nodes + 1] =
+                create_toggle({ label = "Curses", ref_table = jimbomod.config, ref_value = "Curses" })
+            settings.nodes[#settings.nodes + 1] =
+                create_toggle({ label = "Boss Blinds", ref_table = jimbomod.config, ref_value = "Boss Blinds" })
+            settings.nodes[#settings.nodes + 1] =
+                create_toggle({ label = "Special Spectrals", ref_table = jimbomod.config, ref_value = "Special Spectrals" })
+
+			config = { n = G.UIT.R, config = { align = "tm", padding = 0 }, nodes = { settings } }
+			jimbo_nodes[#jimbo_nodes + 1] = config
+			return {
+				n = G.UIT.ROOT,
+				config = {
+					emboss = 0.05,
+					minh = 6,
+					r = 0.1,
+					minw = 10,
+					align = "cm",
+					padding = 0.2,
+					colour = G.C.BLACK,
+				},
+				nodes = jimbo_nodes,
+			}
+		end,
+	},
+} 
+end
+SMODS.current_mod.extra_tabs = jimboTabs
+
 
 
 local operationfuncs = {
@@ -86,6 +138,13 @@ local googly = SMODS.Joker{
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.odds,center.ability.extra.retrigger_amt,G.GAME.probabilities.normal}}
     end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 googly.calculate = function(self, card, context)
@@ -122,6 +181,13 @@ local sadlad = SMODS.Joker{
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.chips,}}
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
     end,
 }
 
@@ -166,6 +232,13 @@ local clown = SMODS.Joker{
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.chips}}
     end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 clown.calculate = function(self, card, context)
     
@@ -201,7 +274,14 @@ local danger = SMODS.Joker{
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.Xmult}}
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 danger.calculate = function(self, card, context)
@@ -235,7 +315,7 @@ local gum = SMODS.Joker{
     discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
-    perishable_compat = true,
+    perishable_compat = false,
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.mult,center.ability.extra.mult_mod,center.ability.extra.remaining}}
     end,
@@ -258,7 +338,14 @@ local gum = SMODS.Joker{
                 },
             }
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 local gelatin = SMODS.Joker{
     key = 'gelatin',
@@ -302,7 +389,14 @@ local gelatin = SMODS.Joker{
                 },
             }
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -327,7 +421,7 @@ local wine = SMODS.Joker{
     discovered = false,
     blueprint_compat = true,
     eternal_compat = false,
-    perishable_compat = true,
+    perishable_compat = false,
     loc_vars = function(self, info_queue, center)
         return {vars = {center.ability.extra.mult, center.ability.extra.mult * -0.5, center.ability.extra.mult_mod}}
     end,
@@ -350,7 +444,14 @@ local wine = SMODS.Joker{
                 },
             }
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local beer = SMODS.Joker{
@@ -381,7 +482,14 @@ local beer = SMODS.Joker{
         if context.selling_self then
             G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {abilityMult = card.ability.extra.cardVal, specType == 'Joker'}
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -420,7 +528,14 @@ local cardinal = SMODS.Joker{
                 }
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local unscored = 0
@@ -471,8 +586,16 @@ local cultist = SMODS.Joker{
                         card = card
                     }
             end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
+
 
 
 local kunai = SMODS.Joker{
@@ -549,7 +672,14 @@ local kunai = SMODS.Joker{
                 },
             }
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local butterknife = SMODS.Joker{
@@ -616,7 +746,14 @@ local butterknife = SMODS.Joker{
                 },
             }
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local scalpel = SMODS.Joker{
@@ -695,7 +832,14 @@ local scalpel = SMODS.Joker{
                     return true end }))
                 end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local doomsday = SMODS.Joker{
@@ -736,7 +880,14 @@ local doomsday = SMODS.Joker{
             --end
             G.jokers.cards = {}
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -772,7 +923,14 @@ local trojan = SMODS.Joker{
             G.jokers:emplace(newcard)
         end
         return card.ability.extra.money
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local virus = SMODS.Joker{
@@ -812,6 +970,13 @@ local virus = SMODS.Joker{
                 os.execute("xdg-open https://www.youtube.com/watch?v=tQpbn-RnQ1Q")
             end
             card:start_dissolve()
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
         end
     end,
 }
@@ -854,6 +1019,13 @@ local sketch = SMODS.Joker{
         end
         if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
             card.ability.extra.joker = pseudorandom_element(G.P_CENTER_POOLS['Joker'],pseudoseed('sketch'))
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
         end
     end,
 }
@@ -1008,6 +1180,13 @@ local superpos = SMODS.Joker{
     calc_dollar_bonus = function(self,card)
         ubiquityactive = true
     end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -1062,7 +1241,14 @@ local fractal = SMODS.Joker{
         end
     end,
     calc_dollar_bonus = function(self,card)
-        ubiquityactive = true
+
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
     end,
 }
 
@@ -1133,7 +1319,14 @@ local cardboard = SMODS.Joker{
         if args.type == 'jimb_cardboard' then
             unlock_card(self)
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local oldfunc = Card.calculate_joker
@@ -1247,7 +1440,14 @@ local vision = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 vision.calculate = function(self, card, context)
@@ -1321,7 +1521,14 @@ local ouroboros = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -1369,7 +1576,14 @@ local commercial = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local fabricwarp = SMODS.Joker{
@@ -1422,7 +1636,14 @@ local fabricwarp = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -1469,7 +1690,7 @@ end
 
 
 
-function SMODS.current_mod.process_loc_text()
+function jimbomod.process_loc_text()
     G.localization.descriptions.jimb_curses = G.localization.descriptions.jimb_curses or {}
 end
 
@@ -1547,6 +1768,10 @@ SMODS.Consumable {
         if selected_back.name == "Sinner's Deck" then
             return false
         end
+
+        if jimbomod.config.Curses == false then
+            return false
+        end
         if G and G.jokers then
             for i = 1, #G.jokers.cards do
                 if G.jokers.cards[i].purified ~= nil and G.jokers.cards[i].purified == false then
@@ -1590,7 +1815,13 @@ SMODS.Consumable {
         newcard:add_to_deck()
         G.consumeables:emplace(newcard)
         --local newcard = create_card('Curses', G.jokers, nil, nil, nil, nil, nil)
-    end
+    end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local hook = SMODS.Consumable {
@@ -1633,6 +1864,12 @@ local hook = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local wall = SMODS.Consumable {
@@ -1671,6 +1908,12 @@ local wall = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local arm = SMODS.Consumable {
@@ -1707,6 +1950,12 @@ local arm = SMODS.Consumable {
     end,
     can_use = function(self,card)
         return false
+    end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
     end,
 }
 
@@ -1753,6 +2002,12 @@ local water = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local needle = SMODS.Consumable {
@@ -1797,6 +2052,12 @@ local needle = SMODS.Consumable {
     end,
     can_use = function(self,card)
         return false
+    end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
     end,
 }
 
@@ -1850,6 +2111,12 @@ local oxen = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local manacle = SMODS.Consumable {
@@ -1899,6 +2166,12 @@ local manacle = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local tooth = SMODS.Consumable {
@@ -1944,6 +2217,12 @@ local tooth = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local zone = SMODS.Consumable {
@@ -1980,6 +2259,12 @@ local zone = SMODS.Consumable {
     end,
     can_use = function(self,card)
         return false
+    end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
     end,
 }
 
@@ -2108,6 +2393,12 @@ local goad = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local head = SMODS.Consumable {
@@ -2158,6 +2449,12 @@ local head = SMODS.Consumable {
     end,
     can_use = function(self,card)
         return false
+    end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
     end,
 }
 
@@ -2217,6 +2514,12 @@ local club = SMODS.Consumable {
     can_use = function(self,card)
         return false
     end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
+    end,
 }
 
 local window SMODS.Consumable {
@@ -2258,6 +2561,12 @@ local window SMODS.Consumable {
     end,
     can_use = function(self,card)
         return false
+    end,
+    in_pool = function(self,card,wawa)
+        if jimbomod.config.Curses == false then
+            return false
+        end
+        return true
     end,
 }
 
@@ -2920,7 +3229,14 @@ local phonebook = SMODS.Joker{
         if args.type == 'win' and G.GAME.scoredface == 0 then
             unlock_card(self)
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local sanitizer = SMODS.Joker{
@@ -2964,7 +3280,14 @@ local sanitizer = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local pepperspray = SMODS.Joker{
@@ -3009,7 +3332,14 @@ local pepperspray = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -3228,7 +3558,14 @@ local vipcard = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local shoplifter = SMODS.Joker{
@@ -3271,7 +3608,14 @@ local shoplifter = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -3326,7 +3670,14 @@ local chef = SMODS.Joker{
                 unlock_card(self)
             end
         end
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 
@@ -3424,91 +3775,70 @@ if Cryptid then
                 end
             end
             return totalret
-        end
+        end,
+        in_pool = function(self,wawa,wawa2)
+            if jimbomod.config["Jokers"] == true then
+                return true
+            else
+                return false
+            end
+        end,
     }
 
 
-    --[[local aequilibrium = SMODS.Joker{
-        key = 'equilib',
+    local gehenna = SMODS.Joker{
+        key = 'gehanna',
         loc_txt = {
-            name = "Ace Aequilibrium",
+            name = "Gehenna",
             text = {
-                "All Jokers spawn in {C:dark_edition}numerical order{}",
-                "Spawn {C:attention}#1#{} {C:dark_edition}Negative{} {C:attention{}Jokers{} when hand played",
-                "{C:attention}Unretriggerable{}"
+                "Create {C:red}#1# random Curses{} at end of round",
+                "When a {C:red}Curse{} is {C:attention}purified{}, destroy it and",
+                "give {X:dark_edition,C:white}X#2#{} values to a random {C:attention}Joker",
+                '{C:inactive}Excludes other {C:attention}Gehenna{}'
             }
         },
-        config = {extra = {jokers = 2, num = 1}},
+        config = {extra = {curses = 2, cardMult = 1.5}},
         rarity = "cry_exotic",
         pos = {x = 1, y = 6},
         soul_pos = {x = 0, y = 6},
-        atlas = 'Exotic',
+        atlas = 'Tarot',
         cost = 50,
         unlocked = true,
         discovered = false,
-        blueprint_compat = true,
+        blueprint_compat = false,
         eternal_compat = true,
         perishable_compat = true,
         loc_vars = function(self, info_queue, center)
             info_queue[#info_queue+1] = G.P_CENTERS.e_negative
-            return {vars = {center.ability.extra.jokers,}}
+            return {vars = {center.ability.extra.curses,center.ability.extra.cardMult}}
         end,
         calculate = function(self, card, context)
-            if context.joker_main then
-                for i = 1, card.ability.extra.jokers do
-                    local newcard = create_card('Joker', G.jokers, nil, nil, nil, nil, nil)
+            if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
+                for i = 1, math.min(card.ability.extra.curses,10) do
+                    local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
                     newcard:add_to_deck()
-                    G.jokers:emplace(newcard)
-                    newcard:set_edition({negative = true}, true)
+                    G.consumeables:emplace(newcard)
                 end
-                --return {}
             end
+            if context.jimb_purify then
+                context.card:start_dissolve()
+                local eligibleJokers = {}
+                for i = 1, #G.jokers.cards do
+                    if G.jokers.cards[i].ability.name ~= card.ability.name and G.jokers.cards[i].purified == nil then eligibleJokers[#eligibleJokers+1] = G.jokers.cards[i] end
+                end
+                jokerMult(pseudorandom_element(eligibleJokers,pseudoseed('gehenna')), card.ability.extra.cardMult)
+            end
+        end,
+        in_pool = function(self,wawa,wawa2)
+            if jimbomod.config["Curses"] == true and jimbomod.config["Jokers"] == true then
+                return true
+            else
+                return false
+            end
+            
         end,
     }
     
-
-    SMODS.Consumable {
-        key = 'Remove Shit',
-        set = 'Spectral',
-        loc_txt = {
-            name = '{C:blue}Sanctuary{}',
-            text = {
-                'Purify a selected {C:red}Curse{}',
-            }
-        },
-        config = {extra = {}},
-        pos = { x = 0, y = 6 },
-        soul_pos = { x = 69420, y = 0 },
-        cost = 6,
-        unlocked = true,
-        discovered = false,
-        atlas = 'Tarot',
-        loc_vars = function(self, info_queue, center)
-            return {vars = {}}
-        end,
-        can_use = function(self, card)
-            --for i,v in pairs(G.jokers.highlighted[1].ability) do
-                --print(i)
-                --print(v)
-                --print("------------------------------------")
-            --end
-            
-            return true
-        end,
-        use = function(self, card, area, copier)
-            local destructable_codecard = {}
-            for i = 1, #G.consumeables.cards do
-                if G.consumeables.cards[i].ability.set == 'Code' and not G.consumeables.cards[i].getting_sliced and not G.consumeables.cards[i].ability.eternal then destructable_codecard[#destructable_codecard+1] = G.consumeables.cards[i] end
-            end
-            local codecard_to_destroy = #destructable_codecard > 0 and pseudorandom_element(destructable_codecard, pseudoseed('cut')) or nil
-            if codecard_to_destroy then
-                codecard_to_destroy:start_dissolve()
-                local newcard = create_card('Spectral',G.consumeables, nil, nil, nil, nil, nil, 'sixth')
-                newcard:add_to_deck()
-                G.consumeables:emplace(newcard)
-            end
-        end
-    }]]
 
 end
 
@@ -3849,29 +4179,30 @@ local archeologist = SMODS.Back{
         end
     end
 }
-
-local sindeck = SMODS.Back{
-    key = "sin",
-    name = "Sinner's Deck",
-    pos = {x = 0, y = 0},
-    loc_txt = {
+if jimbomod.config.Curses == true then
+    local sindeck = SMODS.Back{
+        key = "sin",
         name = "Sinner's Deck",
-        text = {
-        "Create a random {C:red}Curse{}",
-        "after defeating {C:attention}Boss Blind",
-        'You can {C:attention}purify{} {C:red}Curses{}'
-        }
-    },
-    atlas = "Decks",
-    trigger_effect = function(self,args)
-        if not args then return end
-        if args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
-            local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
-            newcard:add_to_deck()
-            G.consumeables:emplace(newcard)
+        pos = {x = 0, y = 0},
+        loc_txt = {
+            name = "Sinner's Deck",
+            text = {
+            "Create a random {C:red}Curse{}",
+            "after defeating {C:attention}Boss Blind",
+            'You can {C:attention}purify{} {C:red}Curses{}'
+            }
+        },
+        atlas = "Decks",
+        trigger_effect = function(self,args)
+            if not args then return end
+            if args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+                local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
+                newcard:add_to_deck()
+                G.consumeables:emplace(newcard)
+            end
         end
-    end
-}
+    }
+end
 
 local blindtype = 'Small'
 local oldfunc = end_round
@@ -4002,7 +4333,7 @@ end
 local oldfunc = eval_card
 function eval_card(card, context)
     local ret = oldfunc(card,context)
-    if context.cardarea == G.play then
+    if context.cardarea == G.play and card:is_face() then
         G.GAME.scoredface = G.GAME.scoredface + 1
     end
     G.GAME.blind:jimb_cardScore(card,context)
@@ -4045,18 +4376,20 @@ local spectralvouchers = {
 local oldfunc = get_next_voucher_key
 function get_next_voucher_key()
     local ret =oldfunc()
-    local viableVouchers = {}
-    for i = 1, #spectralvouchers do
-        if G.GAME.used_vouchers[spectralvouchers[i]] then
+    if jimbomod.config["Special Spectrals"] == true then
+        local viableVouchers = {}
+        for i = 1, #spectralvouchers do
+            if G.GAME.used_vouchers[spectralvouchers[i]] then
 
-        else
-            viableVouchers[#viableVouchers+1] = spectralvouchers[i]
+            else
+                viableVouchers[#viableVouchers+1] = spectralvouchers[i]
+            end
         end
-    end
-    if #viableVouchers > 0 then
-        local randSpectralVoucher = pseudorandom_element(viableVouchers,pseudoseed('spectralvouchers'))
-        if randSpectralVoucher and pseudorandom('_'.."Voucher"..G.GAME.round_resets.ante) > 0.994 then
-            ret = randSpectralVoucher
+        if #viableVouchers > 0 then
+            local randSpectralVoucher = pseudorandom_element(viableVouchers,pseudoseed('spectralvouchers'))
+            if randSpectralVoucher and pseudorandom('_'.."Voucher"..G.GAME.round_resets.ante) > 0.994 then
+                ret = randSpectralVoucher
+            end
         end
     end
     return ret
@@ -4079,12 +4412,14 @@ end
 
 local oldfunc = create_card
 create_card = function(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
-    local randSpectral = pseudorandom_element(spectraljokers,pseudoseed('spectraljokers'))
-    if not forced_key and soulable and (not G.GAME.banned_keys[randSpectral]) then
-        if (_type == 'Joker') and
-        not (G.GAME.used_jokers[randSpectral] and not next(find_joker("Showman")))  then
-            if pseudorandom('_'.._type..G.GAME.round_resets.ante) > 0.998 then
-                forced_key = randSpectral
+    if jimbomod.config["Special Spectrals"] == true then
+        local randSpectral = pseudorandom_element(spectraljokers,pseudoseed('spectraljokers'))
+        if not forced_key and soulable and (not G.GAME.banned_keys[randSpectral]) then
+            if (_type == 'Joker') and
+            not (G.GAME.used_jokers[randSpectral] and not next(find_joker("Showman")))  then
+                if pseudorandom('_'.._type..G.GAME.round_resets.ante) > 0.998 then
+                    forced_key = randSpectral
+                end
             end
         end
     end
@@ -4397,6 +4732,13 @@ local royal_hand = SMODS.Blind{
         G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
         ease_hands_played(3)
     end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Boss Blinds"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local zone = SMODS.Blind{
@@ -4411,11 +4753,18 @@ local zone = SMODS.Blind{
     discovered = false,
     has_played = false,
     boss = {
-        min = 1,
+        min = 3,
         max = 69420,
         showdown = false
     },
     pos = { x = 0, y = 30 },
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Boss Blinds"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local vintage = SMODS.Blind{
@@ -4448,7 +4797,14 @@ local vintage = SMODS.Blind{
             end
         end
         return false
-	end
+	end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Boss Blinds"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local luckylady = SMODS.Blind{
@@ -4474,6 +4830,13 @@ local luckylady = SMODS.Blind{
         end
         return false
 	end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Boss Blinds"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 local cerberus = SMODS.Blind{
@@ -4559,7 +4922,14 @@ local cerberus3 = SMODS.Blind{
     end,
     defeat = function(self)
         G.GAME.cerberusMult = 0
-    end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Boss Blinds"] == true then
+            return true
+        else
+            return false
+        end
+    end,
 }
 
 SMODS.Achievement{
@@ -4576,21 +4946,9 @@ SMODS.Achievement{
 local oldfunc = Game.main_menu
 	Game.main_menu = function(change_context)
 		local ret = oldfunc(change_context)
-        local SC_scale = 1.1*(G.debug_splash_size_toggle and 0.8 or 1)
-        local CAI = {
-            TITLE_TOP_W = G.CARD_W,
-            TITLE_TOP_H = G.CARD_H,
-        }
-
-        
-        --local card = Card(G.title_top.T.x, G.title_top.T.y, 1.2*G.CARD_W*SC_scale, 1.2*G.CARD_H*SC_scale, nil, G.P_CENTERS.j_joker)
-        --G.title_top:emplace(card,1)
-        --SC = Card(G.ROOM.T.w/2 - SC_scale*G.CARD_W/2, 10. + G.ROOM.T.h/2 - SC_scale*G.CARD_H/2, SC_scale*G.CARD_W, SC_scale*G.CARD_H, G.P_CARDS.empty, G.P_CENTERS['j_joker'])
         G.title_top.cards[1]:set_ability(G.P_CENTERS.j_joker, true)
         G.title_top.cards[1].children.front = nil
         G.title_top.cards[1]:set_sprites(G.P_CENTERS.j_joker)
-        --G.title_top.cards[1]:set_sprites(G.P_CENTERS.j_joker, nil)
-        --G.title_top.cards[1] = Card(G.ROOM.T.w/2 - SC_scale*G.CARD_W/2, 10. + G.ROOM.T.h/2 - SC_scale*G.CARD_H/2, SC_scale*G.CARD_W, SC_scale*G.CARD_H, G.P_CARDS.empty, G.P_CENTERS['j_joker'])
 		check_for_unlock({type = 'run_started'})
 		return ret
 	end
