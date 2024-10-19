@@ -3054,7 +3054,7 @@ local oldfunc = ease_ante
 ease_ante = function(num)
     local ret = oldfunc(num)
         print('hiii')
-        if G.GAME.used_vouchers['c_jimb_aether'] then
+        if G.GAME.used_vouchers['v_jimb_aether'] then
             G.jokers.config.card_limit = G.jokers.config.card_limit + 1
                 local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
                 newcard:add_to_deck()
