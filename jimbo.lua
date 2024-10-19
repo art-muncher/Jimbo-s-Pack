@@ -3107,7 +3107,7 @@ function G.UIDEF.use_and_sell_buttons(card)
     if card.ability.set == 'jimb_curses' then
         local selected_back = (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
         selected_back = get_deck_from_name(selected_back)
-        if selected_back.name == "Sinner's Deck" then
+        if selected_back.name == "Sinner's Deck" or SMODS.find_card("j_jimb_gehenna", false) then
             if card.purified == false then
                 local use = 
                 {n=G.UIT.C, config={align = "cr"}, nodes={
@@ -3787,21 +3787,21 @@ if Cryptid then
 
 
     local gehenna = SMODS.Joker{
-        key = 'gehanna',
+        key = 'gehenna',
         loc_txt = {
             name = "Gehenna",
             text = {
                 "Create {C:red}#1# random Curses{} at end of round",
+                "You can {C:attention}purify{} {C:red}Curses{} manually",
                 "When a {C:red}Curse{} is {C:attention}purified{}, destroy it and",
                 "give {X:dark_edition,C:white}X#2#{} values to a random {C:attention}Joker",
                 '{C:inactive}Excludes other {C:attention}Gehenna{}'
             }
         },
-        config = {extra = {curses = 2, cardMult = 1.5}},
+        config = {extra = {curses = 2, cardMult = 2}},
         rarity = "cry_exotic",
-        pos = {x = 1, y = 6},
-        soul_pos = {x = 0, y = 6},
-        atlas = 'Tarot',
+        pos = {x = 2, y = 1},
+        atlas = 'Soulj',
         cost = 50,
         unlocked = true,
         discovered = false,
@@ -3809,7 +3809,6 @@ if Cryptid then
         eternal_compat = true,
         perishable_compat = true,
         loc_vars = function(self, info_queue, center)
-            info_queue[#info_queue+1] = G.P_CENTERS.e_negative
             return {vars = {center.ability.extra.curses,center.ability.extra.cardMult}}
         end,
         calculate = function(self, card, context)
@@ -3824,7 +3823,7 @@ if Cryptid then
                 context.card:start_dissolve()
                 local eligibleJokers = {}
                 for i = 1, #G.jokers.cards do
-                    if G.jokers.cards[i].ability.name ~= card.ability.name and G.jokers.cards[i].purified == nil then eligibleJokers[#eligibleJokers+1] = G.jokers.cards[i] end
+                    if G.jokers.cards[i].ability.name ~= card.ability.name and G.jokers.cards[i] ~= context.card then eligibleJokers[#eligibleJokers+1] = G.jokers.cards[i] end
                 end
                 jokerMult(pseudorandom_element(eligibleJokers,pseudoseed('gehenna')), card.ability.extra.cardMult)
             end
@@ -4333,7 +4332,7 @@ end
 local oldfunc = eval_card
 function eval_card(card, context)
     local ret = oldfunc(card,context)
-    if context.cardarea == G.play and card:is_face() then
+    if context.cardarea == G.play then
         G.GAME.scoredface = G.GAME.scoredface + 1
     end
     G.GAME.blind:jimb_cardScore(card,context)
@@ -4767,6 +4766,17 @@ local zone = SMODS.Blind{
     end,
 }
 
+function Card:jimb_get_order()
+    if self.ability.set ~= "Joker" then return 0 end
+    local num = 0
+    for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
+        num = num + 1
+        if G.P_CENTER_POOLS['Joker'][i].key == self.config.center.key then
+            return num
+        end
+    end
+end
+
 local vintage = SMODS.Blind{
     key = "vintage_vanilla",
     loc_txt = {
@@ -4786,8 +4796,7 @@ local vintage = SMODS.Blind{
     },
     pos = { x = 0, y = 30 },
     recalc_debuff = function(self, card, from_blind)
-        self.config.jokers = {}
-		if card.ability.set == 'Joker' then
+		--[[if card.ability.set == 'Joker' then
             local num = 0
             for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
                 num = num + 1
@@ -4795,6 +4804,9 @@ local vintage = SMODS.Blind{
                     return true
                 end
             end
+        end]]
+        if card.ability.set == 'Joker' and card:jimb_get_order() < 150 and pseudorandom('vintage') < 1/3 then
+            return true
         end
         return false
 	end,
