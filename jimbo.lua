@@ -4469,7 +4469,7 @@ function get_next_voucher_key()
     return ret
 end
 
-local oldfunc = G.FUNCS.buy_from_shop
+--[[local oldfunc = G.FUNCS.buy_from_shop
 function G.FUNCS.buy_from_shop(e)
     local ret = oldfunc(e)
     local c1 = e.config.ref_table
@@ -4482,7 +4482,7 @@ function G.FUNCS.buy_from_shop(e)
         end
     end
     return ret
-end
+end]]
 
 local oldfunc = create_card
 create_card = function(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
@@ -5047,13 +5047,33 @@ SMODS.Achievement{
 
 local oldfunc = Game.main_menu
 	Game.main_menu = function(change_context)
+        --G.C.CRY_EXOTIC = HEX('764426')
 		local ret = oldfunc(change_context)
+        --G.C.CRY_EXOTIC = HEX('764426')
         G.title_top.cards[1]:set_ability(G.P_CENTERS.j_joker, true)
         G.title_top.cards[1].children.front = nil
         G.title_top.cards[1]:set_sprites(G.P_CENTERS.j_joker)
 		check_for_unlock({type = 'run_started'})
+        --[[G.C.AUTUMN_FEEL = HEX('764426')
+        G.C.AUTUMN_TOUCH = HEX('A37254')
+        G.SPLASH_BACK:define_draw_steps({{
+			shader = 'splash',
+			send = {
+				{name = 'time', ref_table = G.TIMERS, ref_value = 'REAL_SHADER'},
+				{name = 'vort_speed', val = 0.4},
+				{name = 'colour_1', ref_table = G.C, ref_value = 'BLUE'},
+				{name = 'colour_2', ref_table = G.C, ref_value = 'GREEN'},
+			}}})]]
 		return ret
 	end
+
+--[[local oldfunc = ease_background_colour_blind
+function ease_background_colour_blind(state, blind_override)
+    ease_background_colour{new_colour = G.C.BLUE, special_colour = G.C.GREEN, tertiary_colour = darken(G.C.BLACK, 0.4), contrast = 3}
+    if true then return end
+    local ret = oldfunc(state,blind_override)
+    return ret
+end]]
 
 
 --
