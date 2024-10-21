@@ -4504,7 +4504,7 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     --if ouroborosActive then
     --    forced_key = 'j_jimb_ouroboros'
     --end
-    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and _type ~= 'Base' then
+    if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and _type ~= 'Base' and G.GAME.next_Gen_Cards[1].key then
         forced_key = G.GAME.next_Gen_Cards[1].key
     end
     
