@@ -173,7 +173,7 @@ local sadlad = SMODS.Joker{
     config = {extra = {chips = 10}},
     pos = { x = 1, y = 0 },
     atlas = 'Jokers',
-    cost = 3,
+    cost = 4,
     unlocked = true,
     discovered = false,
     blueprint_compat = false,
@@ -223,7 +223,7 @@ local clown = SMODS.Joker{
     config = {extra = {chips = 1.2}},
     pos = { x = 2, y = 0 },
     atlas = 'Jokers',
-    cost = 7,
+    cost = 8,
     unlocked = true,
     discovered = false,
     blueprint_compat = false,
@@ -264,7 +264,7 @@ local danger = SMODS.Joker{
         },
     },
     config = {extra = {Xmult = 2}},
-    rarity = 1,
+    rarity = 2,
     pos = {x = 1, y = 1},
     atlas = 'Jokers',
     cost = 5,
@@ -310,7 +310,7 @@ local gum = SMODS.Joker{
     rarity = 1,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 4,
+    cost = 5,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -358,7 +358,7 @@ local gelatin = SMODS.Joker{
             '{C:inactive}(Currently {X:mult,C:white}X#2#{}{C:inactive} Mult)'
         }
     },
-    config = {extra = {Xmult = 1, Xmult_mod = 0.1}},
+    config = {extra = {Xmult = 1, Xmult_mod = 0.2}},
     rarity = 1,
     pos = {x = 2, y = 2},
     atlas = 'Jokers',
@@ -416,7 +416,7 @@ local wine = SMODS.Joker{
     rarity = 1,
     pos = {x = 0, y = 3},
     atlas = 'Jokers',
-    cost = 4,
+    cost = 5,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -508,7 +508,7 @@ local cardinal = SMODS.Joker{
     rarity = 2,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 4,
+    cost = 6,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -553,7 +553,7 @@ local cultist = SMODS.Joker{
     rarity = 3,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 4,
+    cost = 8,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -614,7 +614,7 @@ local kunai = SMODS.Joker{
     rarity = 3,
     pos = {x = 2, y = 1},
     atlas = 'Jokers',
-    cost = 10,
+    cost = 8,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -698,7 +698,7 @@ local butterknife = SMODS.Joker{
     rarity = 2,
     pos = {x = 2, y = 3},
     atlas = 'Jokers',
-    cost = 10,
+    cost = 6,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -771,7 +771,7 @@ local scalpel = SMODS.Joker{
     rarity = 3,
     pos = {x = 2, y = 3},
     atlas = 'Jokers',
-    cost = 10,
+    cost = 9,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -858,7 +858,7 @@ local doomsday = SMODS.Joker{
     rarity = 3,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 10,
+    cost = 8,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -906,7 +906,7 @@ local trojan = SMODS.Joker{
     rarity = 2,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 4,
+    cost = 7,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -946,7 +946,7 @@ local virus = SMODS.Joker{
     rarity = 1,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 4,
+    cost = 0,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -994,9 +994,9 @@ local sketch = SMODS.Joker{
         joker = nil,
     }},
     rarity = 3,
-    pos = {x = 0, y = 0},
-    atlas = 'Soulj',
-    cost = 4,
+    pos = {y = 4, x = 0},
+    atlas = 'Jokers',
+    cost = 8,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -1029,6 +1029,165 @@ local sketch = SMODS.Joker{
         end
     end,
 }
+
+local skyjo = SMODS.Joker{
+    key = 'skyjo',
+    loc_txt = {
+        name = "Skyjo",
+        text = {
+            '{C:dark_edition}+#1# Joker slots{}',
+            '{C:red}Self destructs{} if you have 2',
+            'or more {C:dark_edition}Negative Jokers'
+        }
+    },
+    config = {extra = {
+        joker_slots = 2,
+    }},
+    rarity = 2,
+    pos = {y = 4, x = 1},
+    atlas = 'Jokers',
+    cost = 6,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.joker_slots}}
+    end,
+    add_to_deck = function(self,card)
+        G.jokers.config.card_limit = G.jokers.config.card_limit + card.ability.extra.joker_slots
+    end,
+    calculate = function(self,card,context)
+        local negativejokers=0
+        for i = 1, #G.jokers.cards do
+            if G.jokers.cards[i].edition and G.jokers.cards[i].edition.negative then negativejokers = negativejokers+1 end
+        end
+        if negativejokers > 1 then
+            card:start_dissolve()
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+
+local pumpkin = SMODS.Joker{
+    key = 'pumpkin',
+    loc_txt = {
+        name = "Spooky Pumpkin",
+        text = {
+            'The next {C:attention}#1# Boss Blinds',
+            'have their abilities disabled'
+        }
+    },
+    config = {
+        extra = {
+            disables = 2,
+        }
+    },
+    rarity = 2,
+    pos = {y = 0, x = 0},
+    atlas = 'Soulj',
+    cost = 4,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = false,
+    eternal_compat = false,
+    perishable_compat = false,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.disables}}
+    end,
+    calculate = function(self,card,context)
+        if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
+            if G.GAME.blind:get_type() == 'Boss' and not G.GAME.blind.disabled then
+                card.ability.extra.disables = card.ability.extra.disables - 1
+                if card.ability.extra.disables <= 0 then
+                    card:start_dissolve()
+                end
+                card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {message = localize('ph_boss_disabled')})
+                G.GAME.blind:disable()
+            end
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+local blank = SMODS.Joker{
+    key = 'blank',
+    loc_txt = {
+        name = "      Joker",
+        text = {
+            "When selecting a blind,","{C:attention}copies the ability{} of", "3 random {C:attention}Jokers"
+        },
+    },
+    config = {extra = {}},
+    rarity = 1,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 5,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        if center.jimb_jokers then
+            for i = 1, #center.jimb_jokers do
+                info_queue[#info_queue + 1] = {
+                    set = "Joker",
+                    key = center.jimb_jokers[i].config.center.key,
+                    specific_vars = {'???','???','???','???'},
+                }
+            end
+        end
+        return {vars = {}}
+    end,
+    calculate = function(self,card,context)
+        if card.jimb_jokers and #card.jimb_jokers ~= 0 then
+            for i = 1, #card.jimb_jokers do
+                if card.jimb_jokers[i].calculate_joker then
+                    local other_joker = card.jimb_jokers[i]
+                    context.blueprint_card = context.blueprint_card or self
+                    local other_joker_ret = other_joker:calculate_joker(context)
+                    if other_joker_ret then 
+                        other_joker_ret.card = context.blueprint_card or self
+                        other_joker_ret.colour = G.C.BLUE
+                        --return other_joker_ret
+                    end
+                end
+            end
+        end
+        if context.setting_blind then
+            local card1 = create_card("Joker",G.jokers)
+            local card2 = create_card("Joker",G.jokers)
+            local card3 = create_card("Joker",G.jokers)
+            card.jimb_jokers = {card1,card2,card3}
+            card1:remove()
+            card2:remove()
+            card3:remove()
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
 
 
 
@@ -1129,7 +1288,7 @@ local superpos = SMODS.Joker{
     pos = { x = 0, y = 0 },
     soul_pos = {x = 0, y = 1},
     atlas = 'Soulj',
-    cost = 5,
+    cost = 7,
     unlocked = false,
     discovered = false,
     blueprint_compat = false,
@@ -1195,28 +1354,28 @@ local fractal = SMODS.Joker{
     loc_txt = {
         name = "Fractal Joker",
         text = {
-            "Gives {X:mult,C:white}X#1#{}",
-            "Mult {C:attention}#2#{} times",
-            'Increases by {X:mult,C:white}#3#{}',
-            'at end of round',
-            "{C:inactive}(Currently {X:mult,C:white}X#4#{}{C:inactive})"
+            "{C:green}#1# in #2#{} chance for a {C:attention}card{}",
+            "to be replaced with a {C:dark_edition}Negative Fractal Joker",
+            'When obtaining another {C:attention}Fractal Joker{},',
+            'destroy it and gain {C:mult}#3#%{} of current {X:mult,C:white}XMult{}',
+            '{C:inactive}(Currently {}{X:mult,C:white}X#4#{} {C:inactive}Mult)'
         },
         unlock = {
-            'Gain the same Joker 5', 'times','in one run'
+            'Gain the same {C:attention}Joker 5', 'times','in one run'
         }
     },
     rarity = 3,
-    config = {extra = {Xmult = 1.06, Xmult_mod = 0.02,num = 5}},
-    pos = { x = 0, y = 0 },
-    atlas = 'Soulj',
-    cost = 5,
+    config = {extra = {odds = 25, Xmult = 1, Xmult_mod = 25}},
+    pos = { x = 2, y = 4 },
+    atlas = 'Jokers',
+    cost = 7,
     unlocked = false,
     discovered = false,
     blueprint_compat = false,
     eternal_compat = true,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.Xmult, center.ability.extra.num, center.ability.extra.Xmult_mod, math.pow(center.ability.extra.Xmult,center.ability.extra.num)}}
+        return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds,center.ability.extra.Xmult_mod,center.ability.extra.Xmult}}
     end,
     check_for_unlock = function(self, args)
         if args.type == 'jimb_manyJokers' then
@@ -1225,19 +1384,28 @@ local fractal = SMODS.Joker{
     end,
     
     calculate = function(self, card, context)
-        if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
-            card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult_mod
-        end
         if context.joker_main then
-            return {
-                Xmult_mod = math.pow(card.ability.extra.Xmult,card.ability.extra.num),
+            return{
+                Xmult_mod = card.ability.extra.Xmult,
                 card = card,
                 message = localize {
                     type = 'variable',
                     key = 'a_xmult',
-                    vars = {math.pow(card.ability.extra.Xmult,card.ability.extra.num)}
+                    vars = { card.ability.extra.Xmult }
                 },
             }
+        end
+        if context.jimb_pre_create_card and pseudorandom('fractal') < G.GAME.probabilities.normal/card.ability.extra.odds and context._type ~= 'Base' then
+            G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.config.center.key}
+        end
+        if context.jimb_post_create_card and card.ability.name == context.card.ability.name and context.card ~= card then
+            context.card:set_edition({negative = true},true)
+            context.card.cost = context.card.cost - context.card.extra_cost + G.GAME.inflation
+        end
+
+        if context.jimb_card_gain and context.area == G.jokers and context.jimb_card and context.jimb_card.ability.name == card.ability.name and context.jimb_card ~= card then
+            context.jimb_card:start_dissolve()
+            card.ability.extra.Xmult = card.ability.extra.Xmult + card.ability.extra.Xmult * card.ability.extra.Xmult_mod/100
         end
     end,
     calc_dollar_bonus = function(self,card)
@@ -1277,7 +1445,7 @@ local cardboard = SMODS.Joker{
     rarity = 2,
     pos = {x = 0, y = 1},
     atlas = 'Jokers',
-    cost = 8,
+    cost = 4,
     unlocked = false,
     discovered = false,
     blueprint_compat = true,
@@ -1423,7 +1591,7 @@ local vision = SMODS.Joker{
     pos = {x = 0, y = 0},
     soul_pos = {x=1,y=1},
     atlas = 'Soulj',
-    cost = 5,
+    cost = 6,
     unlocked = false,
     discovered = false,
     blueprint_compat = true,
@@ -1545,11 +1713,11 @@ local commercial = SMODS.Joker{
             '{C:attention}Neon Deck{}'
         }
     },
-    config = {extra = {mult = 1.2, active = true}},
+    config = {extra = {mult = 1.5, active = true}},
     rarity = 3,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 10,
+    cost = 8,
     unlocked = false,
     discovered = false,
     blueprint_compat = true,
@@ -1605,7 +1773,7 @@ local fabricwarp = SMODS.Joker{
     rarity = 2,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
-    cost = 10,
+    cost = 5,
     unlocked = false,
     discovered = false,
     blueprint_compat = true,
@@ -1900,7 +2068,7 @@ local wall = SMODS.Consumable {
         if context.jimb_purify and context.card == card then
             card.ability.extra.b_size = card.ability.extra.pure
         end
-        if context.setting_blind then
+        if context.setting_blind and G.GAME.blind:get_type() == "Boss" then
             G.GAME.blind.chips = G.GAME.blind.chips * card.ability.extra.b_size
             G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
         end
@@ -2230,7 +2398,7 @@ local zone = SMODS.Consumable {
     purified = false,
     no_sell = true,
     set = 'jimb_curses',
-    config = {extra = {cardMult = 0.9,pure = 1.1}},
+    config = {extra = {cardMult = 0.9,pure = 1.1,odds = 5}},
     atlas = 'Curse',
     pos = { x = 1, y = 0},
     cost = 0,
@@ -2247,7 +2415,7 @@ local zone = SMODS.Consumable {
         if center.purified ~= nil and center.purified == true then
             key1 = 'zone_pure'
         end
-        return {key = key1,vars = {center.ability.extra.cardMult}}
+        return {key = key1,vars = {center.ability.extra.cardMult, G.GAME.probabilities.normal, center.ability.extra.odds}}
     end,
     calculate = function(self,card,context)
         if context.jimb_purify and context.card == card then
@@ -3467,6 +3635,34 @@ G.localization.misc.v_text.ch_c_jimb_scavenger = {"Open a {C:attention}Mega Buff
 G.localization.misc.v_text.ch_c_jimb_xCards = {"All cards have {X:dark_edition,C:white}X#1#{} to all values"}
 G.localization.misc.v_text.ch_c_jimb_rocktop = {"{C:attention}#1#{} can't be higher than base {C:attention}#1#"}
 
+G.localization.misc.v_text.ch_c_jimb_probability = {"{C:green}Probabilities{} are set to {C:green}#1#"}
+
+SMODS.Challenge{
+    key = 'mandelbrot_set',
+    name = 'Mandelbrot Set',
+    loc_txt = {
+        name = 'Mandelbrot Set',
+    },
+    deck = { type = "Challenge Deck" },
+    rules = { 
+        custom = {
+            {id = 'jimb_probability', value = 1e100},
+        }, 
+        modifiers = {}
+    },
+    jokers = {
+        {id = 'j_jimb_fractal'}
+    },
+    consumeables = {},
+    vouchers = {
+    },
+    restrictions = { 
+        banned_cards = {
+        }, 
+        banned_tags = {}, 
+        banned_other = {} },
+}
+
 SMODS.Challenge{
     key = 'shopping_spree',
     name = 'Shopping Spree',
@@ -4407,6 +4603,9 @@ Game.start_run = function(e, args)
                     if v.id == 'jimb_scavenger' then
                         G.GAME.modifiers.jimb_scavenger = true
                     end
+                    if v.id == 'jimb_probability' then
+                        G.GAME.probabilities.normal = G.GAME.probabilities.normal * v.value
+                    end
                 end
             end
         end
@@ -4500,12 +4699,19 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
 
     end
 
-
+    local stuff = {_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append}
     --if ouroborosActive then
     --    forced_key = 'j_jimb_ouroboros'
     --end
+
+    if G and G.jokers and G.jokers.cards then
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({jimb_pre_create_card = true, _type = _type, area = area, legendary = legendary, _rarity = _rarity, skip_materialize = skip_materialize, soulable = soulable, forced_key = forced_key, key_append})
+        end
+    end
+    
     if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 and _type ~= 'Base' and G.GAME.next_Gen_Cards[1].key then
-        forced_key = G.GAME.next_Gen_Cards[1].key
+        forced_key = G.GAME.next_Gen_Cards[1].key or forced_key
     end
     
     
@@ -4531,6 +4737,12 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
             jokerMult(ret,G.GAME.next_Gen_Cards[1].abilityMult)
         end
         table.remove(G.GAME.next_Gen_Cards,1)
+    end
+
+    if G and G.jokers and G.jokers.cards then
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({jimb_post_create_card = true, _type = _type, area = area, legendary = legendary, _rarity = _rarity, skip_materialize = skip_materialize, soulable = soulable, forced_key = forced_key, key_append, card = ret})
+        end
     end
 
     --POST hook
@@ -5025,6 +5237,43 @@ local cerberus3 = SMODS.Blind{
     defeat = function(self)
         G.GAME.cerberusMult = 0
     end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Boss Blinds"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+local rainfall = SMODS.Blind{
+    key = "rainfall",
+    loc_txt = {
+ 		name = 'Immaculate Rainfall',
+ 		text = { 'Debuff all cards in hand ', 'when hand is played'},
+ 	},
+    boss_colour = HEX('9AB9DB'),
+    dollars = 5,
+    mult = 2,
+    discovered = false,
+    has_played = false,
+    boss = {
+        min = 0,
+        max = 10,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+    press_play = function(self)
+        for i = 1, #G.hand.cards do
+            local worksOrNah = true
+            for _i = 1, #G.hand.highlighted do
+                if G.hand.highlighted[_i] == G.hand.cards[i] then
+                    worksOrNah = false 
+                end
+            end
+            if worksOrNah == true then G.hand.cards[i]:set_debuff(true) end
+        end
+	end,
     in_pool = function(self,wawa,wawa2)
         if jimbomod.config["Boss Blinds"] == true then
             return true
