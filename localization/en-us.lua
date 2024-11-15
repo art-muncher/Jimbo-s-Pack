@@ -118,13 +118,13 @@ return {
             zone_curse = {
                 name = "Totem",
                 text = {
-                    "#2# in #3# chance for", "cards have {X:dark_edition,C:white}X#1#{}", 'to all values'
+                    "{C:green}#2# in #3#{} chance for", "cards have {X:dark_edition,C:white}X#1#{}", 'to all values'
                 }
             },
             zone_pure = {
                 name = "Totem",
                 text = {
-                    "#2# in #3# chance for", 'cards to have {X:dark_edition,C:white}X#1#{}','to all values'
+                    "{C:green}#2# in #3#{} chance for", 'cards to have {X:dark_edition,C:white}X#1#{}','to all values'
                 }
             },
 
@@ -347,7 +347,24 @@ return {
                 text = {
                     "???"
                 }
-            }
+            },
+
+            tax_curse = {
+                name = 'Tax Form',
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult if",
+                    'hand scores over {C:attention}#2#%',
+                    'blind requirement'
+                }
+            },
+            tax_pure = {
+                name = 'Tax Form',
+                text = {
+                    "{X:mult,C:white}X#1#{} Mult if",
+                    'hand scores under {C:attention}#2#%',
+                    'blind requirement'
+                }
+            },
         }
     },
     misc = {
