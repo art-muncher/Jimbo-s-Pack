@@ -4111,18 +4111,6 @@ local vipcard = SMODS.Joker{
     remove_from_deck = function(self,card)
         change_shop_size(-card.ability.extra.cards)
     end,
-    update = function(self,card,dt,a,b,c)
-        self.dissolve_colours = {G.C.BLACK, G.C.ORANGE, G.C.RED, G.C.GOLD, G.C.RED}
-        card.dissolve = card.dissolve and card.dissolve + dissolveVal.val/100/100 or 0.15
-        dissolveVal.val = dissolveVal.val*1.01
-        if card.dissolve > 0.75 then
-            dissolveVal.val = -10
-        end
-        if card.dissolve < 0.15 then
-            dissolveVal.val = 10
-        end
-        
-    end,
     calculate = function(self,card,context)
         if context.ending_shop then
             change_shop_size(-card.ability.extra.decrease)
@@ -4488,7 +4476,8 @@ if Cryptid then
         },
         config = {extra = {curses = 2, cardMult = 2}},
         rarity = "cry_exotic",
-        pos = {x = 2, y = 1},
+        pos = {x = 2, y = 0},
+        soul_pos = {x = 2, y = 1},
         atlas = 'Soulj',
         cost = 50,
         unlocked = true,
@@ -4515,6 +4504,18 @@ if Cryptid then
                 end
                 jokerMult(pseudorandom_element(eligibleJokers,pseudoseed('gehenna')), card.ability.extra.cardMult)
             end
+        end,
+        update = function(self,card,dt,a,b,c)
+            self.dissolve_colours = {G.C.BLACK, G.C.ORANGE, G.C.RED, G.C.GOLD, G.C.RED}
+            card.dissolve = card.dissolve and card.dissolve + dissolveVal.val/100/100 or 0.15
+            dissolveVal.val = dissolveVal.val*1.01
+            if card.dissolve > 0.55 then
+                dissolveVal.val = -10
+            end
+            if card.dissolve < 0.25 then
+                dissolveVal.val = 10
+            end
+            
         end,
         add_to_deck = function(self,card,from_debuff)
             self.dissolve_colours = {G.C.BLACK, G.C.ORANGE, G.C.RED, G.C.GOLD, G.C.RED}
