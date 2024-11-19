@@ -3449,12 +3449,12 @@ G.localization.misc.quips['hi_derek5'] = {"{C:red,E:1.5,S:2.5,s:2}LOVE YOU,", "{
 
 local talkNum = 0
 
-SMODS.Atlas{
+--[[SMODS.Atlas{
     key = 'Derek',
     path = 'Derek.png',
     px = 71,
     py = 95
-}
+}]]
 --[[
 SMODS.Joker{
     key = 'derek',
