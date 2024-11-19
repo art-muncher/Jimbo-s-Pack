@@ -3455,6 +3455,7 @@ SMODS.Atlas{
     px = 71,
     py = 95
 }
+--[[
 SMODS.Joker{
     key = 'derek',
     loc_txt = {
@@ -3466,6 +3467,7 @@ SMODS.Joker{
         }
     },
     atlas = 'Derek',
+
     pos = {x = 0, y = 0},
     config = { 
       extra = {
@@ -3499,6 +3501,7 @@ SMODS.Joker{
         end
     end,
   }
+]]
 
 local amalgam = SMODS.Joker{
     key = 'amalgam',
@@ -6299,7 +6302,7 @@ local oldfunc = Game.main_menu
         --G.C.CRY_EXOTIC = HEX('764426')
         G.title_top.cards[1]:set_ability(G.P_CENTERS.j_joker, true)
         G.title_top.cards[1].children.front = nil
-        G.title_top.cards[1]:set_sprites(G.P_CENTERS.j_jimb_derek)
+        G.title_top.cards[1]:set_sprites(G.P_CENTERS.j_joker)
 		check_for_unlock({type = 'run_started'})
         --[[G.C.AUTUMN_FEEL = HEX('764426')
         G.C.AUTUMN_TOUCH = HEX('A37254')
