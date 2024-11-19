@@ -5968,7 +5968,7 @@ function Blind:jimb_cardScore(card,context)
     end
 end
 
-
+--[[
 SMODS.Consumable {
     key = 'sin_2',
     set = 'Spectral',
@@ -6009,7 +6009,7 @@ function Blind:jimb_summon()
         print(self.name)
         
     end
-end
+end]]
 
 
 local royal_hand = SMODS.Blind{
