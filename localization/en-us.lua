@@ -365,11 +365,264 @@ return {
                     'blind requirement'
                 }
             },
-        }
+        },
+        summon_blind = {
+            bl_small = {
+                name = "Small Blind?",
+                text = {}
+            },
+            bl_big = {
+                name = "Big Blind?",
+                text = {}
+            },
+            bl_hook = {
+                name = "The Hook?",
+                text = {
+                    'Debuffs 2 random',
+                    'cards per hand played',
+                }
+            },
+            bl_wall = {
+                name = "The Wall?",
+                text = {
+                    "Extra large blind, increase",
+                    'blind size by +0.25X every hand'
+                }
+            },
+            bl_wheel = {
+                name = "The Wheel?",
+                text = {
+                    " in 10 Jokers get",
+                    "shuffled and flipped"
+                }
+            },
+            bl_arm = {
+                name = "The Arm?",
+                text = {
+                    "Decrease level of",
+                    "played poker hand twice"
+                }
+            },
+            bl_psychic = {
+                name = "The Psychic?",
+                text = {
+                    "Must play 5 cards",
+                    'All cards must score'
+                }
+            },
+            bl_goad = {
+                name = "The Goad?",
+                text = {
+                    "All Spade cards are debuffed",
+                    "Spade cards can't be discarded"
+                }
+            },
+            bl_water = {
+                name = "The Water?",
+                text = {
+                    "Start with 0 discards",
+                    "1/3rd of deck is in discard pile"
+                }
+            },
+            bl_eye = {
+                name = "The Eye",
+                text = {
+                    "No repeat hand",
+                    "types this round"
+                }
+            },
+            bl_mouth = {
+                name = "The Mouth",
+                text = {
+                    "Play only 1 hand",
+                    "type this round"
+                }
+            },
+            bl_plant = {
+                name = "The Plant?",
+                text = {
+                    'Face cards are debuffed',
+                    'Face cards cannot be discarded'
+                }
+            },
+            bl_needle = {
+                name = "The Needle?",
+                text = {
+                    "Play only 1 hand"
+                }
+            },
+            bl_head = {
+                name = "The Head?",
+                text = {
+                    "All Heart cards are debuffed",
+                    "Heart cards left in hand give",
+                    'X0.75 Mult'
+                }
+            },
+            bl_tooth = {
+                name = "The Tooth?",
+                text = {
+                    "Lose $1 per",
+                    "card drawn"
+                }
+            },
+            bl_final_leaf = {
+                name = "Jade Garden",
+                text = {
+                    "All cards debuffed",
+                    "Undebuff a random card type",
+                    'whenever a card is sold'
+                }
+            },
+            bl_final_vessel = {
+                name = "Lavender Husk",
+                text = {
+                    "Very large blind",
+                    'X1.25 blind size when',
+                    'hand is played'
+                }
+            },
+            bl_ox = {
+                name = "The Ox?",
+                text = {
+                    "Playing a #1#",
+                    "sets money to $-10"
+                }
+            },
+            bl_house = {
+                name = "The House?",
+                text = {
+                    "First hand is",
+                    "debuffed"
+                }
+            },
+            bl_club = {
+                name = "The Club?",
+                text = {
+                    "All Club cards",
+                    "are debuffed this Ante"
+                }
+            },
+            bl_fish = {
+                name = "The Fish?",
+                text = {
+                    "Cards are not drawn",
+                    "after each hand played"
+                }
+            },
+            bl_window = {
+                name = "The Window?",
+                text = {
+                    "All Diamond cards",
+                    "are debuffed and flip",
+                    'a random card when drawn'
+                }
+            },
+            bl_manacle = {
+                name = "The Manacle?",
+                text = {
+                    "-1 Hand Size",
+                    'every hand'
+                }
+            },
+            bl_serpent = {
+                name = "The Serpent",
+                text = {
+                    "After Play or Discard,",
+                    "always draw 2 cards"
+                }
+            },
+            bl_pillar = {
+                name = "The Pillar?",
+                text = {
+                    "Cards played previously this Ante",
+                    "are debuffed, all ranks previously",
+                    'played this round are debuffed'
+                }
+            },
+            bl_flint = {
+                name = "The Flint?",
+                text = {
+                    "Base Chips and",
+                    "Mult are halved twice"
+                }
+            },
+            bl_mark = {
+                name = "The Mark?",
+                text = {
+                    "All cards with a rank",
+                    "higher than 6 are",
+                    "drawn face down"
+                }
+            },
+            bl_final_acorn = {
+                name = "Ochre Kernel",
+                text = {
+                    "Flips and shuffles",
+                    "all Joker cards",
+                    'every hand'
+                }
+            },
+            bl_final_heart = {
+                name = "Cardinal Soul",
+                text = {
+                    "One random Joker",
+                    "disabled at all times"
+                }
+            },
+            bl_final_bell = {
+                name = "Azure Chime",
+                text = {
+                    "Forces 1 card to be selected",
+                    "Forced card cannot score in a hand"
+                }
+            }
+        },
     },
     misc = {
         dictionary = {
 
+        },
+        quips = {
+            ['default'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}...",},
+
+            ['jimbo_menu1'] = {"{s:1.5}Let's get this", '{s:1.5}Joker Poker started!'},
+            ['jimbo_menu2'] = {"{s:1.5}Do you like my", "{s:1.5}newest additions?",},
+            ['jimbo_menu3'] = {"{s:1.5}Find all the Jokers!",},
+            ['jimbo_menu4'] = {"{s:1.5}There's a scary card hiding", '{s:1.5}in your collection...'},
+            ['jimbo_menu5'] = {"{s:1.5}Are you new here?",},
+            ['jimbo_menu6'] = {"{s:1.5}What are you standing", '{s:1.5}here for? Start a run!'},
+            ['jimbo_menu7'] = {"{s:1.5}You should watch", '{s:1.5}my videos!'},
+            ['jimbo_menu8'] = {"{s:1.5}https://www.youtube.com/watch?v=xvFZjo5PgG0", },
+
+            ['Small Blind Red Deck1'] = {"{C:blue,E:1.5,S:1.5,s:1.5}Hehehe!",},
+            ['Small Blind Red Deck2'] = {"{C:blue,E:1.5,S:1.5,s:1.5}Nyahaha...",},
+            ['Small Blind Red Deck3'] = {"{C:blue,E:1.5,S:1.5,s:1.5}Hahaha!"},
+            ['Small Blind Red Deck_disable1'] = {"{C:blue,E:1.5,S:1.5,s:1.5}?",},
+            ['Small Blind Red Deck_disable2'] = {"{C:blue,E:1.5,S:1.5,s:1.5}?",},
+            ['Small Blind Red Deck_disable3'] = {"{C:blue,E:1.5,S:1.5,s:1.5}?",},
+            ['Small Blind Red Deck_defeat1'] = {"{C:blue,E:1.5,S:1.5,s:1.5}Nnngh...",},
+            ['Small Blind Red Deck_defeat2'] = {"{C:blue,E:1.5,S:1.5,s:1.5}Aaghhh!!!",},
+
+            ['Big Blind Red Deck1'] = {"{C:attention,E:1.5,S:1.5,s:1.5}Hehehe!",},
+            ['Big Blind Red Deck2'] = {"{C:attention,E:1.5,S:1.5,s:1.5}Nyahaha...",},
+            ['Big Blind Red Deck3'] = {"{C:attention,E:1.5,S:1.5,s:1.5}Hahaha!"},
+            ['Big Blind Red Deck_disable1'] = {"{C:attention,E:1.5,S:1.5,s:1.5}?",},
+            ['Big Blind Red Deck_disable2'] = {"{C:attention,E:1.5,S:1.5,s:1.5}?",},
+            ['Big Blind Red Deck_disable3'] = {"{C:attention,E:1.5,S:1.5,s:1.5}?",},
+            ['Big Blind Red Deck_defeat1'] = {"{C:attention,E:1.5,S:1.5,s:1.5}Nnngh...",},
+            ['Big Blind Red Deck_defeat2'] = {"{C:attention,E:1.5,S:1.5,s:1.5}Aaghhh!!!",},
+
+
+
+            ['The Plant Red Deck1'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}Why, hello again.",},
+            ['The Plant Red Deck2'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}Nice day, isn't it?",},
+            ['The Plant Red Deck3'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}Are you scared?", "{C:legendary,E:1.5,S:1.5,s:1.5}You can always hug me!"},
+            ['The Plant Red Deck_disable1'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}..You...",},
+            ['The Plant Red Deck_disable2'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}Why would you..",},
+            ['The Plant Red Deck_disable3'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}How could you..",},
+            ['The Plant Red Deck_defeat1'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}Good luck!",},
+            ['The Plant Red Deck_defeat2'] = {"{C:legendary,E:1.5,S:1.5,s:1.5}See you soon!",},
         }
     }
 }
