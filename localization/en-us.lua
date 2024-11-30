@@ -380,7 +380,7 @@ return {
                 text = {
                     'Debuffs 2 random',
                     'cards per hand played',
-                }
+                } 
             },
             bl_wall = {
                 name = "The Wall?",
@@ -392,52 +392,56 @@ return {
             bl_wheel = {
                 name = "The Wheel?",
                 text = {
-                    " in 10 Jokers get",
-                    "shuffled and flipped"
+                    " in 2 Jokers get flipped,",
+                    "all Jokers are shuffled"
                 }
             },
             bl_arm = {
                 name = "The Arm?",
                 text = {
                     "Decrease level of",
-                    "played poker hand twice"
+                    "most played poker hand"
                 }
             },
             bl_psychic = {
                 name = "The Psychic?",
                 text = {
-                    "Must play 5 cards",
-                    'All cards must score'
+                    "Must play 5 cards,",
+                    'all cards must score'
                 }
             },
             bl_goad = {
                 name = "The Goad?",
                 text = {
-                    "All Spade cards are debuffed",
-                    "Spade cards can't be discarded"
+                    "All Spade cards are debuffed,",
+                    "spade cards can't be discarded"
                 }
             },
             bl_water = {
                 name = "The Water?",
                 text = {
-                    "Start with 0 discards",
-                    "1/3rd of deck is in discard pile"
+                    "Start with 0 discards,",
+                    "1 in 8 chance for drawn",
+                    'cards to be discarded'
                 }
             },
-            bl_eye = {
-                name = "The Eye",
+            --[[bl_eye = {
+                name = "The Eye?",
                 text = {
-                    "No repeat hand",
-                    "types this round"
-                }
+                    "You can repeat",
+                    "hand types only",
+                    '2 times this Ante'
+                }--too lazy to finish
             },
             bl_mouth = {
-                name = "The Mouth",
+                name = "The Mouth?",
                 text = {
                     "Play only 1 hand",
-                    "type this round"
-                }
-            },
+                    "type this round,",
+                    'cannot play most',
+                    'played poker hand',
+                }--too lazy to finish
+            },]]
             bl_plant = {
                 name = "The Plant?",
                 text = {
@@ -448,7 +452,8 @@ return {
             bl_needle = {
                 name = "The Needle?",
                 text = {
-                    "Play only 1 hand"
+                    "Play only 1 hand",
+                    '+1X Base blind size'
                 }
             },
             bl_head = {
@@ -470,7 +475,7 @@ return {
                 name = "Jade Garden",
                 text = {
                     "All cards debuffed",
-                    "Undebuff a random card type",
+                    "Undebuff 3 random ranks",
                     'whenever a card is sold'
                 }
             },
@@ -486,13 +491,15 @@ return {
                 name = "The Ox?",
                 text = {
                     "Playing a #1#",
-                    "sets money to $-10"
+                    "sets $ to the negative",
+                    'of current $',
                 }
             },
             bl_house = {
                 name = "The House?",
                 text = {
                     "First hand is",
+                    "flipped and", 
                     "debuffed"
                 }
             },
@@ -506,8 +513,8 @@ return {
             bl_fish = {
                 name = "The Fish?",
                 text = {
-                    "Cards are not drawn",
-                    "after each hand played"
+                    "Cards are drawn debuffed",
+                    "after each hand played" --idfk how
                 }
             },
             bl_window = {
@@ -525,19 +532,19 @@ return {
                     'every hand'
                 }
             },
-            bl_serpent = {
+            --[[bl_serpent = {
                 name = "The Serpent",
                 text = {
                     "After Play or Discard,",
-                    "always draw 2 cards"
+                    "always draw 3 cards"
                 }
-            },
+            },]]
             bl_pillar = {
                 name = "The Pillar?",
                 text = {
                     "Cards played previously this Ante",
-                    "are debuffed, all ranks previously",
-                    'played this round are debuffed'
+                    "are debuffed, ranks previously",
+                    'played last hand are debuffed'
                 }
             },
             bl_flint = {
@@ -567,7 +574,7 @@ return {
                 name = "Cardinal Soul",
                 text = {
                     "One random Joker",
-                    "disabled at all times"
+                    "cannot score",
                 }
             },
             bl_final_bell = {
