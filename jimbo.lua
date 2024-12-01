@@ -1383,7 +1383,8 @@ local doomsday = SMODS.Joker{
             "{C:attention}Duplicate all Jokers you gain{}",
             "{C:green}#1# in #2#{} chance to destroy all {C:attention}Jokers{}",
             "whenever a context is triggered",
-            '{C:inactive}ie. playing hand, discarding...'
+            '{C:inactive}ie. playing hand, discarding...',
+            '{C:inactive}Bypasses Eternal'
 
         }
     },
@@ -3654,6 +3655,14 @@ function SMODS.Center.inject(self)
         SMODS.insert_pool(G.P_CENTER_POOLS["Spectral"], self)
         return
     end
+
+    local tableNum = 0
+    for i = 1, #G.P_CENTER_POOLS['Consumeables'] do
+        if G.P_CENTER_POOLS['Consumeables'][i-tableNum].set == 'jimb_curses' then
+            tableNum = tableNum + 1
+            table.remove(G.P_CENTER_POOLS["Consumeables"],i)
+        end
+    end
     local ret = oldfunc(self)
     return ret
 end
@@ -5799,7 +5808,15 @@ neondeck.trigger_effect = function(self,args)
         for i = 1, #G.jokers.cards do
             G.GAME.neonJokers2[#G.GAME.neonJokers2+1] = {}
             G.GAME.neonJokers2[#G.GAME.neonJokers2].key = G.jokers.cards[i].config.center.key
-            G.GAME.neonJokers2[#G.GAME.neonJokers2].ability = G.jokers.cards[i].ability
+            G.GAME.neonJokers2[#G.GAME.neonJokers2].saveables = {
+                ability = G.jokers.cards[i].ability,
+                pinned = G.jokers.cards[i].pinned,
+                edition = G.jokers.cards[i].edition,
+                base_cost = G.jokers.cards[i].base_cost,
+                extra_cost = G.jokers.cards[i].extra_cost,
+                cost = G.jokers.cards[i].cost,
+                sell_cost = G.jokers.cards[i].sell_cost,
+            }
             G.jokers.cards[i]:remove_from_deck()
         end
         G.GAME.neonJokers = G.GAME.neonJokers or {}
@@ -5808,7 +5825,10 @@ neondeck.trigger_effect = function(self,args)
         G.jokers.cards = {}
         for i = 1, #G.GAME.neonJokers do
             local card = create_card('Joker', G.jokers, nil, nil, nil, nil, G.GAME.neonJokers[i].key)
-            card.ability = G.GAME.neonJokers[i].ability
+            for k,v in pairs(G.GAME.neonJokers[i].saveables) do
+                card[k] = G.GAME.neonJokers[i].saveables[k]
+            end
+            --card.ability = G.GAME.neonJokers[i].ability
             card.ability.isDuped = true
 
             --G.GAME.neonJokers[i]:add_to_deck()
@@ -6358,6 +6378,9 @@ function Card:ability_change(self)
 
     if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_jimb_zone' and not next(find_joker('Chicot')) then
         SMODS.Stickers['jimb_deteriorating']:apply(self, true)
+        if G.GAME.boss_summoned then
+            self:set_perishable(true)
+        end
     end
 end
 
@@ -6694,6 +6717,11 @@ function get_new_boss()
         --G.GAME.round_resets.blind_choices.Boss = 'bl_jimb_calm'
         return 'bl_jimb_cerberus3'
     end
+    if ret == 'bl_jimb_zone' then
+        if to_big(G.GAME.round_resets.ante) < to_big(4) then
+            return get_new_boss()
+        end
+    end
     --[[if isCalm == true then
         G.GAME.round_resets.blind_choices.Small = 'bl_jimb_storm'
         G.GAME.round_resets.blind_choices.Big = 'bl_jimb_storm'
@@ -6759,561 +6787,914 @@ end
 
 --[
 
-SMODS.Stake {
-    key = 'silver',
-    name = "Silver Stake",
-    pos = {x = 0, y = 0},
-    unlocked_stake = 'jimb_burning',
-    applied_stakes = {'white'},
-    above_stake = 'white',
-	loc_txt = {
+
+
+--calculate functions
+
+    function Blind:jimb_calc(context)
+
+
+        --when summoned
+        if context.summon then
+            if self.name == 'Small Blind' then
+                G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.25
+                G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            elseif self.name == 'Big Blind' then
+                G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.5
+                G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            elseif self.name == 'The Needle' then
+                G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*1
+                G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+            elseif self.name == 'The Wheel' then
+                self.disabled = true
+                G.jokers:unhighlight_all()
+                for k, v in ipairs(G.jokers.cards) do
+                    if pseudorandom('wheelsummon') < G.GAME.probabilities.normal/2 then
+                        v:flip()
+                    end
+                end
+                if #G.jokers.cards > 1 then 
+                    G.E_MANAGER:add_event(Event({ trigger = 'after', delay = 0.2, func = function() 
+                        G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 0.85);return true end })) 
+                        delay(0.15)
+                        G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1.15);return true end })) 
+                        delay(0.15)
+                        G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1);return true end })) 
+                        delay(0.5)
+                    return true end })) 
+                end
+            end
+        end
+
+
+        --play hand
+        if context.play_hand then
+            if self.name == 'The Hook' then
+                self.disabled = true
+                G.E_MANAGER:add_event(Event({ func = function()
+                    for i = 1, 2 do
+                        local _cards = {}
+                        for k, v in ipairs(G.hand.cards) do
+                            if v.debuff ~= true then
+                                --print('skibidi toilet') 
+                                _cards[#_cards+1] = v
+                            end
+                        end
+                        if G.hand.cards[i] then 
+                            local selected_card, card_key = pseudorandom_element(_cards, pseudoseed('hook'))
+                            --G.hand:add_to_highlighted(selected_card, true)
+                            if selected_card then 
+                                selected_card:set_debuff(true)
+                                selected_card:juice_up()
+                                play_sound('card1', 1)
+                            end
+                        end
+                    end
+                return true end })) 
+            elseif self.name == 'The Wall' then
+                G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.25
+                self:juice_up()
+                G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+    
+            elseif self.name == 'The Arm' then
+                self.disabled = true
+                local mostplayedhand = nil
+                local playedtimes = -420/69
+                for k, v in ipairs(G.handlist) do
+    
+                    if G.GAME.hands[v].visible and G.GAME.hands[v].played > playedtimes then
+                        playedtimes = G.GAME.hands[v].played
+                        mostplayedhand = v
+                    end
+                end
+                level_up_hand(self.children.animatedSprite, mostplayedhand, nil, -1)
+            elseif self.name == 'The Manacle' then
+                self.disabled = true
+                G.hand:change_size(-1)
+                G.GAME.manacle_handsize = G.GAME.manacle_handsize and G.GAME.manacle_handsize+1 or 2
+            elseif self.name == 'The Pillar' then
+                local list = {}
+                for i = 1, #G.hand.highlighted do
+                    print('hi')
+                    if G.GAME.pillar_debuffs then
+                        if G.GAME.pillar_debuffs[G.hand.highlighted[i]:get_id() .. '_'] == true then
+                            G.hand.highlighted[i]:set_debuff(true)
+                        end
+                    end
+                    list[G.hand.highlighted[i]:get_id() .. '_'] = true
+                end
+                G.GAME.pillar_debuffs = nil
+                G.GAME.pillar_debuffs = list
+            elseif G.GAME.blind.name == 'The Fish' then
+                G.GAME.blind.disabled = true
+                G.GAME.debuff_hand_draw = true
+            end
+        end
+        
+        --before drawing card
+        if context.pre_draw_card then
+            if self.name == 'The Water' and G.hand and context.to == G.hand then
+                if pseudorandom('water_summon') < 1/8 then
+                    return oldfunc(context.from, G.discard, context.percent, context.dir, context.sort, context.card, context.delay, context.mute, context.stay_flipped, context.vol, context.discarded_only)
+                end
+            end
+            if self.name == 'The Tooth' and G.hand and context.to == G.hand then
+                self.disabled = true
+                ease_dollars(-1)
+            end
+            if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_club' and not next(find_joker('Chicot')) then
+                for i = 1, #G.playing_cards do
+                    local card = G.playing_cards[i]
+                    if card:is_suit('Clubs',true) then
+                        card:set_debuff(true)
+                    end
+                end
+            end
+        end
+
+        --when drawing card
+        if context.draw_card then
+            if self.name == 'The Window' and context.area == G.hand then
+                if context.card and context.card:is_suit('Diamonds',true) and #G.hand.cards > 0 then
+                    local chosencard = pseudorandom_element(G.hand.cards,pseudoseed('window_summon'))
+                    chosencard:flip()
+                end
+            end
+            if self.name == 'The Pillar' and context.area == G.hand then
+                for i = 1, #G.hand.cards do
+                    if G.GAME.pillar_debuffs then
+                        if G.GAME.pillar_debuffs[G.hand.cards[i]:get_id() .. '_'] == true then
+                            G.hand.cards[i]:set_debuff(true)
+                        end
+                    end
+                end
+            end
+            if self.name == 'The Mark' then
+                self.disabled = true
+                if card:get_id() < 6 then
+                    card:flip()
+                end
+            end
+            if G.GAME.debuff_hand_draw and G.hand and self == G.hand then
+                card:set_debuff(true)
+            end
+        end
+
+        --before discarding
+        if context.pre_discard then
+            if self.name == 'The Plant' then
+                local num = 0
+                for i = 1, #G.hand.highlighted do
+                    if G.hand.highlighted[i-num]:is_face(true) then
+                        G.hand:remove_from_highlighted(G.hand.highlighted[i-num])
+                        num = num + 1
+                    end
+                end
+            end
+            if self.name == 'The Goad' then
+                local num = 0
+                for i = 1, #G.hand.highlighted do
+                    if G.hand.highlighted[i-num]:is_suit("Spades",true) then
+                        G.hand:remove_from_highlighted(G.hand.highlighted[i-num])
+                        num = num + 1
+                    end
+                end
+            end
+            G.GAME.debuff_hand_draw = nil
+        end
+
+        --debuffing hand
+        if context.debuff_hand then
+            local cards, hand, handname, check = context.cards, context.hand, context.handname, context.check
+            if self.name == 'The Psychic' then
+                local text,disp_text,poker_hands,scoring_hand,non_loc_disp_text = G.FUNCS.get_poker_hand_info(G.play.cards)
+                --print(#scoring_hand)
+                --print(#cards)
+                if #scoring_hand ~= #cards then
+                    return true
+                end
+            end
+            if self.name == 'The Ox' then
+                self.disabled = true
+                self.triggered = false
+                if handname == G.GAME.current_round.most_played_poker_hand then
+                    self.triggered = true
+                    if not check then
+                        ease_dollars(-math.abs(G.GAME.dollars)*2, true)
+                    end
+                end 
+            end
+        end
+        --modifying hand
+        if context.modify_hand then
+            local cards, poker_hands, text, mult, hand_chips = context.cards, context.poker_hands, context.text, context.mult, context.hand_chips
+
+            if self.name == 'The Head' then
+                local Xmult = 1
+                for i = 1, #G.hand.cards do
+                    if G.hand.cards[i]:is_suit("Hearts",true) then
+                        Xmult = Xmult*0.75
+                    end
+                end
+                return math.max(math.floor(mult*Xmult + 0.5), 1), hand_chips, true
+            elseif self.name == 'The House' and G.GAME.current_round.hands_played == 0 and G.GAME.current_round.discards_used == 0 then
+                for i = 1, #G.hand.cards do
+                    G.hand.cards[i]:set_debuff(true)
+                end
+                for i = 1, #cards do
+                    cards[i]:set_debuff(true)
+                end
+            elseif self.name == 'The Flint' then
+                return math.max(math.floor(mult*0.25 + 0.5), 1), math.max(math.floor(hand_chips*0.25 + 0.5), 0), true
+            end
+        end
+
+        --other
+        if self.config.blind.summon_calc then
+            return self.config.blind:summon_calc(context)
+        end
+    end
+
+
+    --
+    --when it calculates
+            local oldfunc = Blind.debuff_card
+            function Blind:debuff_card(card, from_blind)
+                self:jimb_calc({debuff_card = true, card = card, from_blind = from_blind})
+                local ret = oldfunc(self,card,from_blind)
+                return ret
+            end
+            local oldfunc = draw_card
+            function draw_card(from, to, percent, dir, sort, card, delay, mute, stay_flipped, vol, discarded_only)
+                local ret = oldfunc(from, to, percent, dir, sort, card, delay, mute, stay_flipped, vol, discarded_only)
+                if G.GAME.boss_summoned and G.GAME.blind then
+                    local ret_ = G.GAME.blind:jimb_calc({pre_draw_card = true, from = from, to = to, percent = percent, dir = dir, sort = sort, card = card, delay = delay, mute = mute, stay_flipped = stay_flipped, vol = vol, discarded_only = discarded_only})
+                    if ret_ ~= nil then return ret_ end
+                end
+                return ret
+            end
+            local oldfunc = CardArea.emplace
+            function CardArea:emplace(card, location, stay_flipped)
+                local ret = oldfunc(self,card,location,stay_flipped)
+                if G.GAME.boss_summoned then
+                    local ret_ = G.GAME.blind:jimb_calc({draw_card = true, area = self, card = card, old_area = location, stay_flipped = stay_flipped})
+                    if ret_ then return ret_ end
+                end
+                return ret
+            end
+            local oldfunc = G.FUNCS.draw_from_deck_to_hand
+            G.FUNCS.draw_from_deck_to_hand = function(e)
+                local ret = oldfunc(e)
+                return ret
+            end
+            local oldfunc = G.FUNCS.discard_cards_from_highlighted
+            G.FUNCS.discard_cards_from_highlighted = function(e, hook)
+                if G.GAME.blind and G.GAME.blind.summoned == true or G.GAME.blind:get_type() == 'Boss' and G.GAME.boss_summoned then
+                    local ret_ = G.GAME.blind:jimb_calc({pre_discard = true})
+                    if ret_ then return ret_ end
+                    G.GAME.debuff_hand_draw = nil
+                end
+                if #G.hand.highlighted == 0 then return end
+                local ret = oldfunc(e, hook)
+                return ret
+            end
+            local oldfunc = Blind.debuff_hand
+            function Blind:debuff_hand(cards, hand, handname, check)
+                local ret = oldfunc(self,cards,hand,handname,check)
+                if self.summoned or G.GAME.boss_summoned then
+                    local ret_ = self:jimb_calc({debuff_hand = true, cards = cards, hand = hand, handname = handname, check = check})
+                    if ret_ then return ret_ end
+                end
+                return ret
+            end
+            local oldfunc = Blind.modify_hand
+            function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips)
+                if G.GAME.boss_summoned then
+                    local ret_,ret2_,ret3_ = self:jimb_calc({modify_hand = true, cards = cards, poker_hands = poker_hands, text = text, mult = mult, hand_chips = hand_chips})
+                    if ret_ and ret2_ and ret3_ then return ret_, ret2_, ret3_ end
+                end
+                local ret, ret2,ret3 = oldfunc(self,cards, poker_hands, text, mult, hand_chips)
+                return ret,ret2,ret3
+            end
+            local oldfunc = Blind.press_play
+            function Blind:press_play()
+                if self.summoned == true then
+                    local ret_ = self:jimb_calc({play_hand = true})
+                    if ret_ then return ret_ end
+                end
+                if self.trueDebuffed == true then return end
+                local ret = oldfunc(self)
+                return ret
+            end
+    --
+--
+
+--stakes
+
+    SMODS.Stake {
+        key = 'silver',
         name = "Silver Stake",
-        text = {
-            "Low chance for {C:attention}Boss Blinds{}",
-            "spawn {C:legendary}Summoned",
-            '{C:inactive}Showdown Blinds excluded',
-            '{C:inactive}Thank you{} {C:attention}gudusername_53951{}', 
-            'for help with the sprite'
-        },
-        sticker = {
-            name = "Silver Sticker",
+        pos = {x = 0, y = 0},
+        unlocked_stake = 'jimb_burning',
+        applied_stakes = {'white'},
+        above_stake = 'white',
+        loc_txt = {
+            name = "Silver Stake",
             text = {
-                "Used this Joker",
-                "to win on {C:attention}Silver",
-                "{C:attention}Stake{} difficulty"
+                "Low chance for {C:attention}Boss Blinds{}",
+                "spawn {C:legendary}Summoned",
+                '{C:inactive}Showdown Blinds excluded',
+                '{C:inactive}Thank you{} {C:attention}gudusername_53951{}', 
+                'for help with the sprite'
+            },
+            sticker = {
+                name = "Silver Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Silver",
+                    "{C:attention}Stake{} difficulty"
+                }
             }
-        }
-    },
-    atlas = 'Stakes',
-    pos = {x = 0, y = 0},
-    sticker_atlas = 'Stickers',
-    sticker_pos = {x = 1, y = 0},
-    modifiers = function()
-        G.GAME.chance_summon = 1/9
-    end,
-}
+        },
+        atlas = 'Stakes',
+        pos = {x = 0, y = 0},
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 1, y = 0},
+        modifiers = function()
+            G.GAME.chance_summon = 1/7
+        end,
+    }
 
-SMODS.Stake {
-    key = 'burning',
-    name = "Burning Stake",
-    pos = {x = 0, y = 0},
-    applied_stakes = {'jimb_silver', 'red'},
-    above_stake = 'red',
-	loc_txt = {
+    SMODS.Stake {
+        key = 'burning',
         name = "Burning Stake",
-        text = {
-            "{C:attention}Small Blinds{} have a chance to be {C:legendary}Summoned",
-        },
-        sticker = {
-            name = "Burning Sticker",
+        pos = {x = 0, y = 0},
+        applied_stakes = {'jimb_silver', 'red'},
+        above_stake = 'red',
+        loc_txt = {
+            name = "Burning Stake",
             text = {
-                "Used this Joker",
-                "to win on {C:attention}Burning",
-                "{C:attention}Stake{} difficulty"
+                "{C:attention}Small Blinds{} have a chance to be {C:legendary}Summoned",
+            },
+            sticker = {
+                name = "Burning Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Burning",
+                    "{C:attention}Stake{} difficulty"
+                }
             }
-        }
-    },
-    atlas = 'Stakes',
-    pos = {x = 1, y = 0},
-    sticker_atlas = 'Stickers',
-    sticker_pos = {x = 2, y = 0},
-    modifiers = function()
-        G.GAME.chance_small_summon = 1/4
-    end,
-}
+        },
+        atlas = 'Stakes',
+        pos = {x = 1, y = 0},
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 2, y = 0},
+        modifiers = function()
+            G.GAME.chance_small_summon = 1/4
+        end,
+    }
 
-SMODS.Stake {
-    key = 'cracked',
-    name = "Cracked Stake",
-    pos = {x = 0, y = 0},
-    applied_stakes = {'jimb_burning', 'green'},
-    above_stake = 'green',
-	loc_txt = {
+    SMODS.Stake {
+        key = 'cracked',
         name = "Cracked Stake",
-        text = {
-            "{C:attention}Boss Blinds{} have a higher chance",
-            'to be {C:legendary}Summoned{} on spawn',
-            '{C:inactive}Thank you{} {C:attention}gudusername_53951{}', 
-            'for help with the sprite'
-        },
-        sticker = {
-            name = "Cracked Sticker",
+        pos = {x = 0, y = 0},
+        applied_stakes = {'jimb_burning', 'green'},
+        above_stake = 'green',
+        loc_txt = {
+            name = "Cracked Stake",
             text = {
-                "Used this Joker",
-                "to win on {C:attention}Cracked",
-                "{C:attention}Stake{} difficulty"
+                "{C:attention}Boss Blinds{} have a higher chance",
+                'to be {C:legendary}Summoned{} on spawn',
+                '{C:inactive}Thank you{} {C:attention}gudusername_53951{}', 
+                'for help with the sprite'
+            },
+            sticker = {
+                name = "Cracked Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Cracked",
+                    "{C:attention}Stake{} difficulty"
+                }
             }
-        }
-    },
-    sticker_atlas = 'Stickers',
-    sticker_pos = {x = 3, y = 0},
-    atlas = 'Stakes',
-    pos = {x = 2, y = 0},
-    modifiers = function()
-        G.GAME.chance_summon = 1/5
-    end,
-}
+        },
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 3, y = 0},
+        atlas = 'Stakes',
+        pos = {x = 2, y = 0},
+        modifiers = function()
+            G.GAME.chance_summon = 1/4
+        end,
+    }
 
-SMODS.Stake {
-    key = 'sepia',
-    name = "Sepia Stake",
-    pos = {x = 0, y = 0},
-    applied_stakes = {'jimb_cracked', 'black'},
-    above_stake = 'black',
-	loc_txt = {
+    SMODS.Stake {
+        key = 'sepia',
         name = "Sepia Stake",
-        text = {
-            "{C:legendary}Summoned {}{C:attention}Boss Blinds{} spawn {C:legendary}Curses",
-        },
-        sticker = {
-            name = "Sepia Sticker",
+        pos = {x = 0, y = 0},
+        applied_stakes = {'jimb_cracked', 'black'},
+        above_stake = 'black',
+        loc_txt = {
+            name = "Sepia Stake",
             text = {
-                "Used this Joker",
-                "to win on {C:attention}Sepia",
-                "{C:attention}Stake{} difficulty"
+                "{C:legendary}Summoned {}{C:attention}Boss Blinds{} spawn {C:legendary}Curses",
+            },
+            sticker = {
+                name = "Sepia Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Sepia",
+                    "{C:attention}Stake{} difficulty"
+                }
             }
-        }
-    },
-    atlas = 'Stakes',
-    pos = {x = 4, y = 0},
-    sticker_atlas = 'Stickers',
-    sticker_pos = {x = 0, y = 1},
-    modifiers = function()
-        G.GAME.curse_summon = true
-    end,
-}
+        },
+        atlas = 'Stakes',
+        pos = {x = 4, y = 0},
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 0, y = 1},
+        modifiers = function()
+            G.GAME.curse_summon = true
+        end,
+    }
 
-SMODS.Stake {
-    key = 'hellbound',
-    name = "Hellbound Stake",
-    pos = {x = 0, y = 0},
-    applied_stakes = {'jimb_sepia', 'blue'},
-    above_stake = 'blue',
-	loc_txt = {
+    SMODS.Stake {
+        key = 'hellbound',
         name = "Hellbound Stake",
-        text = {
-            "{C:legendary}Curses{} can spawn with",
-            'an {X:dark_edition,C:white}Impure{} Sticker'
-        },
-        sticker = {
-            name = "Hellbound Sticker",
+        pos = {x = 0, y = 0},
+        applied_stakes = {'jimb_sepia', 'blue'},
+        above_stake = 'blue',
+        loc_txt = {
+            name = "Hellbound Stake",
             text = {
-                "Used this Joker",
-                "to win on {C:attention}Hellbound",
-                "{C:attention}Stake{} difficulty"
+                "{C:legendary}Curses{} can spawn with",
+                'an {X:dark_edition,C:white}Impure{} Sticker'
+            },
+            sticker = {
+                name = "Hellbound Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Hellbound",
+                    "{C:attention}Stake{} difficulty"
+                }
             }
-        }
-    },
-    sticker_atlas = 'Stickers',
-    sticker_pos = {x = 4, y = 0},
-    atlas = 'Stakes',
-    pos = {x = 3, y = 0},
-    modifiers = function()
-        G.GAME.enable_impure_sticker = true
-    end,
-}
-
-SMODS.Sticker{
-    key = 'impure', 
-    loc_txt = {
-        name = "Impure",
-        label = 'Impure',
-        text = {
-            "Prevents being {C:legendary}Purified",
-            'one time'
         },
-    },
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 4, y = 0},
+        atlas = 'Stakes',
+        pos = {x = 3, y = 0},
+        modifiers = function()
+            G.GAME.enable_impure_sticker = true
+        end,
+    }
 
-    apply = function(self, card, val)
-        card.ability[self.key] = val
-        card.ability.purify_preventing = true
-    end,
+    SMODS.Sticker{
+        key = 'impure', 
+        loc_txt = {
+            name = "Impure",
+            label = 'Impure',
+            text = {
+                "Prevents being {C:legendary}Purified",
+                'one time'
+            },
+        },
 
-    badge_colour = HEX('e97720'),
+        apply = function(self, card, val)
+            card.ability[self.key] = val
+            card.ability.purify_preventing = true
+        end,
 
-    order = 99,
-    atlas = 'Stickers',
-    pos = {x = 0, y = 2},
-}
+        badge_colour = HEX('e97720'),
 
-SMODS.Stake {
-    key = 'rotting',
-    name = "Rotting Stake",
-    pos = {x = 0, y = 0},
-    applied_stakes = {'jimb_hellbound', 'purple'},
-    above_stake = 'purple',
-	loc_txt = {
+        order = 99,
+        atlas = 'Stickers',
+        pos = {x = 0, y = 2},
+    }
+
+    SMODS.Stake {
+        key = 'rotting',
         name = "Rotting Stake",
-        text = {
-            "{C:legendary}Cards{} can spawn with",
-            'an {C:dark_edition}Deteriorating{} Sticker',
-            '{C:inactive}Thank you{} {C:attention}gudusername_53951{}', 
-            'for help with the sprite'
-        },
-        sticker = {
-            name = "Rotting Sticker",
+        pos = {x = 0, y = 0},
+        applied_stakes = {'jimb_hellbound', 'purple'},
+        above_stake = 'purple',
+        loc_txt = {
+            name = "Rotting Stake",
             text = {
-                "Used this Joker",
-                "to win on {C:attention}Rotting",
-                "{C:attention}Stake{} difficulty"
+                "{C:legendary}Cards{} can spawn with",
+                'an {C:dark_edition}Deteriorating{} Sticker',
+                '{C:inactive}Thank you{} {C:attention}gudusername_53951{}', 
+                'for help with the sprite'
+            },
+            sticker = {
+                name = "Rotting Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Rotting",
+                    "{C:attention}Stake{} difficulty"
+                }
             }
-        }
-    },
-    atlas = 'Stakes',
-    pos = {x = 0, y = 1},
-    sticker_atlas = 'Stickers',
-    sticker_pos = {x = 1, y = 1},
-    modifiers = function()
-        G.GAME.enable_deteriorating_sticker = true
-    end,
-}
-
-SMODS.Sticker{
-    key = 'deteriorating', 
-    loc_txt = {
-        name = "Deteriorating",
-        label = 'Deteriorating',
-        text = {
-            "Loses {C:attention}5%{} of values",
-            'when a hand is played'
         },
-    },
-
-    apply = function(self, card, val)
-        card.ability[self.key] = val
-        card.ability.deteriorating = true
-    end,
-    atlas = 'Stickers',
-    pos = {x = 0, y = 0},
-    badge_colour = HEX('e97720'),
-
-    order = 99,
-}
-
-
-function Blind:add_speech_bubble(text_key, align, loc_vars)
-    if self.children.speech_bubble then self.children.speech_bubble:remove() end
-    self.config.speech_bubble_align = {align=align or 'bm', offset = {x=0,y=0},parent = self}
-    self.children.speech_bubble = 
-    UIBox{
-        definition = G.UIDEF.speech_bubble(text_key, loc_vars),
-        config = self.config.speech_bubble_align
+        atlas = 'Stakes',
+        pos = {x = 0, y = 1},
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 1, y = 1},
+        modifiers = function()
+            G.GAME.enable_deteriorating_sticker = true
+        end,
     }
-    self.children.speech_bubble:set_role{
-        role_type = 'Minor',
-        xy_bond = 'Weak',
-        r_bond = 'Strong',
-        major = self,
+    
+
+    SMODS.Sticker{
+        key = 'deteriorating', 
+        loc_txt = {
+            name = "Deteriorating",
+            label = 'Deteriorating',
+            text = {
+                "Loses {C:attention}5%{} of values",
+                'when a hand is played'
+            },
+        },
+
+        apply = function(self, card, val)
+            card.ability[self.key] = val
+            card.ability.deteriorating = true
+        end,
+        atlas = 'Stickers',
+        pos = {x = 0, y = 0},
+        badge_colour = HEX('e97720'),
+
+        order = 99,
     }
-    self.children.speech_bubble.states.visible = false
-end
 
-function Blind:say_stuff(n, not_first, args)
-    --args stuff
-    --args.duration
-    --args.pitch
+    SMODS.Stake {
+        key = 'bloody',
+        name = "Bloody Stake",
+        pos = {x = 0, y = 0},
+        applied_stakes = {'jimb_rotting', 'orange'},
+        above_stake = 'orange',
+        loc_txt = {
+            name = "Bloody Stake",
+            text = {
+                "{C:attention}Boss Blinds{} are always {C:legendary}Summoned",
+                '{C:inactive}Showdown Blinds excluded'
+            },
+            sticker = {
+                name = "Bloody Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Bloody",
+                    "{C:attention}Stake{} difficulty"
+                }
+            }
+        },
+        atlas = 'Stakes',
+        pos = {x = 0, y = 1},
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 1, y = 1},
+        modifiers = function()
+            G.GAME.chance_summon = 1
+        end,
+    }
 
-    self.talking = true
-    if not not_first then 
-        G.E_MANAGER:add_event(Event({
-            trigger = 'after',
-            delay = 0.1,
-            func = function()
-                if self.children.speech_bubble then self.children.speech_bubble.states.visible = true end
-                self:say_stuff(n, true,args)
-              return true
-            end
-        }))
-    else
-        if n <= 0 then 
-            self.talking = false
-            if self.children.speech_bubble then self.children.speech_bubble.states.visible = false end
-            
-            return 
-        end
-        local new_said = math.random(1, 11)
-        while new_said == self.last_said do 
-            new_said = math.random(1, 11)
-        end
-        self.last_said = new_said
-        play_sound('voice'..math.random(1, 11), args and args.pitch or 1, 0.5)
-        self:juice_up()
-        
-        G.E_MANAGER:add_event(Event({
-            trigger = 'after',
-            blockable = false, blocking = false,
-            delay = 0.13,
-            func = function()
-                self:say_stuff(n-1, true,args)
-            return true
-            end
-        }), 'tutorial')
+    SMODS.Stake {
+        key = 'deluxe',
+        name = "Deluxe Stake",
+        pos = {x = 0, y = 0},
+        applied_stakes = {'jimb_bloody', 'orange'},
+        above_stake = 'gold',
+        loc_txt = {
+            name = "Gold Stake",
+            text = {
+                "{C:attention}Showdown Blinds{} are always {C:legendary}Summoned",
+            },
+            sticker = {
+                name = "Deluxe Sticker",
+                text = {
+                    "Used this Joker",
+                    "to win on {C:attention}Deluxe",
+                    "{C:attention}Stake{} difficulty"
+                }
+            }
+        },
+        atlas = 'Stakes',
+        pos = {x = 0, y = 1},
+        sticker_atlas = 'Stickers',
+        sticker_pos = {x = 1, y = 1},
+        modifiers = function()
+            G.GAME.showdown_summon = true
+        end,
+    }
+--
+
+
+--Blind visuals
+    function Blind:add_speech_bubble(text_key, align, loc_vars)
+        if self.children.speech_bubble then self.children.speech_bubble:remove() end
+        self.config.speech_bubble_align = {align=align or 'bm', offset = {x=0,y=0},parent = self}
+        self.children.speech_bubble = 
+        UIBox{
+            definition = G.UIDEF.speech_bubble(text_key, loc_vars),
+            config = self.config.speech_bubble_align
+        }
+        self.children.speech_bubble:set_role{
+            role_type = 'Minor',
+            xy_bond = 'Weak',
+            r_bond = 'Strong',
+            major = self,
+        }
+        self.children.speech_bubble.states.visible = false
     end
-end
 
-local oldfunc = Game.draw
-function Game:draw()
-    local ret = oldfunc(self)
-    if G.summon_sprite then
-        G.summon_sprite:draw()
-    end
-    return
-end
+    function Blind:say_stuff(n, not_first, args)
+        --args stuff
+        --args.duration
+        --args.pitch
 
-function Blind:start_materialize(dissolve_colours, silent, timefac)
-    G.summon_sprite.dissolve = G.summon_sprite.dissolve or 1
-    local dissolve_time = 3
-    G.summon_sprite.states.visible = true
-    G.summon_sprite.states.hover.can = false
-    G.summon_sprite.dissolve = 1
-    G.summon_sprite.dissolve_colours = dissolve_colours or {G.C.GREEN}
-    self:juice_up()
-    self.children.particles = Particles(0, 0, 0,0, {
-        timer_type = 'TOTAL',
-        timer = 0.025*dissolve_time,
-        scale = 0.25,
-        speed = 3,
-        lifespan = 0.7*dissolve_time,
-        attach = self,
-        colours = self.dissolve_colours,
-        fill = true
-    })
-    if not silent then 
-        if not G.last_materialized or G.last_materialized +0.01 < G.TIMERS.REAL or G.last_materialized > G.TIMERS.REAL then
-            G.last_materialized = G.TIMERS.REAL
+        self.talking = true
+        if not not_first then 
             G.E_MANAGER:add_event(Event({
-                blockable = false,
-                func = (function()
-                        play_sound('whoosh1', math.random()*0.1 + 0.6,0.3)
-                        play_sound('crumple'..math.random(1,5), math.random()*0.2 + 1.2,0.8)
-                    return true end)
+                trigger = 'after',
+                delay = 0.1,
+                func = function()
+                    if self.children.speech_bubble then self.children.speech_bubble.states.visible = true end
+                    self:say_stuff(n, true,args)
+                return true
+                end
             }))
+        else
+            if n <= 0 then 
+                self.talking = false
+                if self.children.speech_bubble then self.children.speech_bubble.states.visible = false end
+                
+                return 
+            end
+            local new_said = math.random(1, 11)
+            while new_said == self.last_said do 
+                new_said = math.random(1, 11)
+            end
+            self.last_said = new_said
+            play_sound('voice'..math.random(1, 11), args and args.pitch or 1, 0.5)
+            self:juice_up()
+            
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false, blocking = false,
+                delay = 0.13,
+                func = function()
+                    self:say_stuff(n-1, true,args)
+                return true
+                end
+            }), 'tutorial')
         end
     end
-    G.E_MANAGER:add_event(Event({
-        trigger = 'after',
-        blockable = false,
-        delay =  0.5*dissolve_time,
-        func = (function() if self.children.particles then self.children.particles.max = 0 end return true end)
-    }))
-    G.E_MANAGER:add_event(Event({
-        trigger = 'ease',
-        blockable = false,
-        ref_table = G.summon_sprite,
-        ref_value = 'dissolve',
-        ease_to = 0,
-        delay =  1*dissolve_time,
-        func = (function(t) return t end)
-    }))
-    G.E_MANAGER:add_event(Event({
-        trigger = 'after',
-        blockable = false,
-        delay =  1.05*dissolve_time,
-        func = (function() G.summon_sprite.states.hover.can = true; if self.children.particles then self.children.particles:remove(); self.children.particles = nil end return true end)
-    }))
-end
-local SC_scale = 0.9*(G.debug_splash_size_toggle and 0.8 or 1)
-local oldfunc = Blind.init
-function Blind:init(X, Y, W, H)
-    local ret = oldfunc(self,X,Y,W,H)
-    if not G.summon_sprite then
 
-        
-        G.summon_sprite = Sprite(0, 0, 
-        13*SC_scale, 
-        13*SC_scale*(G.ASSET_ATLAS["balatro"].py/G.ASSET_ATLAS["balatro"].px),
-        G.ASSET_ATLAS["balatro"], {x=300,y=0})
-
-        G.summon_sprite.states.visible = false
-        G.summon_sprite:define_draw_steps({{
-            shader = 'dissolve',
-        }})
-        G.summon_sprite:set_alignment({
-            major = G.mid_screen,
-            type = 'cm',
-            bond = 'Strong',
-            offset = {x=0,y=0}
-        })
-
-
-        G.summon_sprite.states.hover.can = false
-        G.summon_sprite.dissolve = 0
-        G.summon_sprite.dissolve_colours = {G.C.DARK_EDITION}
-    end
-
-    return ret
-end
-
-function Blind:jimb_summon()
-    if self.disabled == true then
-        self.disabled = false
+    local oldfunc = Game.draw
+    function Game:draw()
+        local ret = oldfunc(self)
+        if G.summon_sprite then
+            G.summon_sprite:draw()
+        end
         return
     end
-    if not G.localization.descriptions.summon_blind[self.config.blind.key] then return end
-    self.summoned = true
-    if G.summon_sprite then
+
+    function Blind:start_materialize(dissolve_colours, silent, timefac)
+        G.summon_sprite.dissolve = G.summon_sprite.dissolve or 1
+        local dissolve_time = 3
         G.summon_sprite.states.visible = true
-        self:start_materialize()
-    end
-
-    local selected_back = (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
-    selected_back = get_deck_from_name(selected_back)
-    local nameKey = 'default'
-    if G.localization.misc.quips[self.name .. ' Red Deck1'] then
-        if G.localization.misc.quips[self.name .. ' ' .. selected_back.name .. '1'] then
-            nameKey = self.name .. ' ' .. selected_back.name .. math.random(1,3)
-        else
-            nameKey = self.name .. ' Red Deck1'
-        end
-    end
-    self:add_speech_bubble(nameKey,nil,{quip = true})
-    self:say_stuff(10,nil,{pitch = math.random(3,5)*0.15})
-
-
-    --local SC_scale = 1.1*(G.debug_splash_size_toggle and 0.8 or 1)
-
-    --local loc_target = localize{type = 'raw_descriptions', key = self.config.blind.key, set = 'Blind', vars = loc_vars or self.config.blind.vars}
-    self:set_text()
-
-    if self:get_type() == 'Small' or self:get_type() == 'Big' then
-        G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.5
-        G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-    end
-
-
-
-    if self.name == 'The Wheel' then
-        self.disabled = true
-        G.jokers:unhighlight_all()
-        for k, v in ipairs(G.jokers.cards) do
-            if pseudorandom('wheelsummon') < G.GAME.probabilities.normal/2 then
-                v:flip()
+        G.summon_sprite.states.hover.can = false
+        G.summon_sprite.dissolve = 1
+        G.summon_sprite.dissolve_colours = dissolve_colours or {G.C.GREEN}
+        self:juice_up()
+        self.children.particles = Particles(0, 0, 0,0, {
+            timer_type = 'TOTAL',
+            timer = 0.025*dissolve_time,
+            scale = 0.25,
+            speed = 3,
+            lifespan = 0.7*dissolve_time,
+            attach = self,
+            colours = self.dissolve_colours,
+            fill = true
+        })
+        if not silent then 
+            if not G.last_materialized or G.last_materialized +0.01 < G.TIMERS.REAL or G.last_materialized > G.TIMERS.REAL then
+                G.last_materialized = G.TIMERS.REAL
+                G.E_MANAGER:add_event(Event({
+                    blockable = false,
+                    func = (function()
+                            play_sound('whoosh1', math.random()*0.1 + 0.6,0.3)
+                            play_sound('crumple'..math.random(1,5), math.random()*0.2 + 1.2,0.8)
+                        return true end)
+                }))
             end
         end
-        if #G.jokers.cards > 1 then 
-            G.E_MANAGER:add_event(Event({ trigger = 'after', delay = 0.2, func = function() 
-                G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 0.85);return true end })) 
-                delay(0.15)
-                G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1.15);return true end })) 
-                delay(0.15)
-                G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1);return true end })) 
-                delay(0.5)
-            return true end })) 
-        end
-    elseif self.name == 'The Needle' then
-        G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*1
+        G.E_MANAGER:add_event(Event({
+            trigger = 'after',
+            blockable = false,
+            delay =  0.5*dissolve_time,
+            func = (function() if self.children.particles then self.children.particles.max = 0 end return true end)
+        }))
+        G.E_MANAGER:add_event(Event({
+            trigger = 'ease',
+            blockable = false,
+            ref_table = G.summon_sprite,
+            ref_value = 'dissolve',
+            ease_to = 0,
+            delay =  1*dissolve_time,
+            func = (function(t) return t end)
+        }))
+        G.E_MANAGER:add_event(Event({
+            trigger = 'after',
+            blockable = false,
+            delay =  1.05*dissolve_time,
+            func = (function() G.summon_sprite.states.hover.can = true; if self.children.particles then self.children.particles:remove(); self.children.particles = nil end return true end)
+        }))
     end
-end
+    local SC_scale = 0.9*(G.debug_splash_size_toggle and 0.8 or 1)
+    local oldfunc = Blind.init
+    function Blind:init(X, Y, W, H)
+        local ret = oldfunc(self,X,Y,W,H)
+        if not G.summon_sprite then
+
+            
+            G.summon_sprite = Sprite(0, 0, 
+            13*SC_scale, 
+            13*SC_scale*(G.ASSET_ATLAS["balatro"].py/G.ASSET_ATLAS["balatro"].px),
+            G.ASSET_ATLAS["balatro"], {x=300,y=0})
+
+            G.summon_sprite.states.visible = false
+            G.summon_sprite:define_draw_steps({{
+                shader = 'dissolve',
+            }})
+            G.summon_sprite:set_alignment({
+                major = G.mid_screen,
+                type = 'cm',
+                bond = 'Strong',
+                offset = {x=0,y=0}
+            })
 
 
-local oldfunc = create_UIBox_blind_popup
-function create_UIBox_blind_popup(blind, discovered, vars)
-    local blind_text = {}
+            G.summon_sprite.states.hover.can = false
+            G.summon_sprite.dissolve = 0
+            G.summon_sprite.dissolve_colours = {G.C.DARK_EDITION}
+        end
+
+        return ret
+    end
+
     
-    local _dollars = blind.dollars
-    local loc_vars = nil
-    if blind.collection_loc_vars and type(blind.collection_loc_vars) == 'function' then
-        local res = blind:collection_loc_vars() or {}
-        loc_vars = res.vars
-    end
-    local loc_target = localize{type = 'raw_descriptions', key = blind.key, set = 'summon_blind', vars = loc_vars or vars or blind.vars}
-    local loc_name = localize{type = 'name_text', key = blind.key, set = 'summon_blind'}
-  
-    if jimbomod.config['Summoned Blinds'][blind.key] then 
-      local ability_text = {}
-      if loc_target then 
-        for k, v in ipairs(loc_target) do
-          ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={{n=G.UIT.T, config={text = (k ==1 and blind.name == 'The Wheel' and '1' or '')..v, scale = 0.35, shadow = true, colour = G.C.WHITE}}}}
+    local oldfunc = create_UIBox_blind_popup
+    function create_UIBox_blind_popup(blind, discovered, vars)
+        local blind_text = {}
+        
+        local _dollars = blind.dollars
+        local loc_vars = nil
+        if blind.collection_loc_vars and type(blind.collection_loc_vars) == 'function' then
+            local res = blind:collection_loc_vars() or {}
+            loc_vars = res.vars
         end
-      end
-      local stake_sprite = get_stake_sprite(G.GAME.stake or 1, 0.4)
-      blind_text[#blind_text + 1] =
-        {n=G.UIT.R, config={align = "cm", emboss = 0.05, r = 0.1, minw = 2.5, padding = 0.07, colour = G.C.WHITE}, nodes={
-          ability_text[1] and {n=G.UIT.R, config={align = "cm", padding = 0.08, colour = mix_colours(blind.boss_colour, G.C.GREY, 0.4), r = 0.1, emboss = 0.05, minw = 2.5, minh = 0.9}, nodes=ability_text} or nil
-        }}
-    elseif G.localization.descriptions.summon_blind[blind.key] then
-      blind_text[#blind_text + 1] =
-        {n=G.UIT.R, config={align = "cm", emboss = 0.05, r = 0.1, minw = 2.5, padding = 0.1, colour = G.C.WHITE}, nodes={
-          {n=G.UIT.R, config={align = "cm"}, nodes={
-            {n=G.UIT.T, config={text = "Defeat this blind", scale = 0.4, colour = G.C.UI.TEXT_DARK}},
-          }},
-          {n=G.UIT.R, config={align = "cm"}, nodes={
-            {n=G.UIT.T, config={text = 'while it is Summoned', scale = 0.4, colour = G.C.UI.TEXT_DARK}},
-          }},
-          {n=G.UIT.R, config={align = "cm"}, nodes={
-            {n=G.UIT.T, config={text = 'to discover it', scale = 0.4, colour = G.C.UI.TEXT_DARK}},
-          }},
-        }}
-    else
+        local loc_target = localize{type = 'raw_descriptions', key = blind.key, set = 'summon_blind', vars = loc_vars or vars or blind.vars}
+        local loc_name = localize{type = 'name_text', key = blind.key, set = 'summon_blind'}
+    
+        if jimbomod.config['Summoned Blinds'][blind.key] then 
+        local ability_text = {}
+        if loc_target then 
+            for k, v in ipairs(loc_target) do
+            ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={{n=G.UIT.T, config={text = (k ==1 and blind.name == 'The Wheel' and '1' or '')..v, scale = 0.35, shadow = true, colour = G.C.WHITE}}}}
+            end
+        end
+        local stake_sprite = get_stake_sprite(G.GAME.stake or 1, 0.4)
         blind_text[#blind_text + 1] =
-        {n=G.UIT.R, config={align = "cm", emboss = 0.05, r = 0.1, minw = 2.5, padding = 0.1, colour = G.C.WHITE}, nodes={
-          {n=G.UIT.R, config={align = "cm"}, nodes={
-            {n=G.UIT.T, config={text = "This blind is", scale = 0.4, colour = G.C.UI.TEXT_DARK}},
-          }},
-          {n=G.UIT.R, config={align = "cm"}, nodes={
-            {n=G.UIT.T, config={text = 'unsummonable', scale = 0.4, colour = G.C.UI.TEXT_DARK}},
-          }},
-        }}
-    end
-    local ret = oldfunc(blind,discovered,vars)
-    if not ret then return end
-    --if jimbomod.config['Summoned Blinds'][blind.key] then
-    --[
-        ret.nodes[#ret.nodes+1] = {
-            n=G.UIT.R, 
-                    config={
-                        align = "cm", 
-                        emboss = 0.05, 
-                        r = 0.1, 
-                        minw = 2.5, 
-                        padding = 0.1, 
-                        colour = not jimbomod.config['Summoned Blinds'][blind.key] and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
-                    }, 
-                    nodes={
-                        {
-                            n=G.UIT.R, 
-                            config={
-                                align = "cm", 
-                                emboss = 0.05, 
-                                r = 0.1, 
-                                minw = 2.5, 
-                                padding = 0.1, 
-                                colour = not jimbomod.config['Summoned Blinds'][blind.key] and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
-                            }, 
-                            nodes={
-                                {
-                                    n=G.UIT.O, 
-                                    config={
-                                        object = DynaText({
-                                            string = jimbomod.config['Summoned Blinds'][blind.key] and loc_name or 'Not Discovered', 
-                                            colours = {G.C.UI.TEXT_LIGHT}, 
-                                            shadow = true, 
-                                            rotate = not jimbomod.config['Summoned Blinds'][blind.key], 
-                                            spacing = jimbomod.config['Summoned Blinds'][blind.key] and 2 or 0, 
-                                            bump = true, 
-                                            scale = 0.3
-                                        })
-                                    }
-                                },
-                            }
-                        },
-                        {
-                            n=G.UIT.R, 
-                            config={align = "cm"}, 
-                            nodes=blind_text
-                        },
-                    }
-        }
-        --]]
-        --[[ret.nodes[#ret.nodes+1] = {
+            {n=G.UIT.R, config={align = "cm", emboss = 0.05, r = 0.1, minw = 2.5, padding = 0.07, colour = G.C.WHITE}, nodes={
+            ability_text[1] and {n=G.UIT.R, config={align = "cm", padding = 0.08, colour = mix_colours(blind.boss_colour, G.C.GREY, 0.4), r = 0.1, emboss = 0.05, minw = 2.5, minh = 0.9}, nodes=ability_text} or nil
+            }}
+        elseif G.localization.descriptions.summon_blind[blind.key] then
+        blind_text[#blind_text + 1] =
+            {n=G.UIT.R, config={align = "cm", emboss = 0.05, r = 0.1, minw = 2.5, padding = 0.1, colour = G.C.WHITE}, nodes={
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+                {n=G.UIT.T, config={text = "Defeat this blind", scale = 0.4, colour = G.C.UI.TEXT_DARK}},
+            }},
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+                {n=G.UIT.T, config={text = 'while it is Summoned', scale = 0.4, colour = G.C.UI.TEXT_DARK}},
+            }},
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+                {n=G.UIT.T, config={text = 'to discover it', scale = 0.4, colour = G.C.UI.TEXT_DARK}},
+            }},
+            }}
+        else
+            
+            blind_text[#blind_text + 1] =
+            {n=G.UIT.R, config={align = "cm", emboss = 0.05, r = 0.1, minw = 2.5, padding = 0.1, colour = G.C.WHITE}, nodes={
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+                {n=G.UIT.T, config={text = "This blind is", scale = 0.4, colour = G.C.UI.TEXT_DARK}},
+            }},
+            {n=G.UIT.R, config={align = "cm"}, nodes={
+                {n=G.UIT.T, config={text = 'unsummonable', scale = 0.4, colour = G.C.UI.TEXT_DARK}},
+            }},
+            }}
+        end
+        local ret = oldfunc(blind,discovered,vars)
+        if not ret then return end
+        if G.localization.descriptions.summon_blind[blind.key] then
+        --[
+            ret.nodes[#ret.nodes+1] = {
+                n=G.UIT.R, 
+                        config={
+                            align = "cm", 
+                            emboss = 0.05, 
+                            r = 0.1, 
+                            minw = 2.5, 
+                            padding = 0.1, 
+                            colour = not jimbomod.config['Summoned Blinds'][blind.key] and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
+                        }, 
+                        nodes={
+                            {
+                                n=G.UIT.R, 
+                                config={
+                                    align = "cm", 
+                                    emboss = 0.05, 
+                                    r = 0.1, 
+                                    minw = 2.5, 
+                                    padding = 0.1, 
+                                    colour = not jimbomod.config['Summoned Blinds'][blind.key] and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
+                                }, 
+                                nodes={
+                                    {
+                                        n=G.UIT.O, 
+                                        config={
+                                            object = DynaText({
+                                                string = jimbomod.config['Summoned Blinds'][blind.key] and loc_name or 'Not Discovered', 
+                                                colours = {G.C.UI.TEXT_LIGHT}, 
+                                                shadow = true, 
+                                                rotate = not jimbomod.config['Summoned Blinds'][blind.key], 
+                                                spacing = jimbomod.config['Summoned Blinds'][blind.key] and 2 or 0, 
+                                                bump = true, 
+                                                scale = 0.3
+                                            })
+                                        }
+                                    },
+                                }
+                            },
+                            {
+                                n=G.UIT.R, 
+                                config={align = "cm"}, 
+                                nodes=blind_text
+                            },
+                        }
+            }
+            --]]
+            --[[ret.nodes[#ret.nodes+1] = {
+                n=G.UIT.ROOT, 
+                config={
+                    align = "cm", 
+                    padding = 0.05, 
+                    colour = lighten(G.C.JOKER_GREY, 0.5),
+                    r = 0.1, 
+                    emboss = 0.05,
+                    offset = {x=0.5,y=0}
+                }, 
+                nodes={
+                    {
+                        n=G.UIT.R, 
+                        config={
+                            align = "cm", 
+                            emboss = 0.05, 
+                            r = 0.1, 
+                            minw = 2.5, 
+                            padding = 0.1, 
+                            colour = not jimbomod.config['Summoned Blinds'][blind.key] and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
+                        }, 
+                        nodes={
+                            {
+                                n=G.UIT.O, 
+                                config={
+                                    object = DynaText({
+                                        string = jimbomod.config['Summoned Blinds'][blind.key] and loc_name or 'Not Discovered', 
+                                        colours = {G.C.UI.TEXT_LIGHT}, 
+                                        shadow = true, 
+                                        rotate = not jimbomod.config['Summoned Blinds'][blind.key], 
+                                        spacing = jimbomod.config['Summoned Blinds'][blind.key] and 2 or 0, 
+                                        bump = true, 
+                                        scale = 0.4
+                                    })
+                                }
+                            },
+                        }
+                    },
+                    {
+                        n=G.UIT.R, 
+                        config={align = "cm"}, 
+                        nodes=blind_text
+                    },
+                }
+            }]]
+        end
+        return ret
+        --[[
+        return {
             n=G.UIT.ROOT, 
             config={
                 align = "cm", 
                 padding = 0.05, 
-                colour = lighten(G.C.JOKER_GREY, 0.5),
+                colour = lighten(G.C.JOKER_GREY, 0.5), 
                 r = 0.1, 
-                emboss = 0.05,
-                offset = {x=0.5,y=0}
+                emboss = 0.05
             }, 
             nodes={
                 {
@@ -7324,18 +7705,18 @@ function create_UIBox_blind_popup(blind, discovered, vars)
                         r = 0.1, 
                         minw = 2.5, 
                         padding = 0.1, 
-                        colour = not jimbomod.config['Summoned Blinds'][blind.key] and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
+                        colour = not discovered and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
                     }, 
                     nodes={
                         {
                             n=G.UIT.O, 
                             config={
                                 object = DynaText({
-                                    string = jimbomod.config['Summoned Blinds'][blind.key] and loc_name or 'Not Discovered', 
+                                    string = discovered and loc_name or localize('k_not_discovered'), 
                                     colours = {G.C.UI.TEXT_LIGHT}, 
                                     shadow = true, 
-                                    rotate = not jimbomod.config['Summoned Blinds'][blind.key], 
-                                    spacing = jimbomod.config['Summoned Blinds'][blind.key] and 2 or 0, 
+                                    rotate = not discovered, 
+                                    spacing = discovered and 2 or 0, 
                                     bump = true, 
                                     scale = 0.4
                                 })
@@ -7348,551 +7729,351 @@ function create_UIBox_blind_popup(blind, discovered, vars)
                     config={align = "cm"}, 
                     nodes=blind_text
                 },
+            }}
+        --]]
+    end
+
+
+    local oldfunc = create_UIBox_blind_choice
+    function create_UIBox_blind_choice(type, run_info)
+        local ret = oldfunc(type,run_info)
+        if type == 'Boss' and G.GAME.boss_summoned then
+            if not G.GAME.blind_on_deck then
+                G.GAME.blind_on_deck = 'Small'
+            end
+            if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Select' end
+            
+            local disabled = false
+            type = type or 'Small'
+            
+            local blind_choice = {
+                config = G.P_BLINDS[G.GAME.round_resets.blind_choices[type]],
             }
-        }]]
-    --end
-    return ret
-    --[[
-    return {
-        n=G.UIT.ROOT, 
-        config={
-            align = "cm", 
-            padding = 0.05, 
-            colour = lighten(G.C.JOKER_GREY, 0.5), 
-            r = 0.1, 
-            emboss = 0.05
-        }, 
-        nodes={
-            {
-                n=G.UIT.R, 
-                config={
-                    align = "cm", 
-                    emboss = 0.05, 
-                    r = 0.1, 
-                    minw = 2.5, 
-                    padding = 0.1, 
-                    colour = not discovered and G.C.JOKER_GREY or blind.boss_colour or G.C.GREY
-                }, 
-                nodes={
-                    {
-                        n=G.UIT.O, 
-                        config={
-                            object = DynaText({
-                                string = discovered and loc_name or localize('k_not_discovered'), 
-                                colours = {G.C.UI.TEXT_LIGHT}, 
-                                shadow = true, 
-                                rotate = not discovered, 
-                                spacing = discovered and 2 or 0, 
-                                bump = true, 
-                                scale = 0.4
-                            })
-                        }
-                    },
-                }
-            },
-            {
-                n=G.UIT.R, 
-                config={align = "cm"}, 
-                nodes=blind_text
-            },
-        }}
-    --]]
-end 
-
-
-
-local oldfunc = Blind.defeat
-function Blind:defeat(silent)
-    local ret = oldfunc(self,silent)
-    if self.summoned == true then
-        if self:get_type() == 'Boss' then
-            if G.GAME.curse_summon and G.GAME.boss_summoned then
-                local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
-                newcard:add_to_deck()
-                G.consumeables:emplace(newcard)
-                
+            
+            blind_choice.animation = AnimatedSprite(0,0, 1.4, 1.4, G.ANIMATION_ATLAS['blind_chips'],  blind_choice.config.pos)
+            blind_choice.animation:define_draw_steps({
+                {shader = 'dissolve', shadow_height = 0.05},
+                {shader = 'dissolve'}
+            })
+            local extras = nil
+            local stake_sprite = get_stake_sprite(G.GAME.stake or 1, 0.5)
+            
+            G.GAME.orbital_choices = G.GAME.orbital_choices or {}
+            G.GAME.orbital_choices[G.GAME.round_resets.ante] = G.GAME.orbital_choices[G.GAME.round_resets.ante] or {}
+            
+            if not G.GAME.orbital_choices[G.GAME.round_resets.ante][type] then 
+                local _poker_hands = {}
+                for k, v in pairs(G.GAME.hands) do
+                    if v.visible then _poker_hands[#_poker_hands+1] = k end
+                end
+            
+                G.GAME.orbital_choices[G.GAME.round_resets.ante][type] = pseudorandom_element(_poker_hands, pseudoseed('orbital'))
             end
-            if G.localization.descriptions.summon_blind[blind.key] then
-                jimbomod.config["Summoned Blinds"][self.config.blind.key] = true
-                SMODS.save_mod_config(jimbomod)
+            
+            
+            
+            if type == 'Small' then
+                extras = create_UIBox_blind_tag(type, run_info)
+            elseif type == 'Big' then
+                extras = create_UIBox_blind_tag(type, run_info)
+            elseif not run_info then
+                local dt1 = DynaText({string = {{string = localize('ph_up_ante_1'), colour = G.C.FILTER}}, colours = {G.C.BLACK}, scale = 0.55, silent = true, pop_delay = 4.5, shadow = true, bump = true, maxw = 3})
+                local dt2 = DynaText({string = {{string = localize('ph_up_ante_2'), colour = G.C.WHITE}},colours = {G.C.CHANCE}, scale = 0.35, silent = true, pop_delay = 4.5, shadow = true, maxw = 3})
+                local dt3 = DynaText({string = {{string = localize('ph_up_ante_3'), colour = G.C.WHITE}},colours = {G.C.CHANCE}, scale = 0.35, silent = true, pop_delay = 4.5, shadow = true, maxw = 3})
+                extras = 
+                {n=G.UIT.R, config={align = "cm"}, nodes={
+                    {n=G.UIT.R, config={align = "cm", padding = 0.07, r = 0.1, colour = {0,0,0,0.12}, minw = 2.9}, nodes={
+                    {n=G.UIT.R, config={align = "cm"}, nodes={
+                        {n=G.UIT.O, config={object = dt1}},
+                    }},
+                    {n=G.UIT.R, config={align = "cm"}, nodes={
+                        {n=G.UIT.O, config={object = dt2}},
+                    }},
+                    {n=G.UIT.R, config={align = "cm"}, nodes={
+                        {n=G.UIT.O, config={object = dt3}},
+                    }},
+                    }},
+                }}
             end
+            G.GAME.round_resets.blind_ante = G.GAME.round_resets.blind_ante or G.GAME.round_resets.ante
+            
+            local loc_target = localize{type = 'raw_descriptions', key = blind_choice.config.key, set = 'summon_blind', vars = {localize(G.GAME.current_round.most_played_poker_hand, 'poker_hands')}}
+            local loc_name = localize{type = 'name_text', key = blind_choice.config.key, set = 'summon_blind'}
+            if next(find_joker('Chicot')) then
+                loc_target = localize{type = 'raw_descriptions', key = blind_choice.config.key, set = 'Blind', vars = {localize(G.GAME.current_round.most_played_poker_hand, 'poker_hands')}}
+                loc_name = localize{type = 'name_text', key = blind_choice.config.key, set = 'Blind'}
+            end
+            if not G.localization.descriptions.summon_blind[blind_choice.config.key] then
+                return ret
+            end
+            local text_table = loc_target
+            local blind_col = get_blind_main_colour(type)
+            local blind_amt = get_blind_amount(G.GAME.round_resets.blind_ante)*blind_choice.config.mult*G.GAME.starting_params.ante_scaling
+            
+            local blind_state = G.GAME.round_resets.blind_states[type]
+            local _reward = true
+            if G.GAME.modifiers.no_blind_reward and G.GAME.modifiers.no_blind_reward[type] then _reward = nil end
+            if blind_state == 'Select' then blind_state = 'Current' end
+            local run_info_colour = run_info and (blind_state == 'Defeated' and G.C.GREY or blind_state == 'Skipped' and G.C.BLUE or blind_state == 'Upcoming' and G.C.ORANGE or blind_state == 'Current' and G.C.RED or G.C.GOLD)
+            local t = 
+            {n=G.UIT.R, config={id = type, align = "tm", func = 'blind_choice_handler', minh = not run_info and 10 or nil, ref_table = {deck = nil, run_info = run_info}, r = 0.1, padding = 0.05}, nodes={
+                {n=G.UIT.R, config={align = "cm", colour = mix_colours(G.C.BLACK, G.C.L_BLACK, 0.5), r = 0.1, outline = 1, outline_colour = G.C.L_BLACK}, nodes={  
+                {n=G.UIT.R, config={align = "cm", padding = 0.2}, nodes={
+                    not run_info and {n=G.UIT.R, config={id = 'select_blind_button', align = "cm", ref_table = blind_choice.config, colour = disabled and G.C.UI.BACKGROUND_INACTIVE or G.C.ORANGE, minh = 0.6, minw = 2.7, padding = 0.07, r = 0.1, shadow = true, hover = true, one_press = true, button = 'select_blind'}, nodes={
+                        {n=G.UIT.T, config={ref_table = G.GAME.round_resets.loc_blind_states, ref_value = type, scale = 0.45, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.UI.TEXT_LIGHT, shadow = not disabled}}
+                    }} or 
+                    {n=G.UIT.R, config={id = 'select_blind_button', align = "cm", ref_table = blind_choice.config, colour = run_info_colour, minh = 0.6, minw = 2.7, padding = 0.07, r = 0.1, emboss = 0.08}, nodes={
+                        {n=G.UIT.T, config={text = localize(blind_state, 'blind_states'), scale = 0.45, colour = G.C.UI.TEXT_LIGHT, shadow = true}}
+                    }}
+                    }},
+                    {n=G.UIT.R, config={id = 'blind_name',align = "cm", padding = 0.07}, nodes={
+                    {n=G.UIT.R, config={align = "cm", r = 0.1, outline = 1, outline_colour = blind_col, colour = darken(blind_col, 0.3), minw = 2.9, emboss = 0.1, padding = 0.07, line_emboss = 1}, nodes={
+                        {n=G.UIT.O, config={object = DynaText({string = loc_name, colours = {disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE}, shadow = not disabled, float = not disabled, y_offset = -4, scale = 0.45, maxw =2.8})}},
+                    }},
+                    }},
+                    {n=G.UIT.R, config={align = "cm", padding = 0.05}, nodes={
+                    {n=G.UIT.R, config={id = 'blind_desc', align = "cm", padding = 0.05}, nodes={
+                        {n=G.UIT.R, config={align = "cm"}, nodes={
+                        {n=G.UIT.R, config={align = "cm", minh = 1.5}, nodes={
+                            {n=G.UIT.O, config={object = blind_choice.animation}},
+                        }},
+                        text_table[1] and {n=G.UIT.R, config={align = "cm", minh = 0.7, padding = 0.05, minw = 2.9}, nodes={
+                            text_table[1] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
+                            {n=G.UIT.T, config={id = blind_choice.config.key, ref_table = {val = ''}, ref_value = 'val', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled, func = 'HUD_blind_debuff_prefix'}},
+                            {n=G.UIT.T, config={text = text_table[1] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
+                            }} or nil,
+                            text_table[2] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
+                            {n=G.UIT.T, config={text = text_table[2] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
+                            }} or nil,
+                            text_table[3] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
+                                {n=G.UIT.T, config={text = text_table[3] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
+                            }} or nil,
+                            text_table[4] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
+                                {n=G.UIT.T, config={text = text_table[4] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
+                            }} or nil,
+                        }} or nil,
+                        }},
+                        {n=G.UIT.R, config={align = "cm",r = 0.1, padding = 0.05, minw = 3.1, colour = G.C.BLACK, emboss = 0.05}, nodes={
+                        {n=G.UIT.R, config={align = "cm", maxw = 3}, nodes={
+                            {n=G.UIT.T, config={text = localize('ph_blind_score_at_least'), scale = 0.3, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
+                        }},
+                        {n=G.UIT.R, config={align = "cm", minh = 0.6}, nodes={
+                            {n=G.UIT.O, config={w=0.5,h=0.5, colour = G.C.BLUE, object = stake_sprite, hover = true, can_collide = false}},
+                            {n=G.UIT.B, config={h=0.1,w=0.1}},
+                            {n=G.UIT.T, config={text = number_format(blind_amt), scale = score_number_scale(0.9, blind_amt), colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.RED, shadow =  not disabled}}
+                        }},
+                        _reward and {n=G.UIT.R, config={align = "cm"}, nodes={
+                            {n=G.UIT.T, config={text = localize('ph_blind_reward'), scale = 0.35, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}},
+                            {n=G.UIT.T, config={text = string.rep(localize("$"), blind_choice.config.dollars)..'+', scale = 0.35, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.MONEY, shadow = not disabled}}
+                        }} or nil,
+                        }},
+                    }},
+                    }},
+                }},
+                    {n=G.UIT.R, config={id = 'blind_extras', align = "cm"}, nodes={
+                    extras,
+                    }}
+            
+                }}
+            return t
         end
+        return ret
+    end
+--
 
+
+
+--Blind summoning
+    function Blind:jimb_summon()
+        if self.disabled == true then
+            self.disabled = false
+            return
+        end
+        if not G.localization.descriptions.summon_blind[self.config.blind.key] then return end
+        self.summoned = true
+        if G.summon_sprite then
+            G.summon_sprite.states.visible = true
+            self:start_materialize()
+        end
 
         local selected_back = (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
         selected_back = get_deck_from_name(selected_back)
         local nameKey = 'default'
-        if G.localization.misc.quips[self.name .. ' Red Deck_defeat1'] then
-            if G.localization.misc.quips[self.name .. ' ' .. selected_back.name .. '_defeat1'] then
-                nameKey = self.name .. ' ' .. selected_back.name .. '_defeat' .. math.random(1,2)
+        if G.localization.misc.quips[self.name .. ' Red Deck1'] then
+            if G.localization.misc.quips[self.name .. ' ' .. selected_back.name .. '1'] then
+                nameKey = self.name .. ' ' .. selected_back.name .. math.random(1,3)
             else
-                nameKey = self.name .. ' Red Deck_defeat' .. math.random(1,2)
+                nameKey = self.name .. ' Red Deck1'
             end
         end
         self:add_speech_bubble(nameKey,nil,{quip = true})
-        self:say_stuff(3,nil,{pitch = 1.5})
-    end
-    if G.GAME.manacle_handsize then
-        G.hand:change_size(G.GAME.manacle_handsize)
-        G.GAME.manacle_handsize = nil
-    end
+        self:say_stuff(10,nil,{pitch = math.random(3,5)*0.15})
 
-    return ret
-end
 
-local oldfunc = new_round
-function new_round()
-    local ret = oldfunc()
-    G.E_MANAGER:add_event(Event({
-        trigger = 'immediate',
-        func = function()
-            if G.GAME.boss_summoned == true and G.GAME.blind:get_type() == 'Boss' or G.GAME.small_summoned and G.GAME.blind:get_type() == 'Small' then
-                --self.summoned = true
-                G.GAME.blind:jimb_summon()
-            end
-              return true
-              end
-          }))
-    return ret
-end
-local oldfunc = reset_blinds
-function reset_blinds()
-    local ret = oldfunc()
-    if G.GAME.chance_summon then
-        if pseudorandom('chance_summon') < G.GAME.chance_summon then
-            G.GAME.boss_summoned = true
-        end
-    end
-    
-    if G.GAME.chance_small_summon then
-        if pseudorandom('chance_small_summon') < G.GAME.chance_small_summon then
-            G.GAME.small_summoned = true 
-        end
-    end
-    return ret
-end
+        --local SC_scale = 1.1*(G.debug_splash_size_toggle and 0.8 or 1)
 
-local oldfunc = Blind.set_text
-function Blind:set_text()
-    local ret = oldfunc(self)
-    if G.GAME.boss_summoned and self:get_type() == 'Boss' and self.summoned ~= true then 
-        self.summoned = true
+        --local loc_target = localize{type = 'raw_descriptions', key = self.config.blind.key, set = 'Blind', vars = loc_vars or self.config.blind.vars}
         self:set_text()
-    end
-    if self.summoned == true or self:get_type() == 'Boss' and G.GAME.boss_summoned == true or self:get_type() == 'Small' and G.GAME.small_summoned then
-        if self.disabled == true then
-            self.disabled = false
-            self.trueDisabled = true
-            local loc_target = localize{type = 'raw_descriptions', key = self.config.blind.key, set = 'Blind', vars = self.config.blind.vars} or self.config.blind.loc_txt
-            if loc_target then 
-                self.loc_name = self.name == '' and self.name or localize{type ='name_text', key = self.config.blind.key, set = 'Blind'}
-                self.loc_debuff_text = ''
-                for k, v in ipairs(loc_target) do
-                    self.loc_debuff_text = self.loc_debuff_text..v..(k <= #loc_target and ' ' or '')
-                end
-                --self.loc_debuff_lines[1] = loc_target[1] or ''
-                --self.loc_debuff_lines[2] = loc_target[2] or ''
-                for i = 1, #loc_target do
-                    self.loc_debuff_lines[i] = loc_target[i] or ''
-                end
-            end
-        else
-            local loc_target = localize{type = 'raw_descriptions', key = self.config.blind.key, set = 'summon_blind', vars = self.config.blind.vars}
-            if G.localization.descriptions['summon_blind'][self.config.blind.key] and loc_target then 
-                self.loc_name = self.name == '' and self.name or localize{type ='name_text', key = self.config.blind.key, set = 'Blind'}
-                self.loc_debuff_text = ''
-                for k, v in ipairs(loc_target) do
-                    self.loc_debuff_text = self.loc_debuff_text..v..(k <= #loc_target and ' ' or '')
-                end
-                --self.loc_debuff_lines[1] = loc_target[1] or ''
-                --self.loc_debuff_lines[2] = loc_target[2] or ''
-                for i = 1, #loc_target do
-                    self.loc_debuff_lines[i] = loc_target[i] or ''
-                end
-            end
-    
-        end
-    end
-    return ret
-end
 
-
-local oldfunc = create_UIBox_blind_choice
-function create_UIBox_blind_choice(type, run_info)
-    local ret = oldfunc(type,run_info)
-    if type == 'Boss' and G.GAME.boss_summoned then
-        if not G.GAME.blind_on_deck then
-            G.GAME.blind_on_deck = 'Small'
-          end
-          if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Select' end
-        
-          local disabled = false
-          type = type or 'Small'
-        
-          local blind_choice = {
-            config = G.P_BLINDS[G.GAME.round_resets.blind_choices[type]],
-          }
-        
-          blind_choice.animation = AnimatedSprite(0,0, 1.4, 1.4, G.ANIMATION_ATLAS['blind_chips'],  blind_choice.config.pos)
-          blind_choice.animation:define_draw_steps({
-            {shader = 'dissolve', shadow_height = 0.05},
-            {shader = 'dissolve'}
-          })
-          local extras = nil
-          local stake_sprite = get_stake_sprite(G.GAME.stake or 1, 0.5)
-        
-          G.GAME.orbital_choices = G.GAME.orbital_choices or {}
-          G.GAME.orbital_choices[G.GAME.round_resets.ante] = G.GAME.orbital_choices[G.GAME.round_resets.ante] or {}
-        
-          if not G.GAME.orbital_choices[G.GAME.round_resets.ante][type] then 
-            local _poker_hands = {}
-            for k, v in pairs(G.GAME.hands) do
-                if v.visible then _poker_hands[#_poker_hands+1] = k end
-            end
-        
-            G.GAME.orbital_choices[G.GAME.round_resets.ante][type] = pseudorandom_element(_poker_hands, pseudoseed('orbital'))
-          end
-        
-        
-        
-          if type == 'Small' then
-            extras = create_UIBox_blind_tag(type, run_info)
-          elseif type == 'Big' then
-            extras = create_UIBox_blind_tag(type, run_info)
-          elseif not run_info then
-            local dt1 = DynaText({string = {{string = localize('ph_up_ante_1'), colour = G.C.FILTER}}, colours = {G.C.BLACK}, scale = 0.55, silent = true, pop_delay = 4.5, shadow = true, bump = true, maxw = 3})
-            local dt2 = DynaText({string = {{string = localize('ph_up_ante_2'), colour = G.C.WHITE}},colours = {G.C.CHANCE}, scale = 0.35, silent = true, pop_delay = 4.5, shadow = true, maxw = 3})
-            local dt3 = DynaText({string = {{string = localize('ph_up_ante_3'), colour = G.C.WHITE}},colours = {G.C.CHANCE}, scale = 0.35, silent = true, pop_delay = 4.5, shadow = true, maxw = 3})
-            extras = 
-            {n=G.UIT.R, config={align = "cm"}, nodes={
-                {n=G.UIT.R, config={align = "cm", padding = 0.07, r = 0.1, colour = {0,0,0,0.12}, minw = 2.9}, nodes={
-                  {n=G.UIT.R, config={align = "cm"}, nodes={
-                    {n=G.UIT.O, config={object = dt1}},
-                  }},
-                  {n=G.UIT.R, config={align = "cm"}, nodes={
-                    {n=G.UIT.O, config={object = dt2}},
-                  }},
-                  {n=G.UIT.R, config={align = "cm"}, nodes={
-                    {n=G.UIT.O, config={object = dt3}},
-                  }},
-                }},
-              }}
-          end
-          G.GAME.round_resets.blind_ante = G.GAME.round_resets.blind_ante or G.GAME.round_resets.ante
-          
-          local loc_target = localize{type = 'raw_descriptions', key = blind_choice.config.key, set = 'summon_blind', vars = {localize(G.GAME.current_round.most_played_poker_hand, 'poker_hands')}}
-          local loc_name = localize{type = 'name_text', key = blind_choice.config.key, set = 'summon_blind'}
-          if next(find_joker('Chicot')) then
-            loc_target = localize{type = 'raw_descriptions', key = blind_choice.config.key, set = 'Blind', vars = {localize(G.GAME.current_round.most_played_poker_hand, 'poker_hands')}}
-            loc_name = localize{type = 'name_text', key = blind_choice.config.key, set = 'Blind'}
-          end
-          if not G.localization.descriptions.summon_blind[blind_choice.config.key] then
-            return ret
-          end
-          local text_table = loc_target
-          local blind_col = get_blind_main_colour(type)
-          local blind_amt = get_blind_amount(G.GAME.round_resets.blind_ante)*blind_choice.config.mult*G.GAME.starting_params.ante_scaling
-        
-          local blind_state = G.GAME.round_resets.blind_states[type]
-          local _reward = true
-          if G.GAME.modifiers.no_blind_reward and G.GAME.modifiers.no_blind_reward[type] then _reward = nil end
-          if blind_state == 'Select' then blind_state = 'Current' end
-          local run_info_colour = run_info and (blind_state == 'Defeated' and G.C.GREY or blind_state == 'Skipped' and G.C.BLUE or blind_state == 'Upcoming' and G.C.ORANGE or blind_state == 'Current' and G.C.RED or G.C.GOLD)
-          local t = 
-          {n=G.UIT.R, config={id = type, align = "tm", func = 'blind_choice_handler', minh = not run_info and 10 or nil, ref_table = {deck = nil, run_info = run_info}, r = 0.1, padding = 0.05}, nodes={
-            {n=G.UIT.R, config={align = "cm", colour = mix_colours(G.C.BLACK, G.C.L_BLACK, 0.5), r = 0.1, outline = 1, outline_colour = G.C.L_BLACK}, nodes={  
-              {n=G.UIT.R, config={align = "cm", padding = 0.2}, nodes={
-                  not run_info and {n=G.UIT.R, config={id = 'select_blind_button', align = "cm", ref_table = blind_choice.config, colour = disabled and G.C.UI.BACKGROUND_INACTIVE or G.C.ORANGE, minh = 0.6, minw = 2.7, padding = 0.07, r = 0.1, shadow = true, hover = true, one_press = true, button = 'select_blind'}, nodes={
-                    {n=G.UIT.T, config={ref_table = G.GAME.round_resets.loc_blind_states, ref_value = type, scale = 0.45, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.UI.TEXT_LIGHT, shadow = not disabled}}
-                  }} or 
-                  {n=G.UIT.R, config={id = 'select_blind_button', align = "cm", ref_table = blind_choice.config, colour = run_info_colour, minh = 0.6, minw = 2.7, padding = 0.07, r = 0.1, emboss = 0.08}, nodes={
-                    {n=G.UIT.T, config={text = localize(blind_state, 'blind_states'), scale = 0.45, colour = G.C.UI.TEXT_LIGHT, shadow = true}}
-                  }}
-                }},
-                {n=G.UIT.R, config={id = 'blind_name',align = "cm", padding = 0.07}, nodes={
-                  {n=G.UIT.R, config={align = "cm", r = 0.1, outline = 1, outline_colour = blind_col, colour = darken(blind_col, 0.3), minw = 2.9, emboss = 0.1, padding = 0.07, line_emboss = 1}, nodes={
-                    {n=G.UIT.O, config={object = DynaText({string = loc_name, colours = {disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE}, shadow = not disabled, float = not disabled, y_offset = -4, scale = 0.45, maxw =2.8})}},
-                  }},
-                }},
-                {n=G.UIT.R, config={align = "cm", padding = 0.05}, nodes={
-                  {n=G.UIT.R, config={id = 'blind_desc', align = "cm", padding = 0.05}, nodes={
-                    {n=G.UIT.R, config={align = "cm"}, nodes={
-                      {n=G.UIT.R, config={align = "cm", minh = 1.5}, nodes={
-                        {n=G.UIT.O, config={object = blind_choice.animation}},
-                      }},
-                      text_table[1] and {n=G.UIT.R, config={align = "cm", minh = 0.7, padding = 0.05, minw = 2.9}, nodes={
-                        text_table[1] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
-                          {n=G.UIT.T, config={id = blind_choice.config.key, ref_table = {val = ''}, ref_value = 'val', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled, func = 'HUD_blind_debuff_prefix'}},
-                          {n=G.UIT.T, config={text = text_table[1] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
-                        }} or nil,
-                        text_table[2] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
-                          {n=G.UIT.T, config={text = text_table[2] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
-                        }} or nil,
-                        text_table[3] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
-                            {n=G.UIT.T, config={text = text_table[3] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
-                        }} or nil,
-                        text_table[4] and {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
-                            {n=G.UIT.T, config={text = text_table[4] or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
-                        }} or nil,
-                      }} or nil,
-                    }},
-                    {n=G.UIT.R, config={align = "cm",r = 0.1, padding = 0.05, minw = 3.1, colour = G.C.BLACK, emboss = 0.05}, nodes={
-                      {n=G.UIT.R, config={align = "cm", maxw = 3}, nodes={
-                        {n=G.UIT.T, config={text = localize('ph_blind_score_at_least'), scale = 0.3, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
-                      }},
-                      {n=G.UIT.R, config={align = "cm", minh = 0.6}, nodes={
-                        {n=G.UIT.O, config={w=0.5,h=0.5, colour = G.C.BLUE, object = stake_sprite, hover = true, can_collide = false}},
-                        {n=G.UIT.B, config={h=0.1,w=0.1}},
-                        {n=G.UIT.T, config={text = number_format(blind_amt), scale = score_number_scale(0.9, blind_amt), colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.RED, shadow =  not disabled}}
-                      }},
-                      _reward and {n=G.UIT.R, config={align = "cm"}, nodes={
-                        {n=G.UIT.T, config={text = localize('ph_blind_reward'), scale = 0.35, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}},
-                        {n=G.UIT.T, config={text = string.rep(localize("$"), blind_choice.config.dollars)..'+', scale = 0.35, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.MONEY, shadow = not disabled}}
-                      }} or nil,
-                    }},
-                  }},
-                }},
-              }},
-                {n=G.UIT.R, config={id = 'blind_extras', align = "cm"}, nodes={
-                  extras,
-                }}
-        
-            }}
-          return t
-    end
-    return ret
-end
-
-
-
-
-
-
-
-
-
-
-
-local oldfunc = Blind.debuff_card
-function Blind:debuff_card(card, from_blind)
-    local ret = oldfunc(self,card,from_blind)
-    return ret
-end
-
-
-local oldfunc = draw_card
-function draw_card(from, to, percent, dir, sort, card, delay, mute, stay_flipped, vol, discarded_only)
-    local ret = oldfunc(from, to, percent, dir, sort, card, delay, mute, stay_flipped, vol, discarded_only)
-    if G.GAME.boss_summoned and G.GAME.blind then
-        if G.GAME.blind.name == 'The Water' and G.hand and to == G.hand then
-            if pseudorandom('water_summon') < 1/8 then
-                return oldfunc(from, G.discard, percent, dir, sort, card, delay, mute, stay_flipped, vol, discarded_only)
-            end
-        end
-        if G.GAME.blind.name == 'The Tooth' and G.hand and to == G.hand then
-            G.GAME.blind.disabled = true
-            ease_dollars(-1)
-        end
-        if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_club' and not next(find_joker('Chicot')) then
-            for i = 1, #G.playing_cards do
-                local card = G.playing_cards[i]
-                if card:is_suit('Clubs',true) then
-                    card:set_debuff(true)
-                end
-            end
-        end
-    end
-    return ret
-end
-
-local oldfunc = CardArea.emplace
-function CardArea:emplace(card, location, stay_flipped)
-    local ret = oldfunc(self,card,location,stay_flipped)
-    if G.GAME.boss_summoned then
-        if G.GAME.blind.name == 'The Window' and self == G.hand then
-            if card and card:is_suit('Diamonds',true) then
-                local chosencard = pseudorandom_element(G.hand.cards,pseudoseed('window_summon'))
-                chosencard:flip()
-            end
-        end
-        if G.GAME.blind.name == 'The Pillar' and self == G.hand then
-            for i = 1, #G.hand.cards do
-                if G.GAME.pillar_debuffs then
-                    if G.GAME.pillar_debuffs[G.hand.cards[i]:get_id() .. '_'] == true then
-                        G.hand.cards[i]:set_debuff(true)
-                    end
-                end
-            end
-        end
-        if G.GAME.blind.name == 'The Mark' then
-            if card:get_id() < 6 then
-                card:flip()
-            end
-        end
-        if G.GAME.debuff_hand_draw and G.hand and self == G.hand then
-            card:set_debuff(true)
-        end
-    end
-    return ret
-end
-local oldfunc = G.FUNCS.draw_from_deck_to_hand
-G.FUNCS.draw_from_deck_to_hand = function(e)
-    local ret = oldfunc(e)
-    return ret
-end
-
-
-
-local oldfunc = G.FUNCS.discard_cards_from_highlighted
-G.FUNCS.discard_cards_from_highlighted = function(e, hook)
-    if G.GAME.blind and G.GAME.blind.summoned == true or G.GAME.blind:get_type() == 'Boss' and G.GAME.boss_summoned then
-        if G.GAME.blind.name == 'The Plant' then
-            local num = 0
-            for i = 1, #G.hand.highlighted do
-                if G.hand.highlighted[i-num]:is_face(true) then
-                    G.hand:remove_from_highlighted(G.hand.highlighted[i-num])
-                    num = num + 1
-                end
-            end
-        end
-        if G.GAME.blind.name == 'The Goad' then
-            local num = 0
-            for i = 1, #G.hand.highlighted do
-                if G.hand.highlighted[i-num]:is_suit("Spades",true) then
-                    G.hand:remove_from_highlighted(G.hand.highlighted[i-num])
-                    num = num + 1
-                end
-            end
-        end
-        G.GAME.debuff_hand_draw = nil
-    end
-    if #G.hand.highlighted == 0 then return end
-    local ret = oldfunc(e, hook)
-    return ret
-end
-local oldfunc = Blind.debuff_hand
-function Blind:debuff_hand(cards, hand, handname, check)
-    local ret = oldfunc(self,cards,hand,handname,check)
-    if self.summoned then
-        if self.name == 'The Psychic' then
-            local text,disp_text,poker_hands,scoring_hand,non_loc_disp_text = G.FUNCS.get_poker_hand_info(G.play.cards)
-            --print(#scoring_hand)
-            --print(#cards)
-            if #scoring_hand ~= #cards then
-                return true
-            end
-        end
-        if self.name == 'The Ox' then
-            self.disabled = true
-            self.triggered = false
-            if handname == G.GAME.current_round.most_played_poker_hand then
-                self.triggered = true
-                if not check then
-                    ease_dollars(-math.abs(G.GAME.dollars)*2, true)
-                end
-            end 
-        end
-    end
-    return ret
-end
-
---[
-local oldfunc = Blind.modify_hand
-function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips)
-    if G.GAME.boss_summoned then
-        if self.name == 'The Head' then
-            local Xmult = 1
-            for i = 1, #G.hand.cards do
-                if G.hand.cards[i]:is_suit("Hearts",true) then
-                    Xmult = Xmult*0.75
-                end
-            end
-            return math.max(math.floor(mult*Xmult + 0.5), 1), hand_chips, true
-        elseif self.name == 'The House' and G.GAME.current_round.hands_played == 0 and G.GAME.current_round.discards_used == 0 then
-            for i = 1, #G.hand.cards do
-                G.hand.cards[i]:set_debuff(true)
-            end
-            for i = 1, #cards do
-                cards[i]:set_debuff(true)
-            end
-        elseif self.name == 'The Flint' then
-            return math.max(math.floor(mult*0.25 + 0.5), 1), math.max(math.floor(hand_chips*0.25 + 0.5), 0), true
-        end
-    end
-    local ret, ret2,ret3 = oldfunc(self,cards, poker_hands, text, mult, hand_chips)
-    return ret,ret2,ret3
-end
---]]
-
-local oldfunc = Blind.press_play
-function Blind:press_play()
-    if self.summoned == true then
-        if self.name == 'The Hook' then
-            self.disabled = true
-            G.E_MANAGER:add_event(Event({ func = function()
-                for i = 1, 2 do
-                    local _cards = {}
-                    for k, v in ipairs(G.hand.cards) do
-                        if v.debuff ~= true then
-                            --print('skibidi toilet') 
-                            _cards[#_cards+1] = v
-                        end
-                    end
-                    if G.hand.cards[i] then 
-                        local selected_card, card_key = pseudorandom_element(_cards, pseudoseed('hook'))
-                        --G.hand:add_to_highlighted(selected_card, true)
-                        if selected_card then 
-                            selected_card:set_debuff(true)
-                            selected_card:juice_up()
-                            play_sound('card1', 1)
-                        end
-                    end
-                end
-            return true end })) 
-
-        elseif self.name == 'The Wall' then
-            G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.25
-            self:juice_up()
+        if self:get_type() == 'Small' or self:get_type() == 'Big' then
+            G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.5
             G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
+        end
 
-        elseif self.name == 'The Arm' then
+
+        self:jimb_calc({summon = true})
+        if self.name == 'The Wheel' then
             self.disabled = true
-            local mostplayedhand = nil
-            local playedtimes = -420/69
-            for k, v in ipairs(G.handlist) do
-
-                if G.GAME.hands[v].visible and G.GAME.hands[v].played > playedtimes then
-                    playedtimes = G.GAME.hands[v].played
-                    mostplayedhand = v
+            G.jokers:unhighlight_all()
+            for k, v in ipairs(G.jokers.cards) do
+                if pseudorandom('wheelsummon') < G.GAME.probabilities.normal/2 then
+                    v:flip()
                 end
             end
-            level_up_hand(self.children.animatedSprite, mostplayedhand, nil, -1)
-        elseif self.name == 'The Manacle' then
-            self.disabled = true
-            G.hand:change_size(-1)
-            G.GAME.manacle_handsize = G.GAME.manacle_handsize and G.GAME.manacle_handsize+1 or 2
-        elseif self.name == 'The Pillar' then
-            local list = {}
-            for i = 1, #G.hand.highlighted do
-                print('hi')
-                if G.GAME.pillar_debuffs then
-                    if G.GAME.pillar_debuffs[G.hand.highlighted[i]:get_id() .. '_'] == true then
-                        G.hand.highlighted[i]:set_debuff(true)
-                    end
-                end
-                list[G.hand.highlighted[i]:get_id() .. '_'] = true
+            if #G.jokers.cards > 1 then 
+                G.E_MANAGER:add_event(Event({ trigger = 'after', delay = 0.2, func = function() 
+                    G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 0.85);return true end })) 
+                    delay(0.15)
+                    G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1.15);return true end })) 
+                    delay(0.15)
+                    G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1);return true end })) 
+                    delay(0.5)
+                return true end })) 
             end
-            G.GAME.pillar_debuffs = nil
-            G.GAME.pillar_debuffs = list
-        elseif G.GAME.blind.name == 'The Fish' then
-            G.GAME.blind.disabled = true
-            G.GAME.debuff_hand_draw = true
+        elseif self.name == 'The Needle' then
+            G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*1
         end
     end
-    if self.trueDebuffed == true then return end
-    local ret = oldfunc(self)
-    return ret
-end
+
+
+
+    local oldfunc = Blind.defeat
+    function Blind:defeat(silent)
+        local ret = oldfunc(self,silent)
+        if self.summoned == true then
+            if self:get_type() == 'Boss' then
+                if G.GAME.curse_summon and G.GAME.boss_summoned then
+                    local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
+                    newcard:add_to_deck()
+                    G.consumeables:emplace(newcard)
+                    
+                end
+                if G.localization.descriptions.summon_blind[self.config.blind.key] then
+                    jimbomod.config["Summoned Blinds"][self.config.blind.key] = true
+                    SMODS.save_mod_config(jimbomod)
+                end
+            end
+
+
+            local selected_back = (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            local nameKey = 'default'
+            if G.localization.misc.quips[self.name .. ' Red Deck_defeat1'] then
+                if G.localization.misc.quips[self.name .. ' ' .. selected_back.name .. '_defeat1'] then
+                    nameKey = self.name .. ' ' .. selected_back.name .. '_defeat' .. math.random(1,2)
+                else
+                    nameKey = self.name .. ' Red Deck_defeat' .. math.random(1,2)
+                end
+            end
+            self:add_speech_bubble(nameKey,nil,{quip = true})
+            self:say_stuff(3,nil,{pitch = 1.5})
+        end
+        if G.GAME.manacle_handsize then
+            G.hand:change_size(G.GAME.manacle_handsize)
+            G.GAME.manacle_handsize = nil
+        end
+
+        return ret
+    end
+
+    local oldfunc = new_round
+    function new_round()
+        local ret = oldfunc()
+        G.E_MANAGER:add_event(Event({
+            trigger = 'immediate',
+            func = function()
+                if G.GAME.boss_summoned == true and G.GAME.blind:get_type() == 'Boss' or G.GAME.small_summoned and G.GAME.blind:get_type() == 'Small' then
+                    --self.summoned = true
+                    G.GAME.blind:jimb_summon()
+                end
+                return true
+                end
+            }))
+        return ret
+    end
+    local oldfunc = reset_blinds
+    function reset_blinds()
+        if G.GAME.chance_summon then
+            if pseudorandom('chance_summon') < G.GAME.chance_summon and G.localization.descriptions['summon_blind'][G.GAME.round_resets.blind_choices.Boss] then
+                G.GAME.boss_summoned = true
+            end
+        end
+        
+        if G.GAME.chance_small_summon then
+            if pseudorandom('chance_small_summon') < G.GAME.chance_small_summon then
+                G.GAME.small_summoned = true 
+            end
+        end
+        local ret = oldfunc()
+        return ret
+    end
+
+    local oldfunc = Blind.set_text
+    function Blind:set_text()
+        local ret = oldfunc(self)
+        if G.GAME.boss_summoned and self:get_type() == 'Boss' and self.summoned ~= true then 
+            self.summoned = true
+            self:set_text()
+        end
+        if self.summoned == true or self:get_type() == 'Boss' and G.GAME.boss_summoned == true or self:get_type() == 'Small' and G.GAME.small_summoned then
+            if self.disabled == true then
+                self.disabled = false
+                self.trueDisabled = true
+                local loc_target = localize{type = 'raw_descriptions', key = self.config.blind.key, set = 'Blind', vars = self.config.blind.vars} or self.config.blind.loc_txt
+                if loc_target then 
+                    self.loc_name = self.name == '' and self.name or localize{type ='name_text', key = self.config.blind.key, set = 'Blind'}
+                    self.loc_debuff_text = ''
+                    for k, v in ipairs(loc_target) do
+                        self.loc_debuff_text = self.loc_debuff_text..v..(k <= #loc_target and ' ' or '')
+                    end
+                    --self.loc_debuff_lines[1] = loc_target[1] or ''
+                    --self.loc_debuff_lines[2] = loc_target[2] or ''
+                    for i = 1, #loc_target do
+                        self.loc_debuff_lines[i] = loc_target[i] or ''
+                    end
+                end
+            else
+                local loc_target = localize{type = 'raw_descriptions', key = self.config.blind.key, set = 'summon_blind', vars = self.config.blind.vars}
+                if G.localization.descriptions['summon_blind'][self.config.blind.key] and loc_target then 
+                    self.loc_name = self.name == '' and self.name or localize{type ='name_text', key = self.config.blind.key, set = 'Blind'}
+                    self.loc_debuff_text = ''
+                    for k, v in ipairs(loc_target) do
+                        self.loc_debuff_text = self.loc_debuff_text..v..(k <= #loc_target and ' ' or '')
+                    end
+                    --self.loc_debuff_lines[1] = loc_target[1] or ''
+                    --self.loc_debuff_lines[2] = loc_target[2] or ''
+                    for i = 1, #loc_target do
+                        self.loc_debuff_lines[i] = loc_target[i] or ''
+                    end
+                end
+        
+            end
+        end
+        return ret
+    end
+
+    local oldfunc = get_new_boss
+    function get_new_boss()
+        local ret = oldfunc()
+        if G.GAME.boss_summoned then
+            if not G.localization.descriptions.summon_blind[ret] then
+                print(ret)
+                return get_new_boss()
+            end
+        end
+        return ret
+    end
+--
 
 
 --]]
