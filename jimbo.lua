@@ -6980,7 +6980,8 @@ end
                 if handname == G.GAME.current_round.most_played_poker_hand then
                     self.triggered = true
                     if not check then
-                        ease_dollars(-math.abs(G.GAME.dollars)*2, true)
+                        G.GAME.dollars = -math.abs(G.GAME.dollars)
+                        ease_dollars(0,true)
                     end
                 end 
             end
@@ -7919,34 +7920,8 @@ end
         --local loc_target = localize{type = 'raw_descriptions', key = self.config.blind.key, set = 'Blind', vars = loc_vars or self.config.blind.vars}
         self:set_text()
 
-        if self:get_type() == 'Small' or self:get_type() == 'Big' then
-            G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.5
-            G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
-        end
-
 
         self:jimb_calc({summon = true})
-        if self.name == 'The Wheel' then
-            self.disabled = true
-            G.jokers:unhighlight_all()
-            for k, v in ipairs(G.jokers.cards) do
-                if pseudorandom('wheelsummon') < G.GAME.probabilities.normal/2 then
-                    v:flip()
-                end
-            end
-            if #G.jokers.cards > 1 then 
-                G.E_MANAGER:add_event(Event({ trigger = 'after', delay = 0.2, func = function() 
-                    G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 0.85);return true end })) 
-                    delay(0.15)
-                    G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1.15);return true end })) 
-                    delay(0.15)
-                    G.E_MANAGER:add_event(Event({ func = function() G.jokers:shuffle('aajk'); play_sound('cardSlide1', 1);return true end })) 
-                    delay(0.5)
-                return true end })) 
-            end
-        elseif self.name == 'The Needle' then
-            G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*1
-        end
     end
 
 
