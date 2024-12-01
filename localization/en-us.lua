@@ -1,4 +1,4 @@
-return {
+local table ={
     descriptions = {
         jimb_curses = {
 
@@ -10,7 +10,7 @@ return {
                 }
             },
             hook_pure = {
-                name = "Hasp",
+                name = "Hasp Purified",
                 text = {
                     "{C:attention}First hand{} of {C:attention}round", 'has {C:attention}+#1# handsize'
                 }
@@ -25,7 +25,7 @@ return {
                 }
             },
             wall_pure = {
-                name = "Tower",
+                name = "Tower Purified",
                 text = {
                     "{X:purple,C:white}X#1#{} blind size",
                     'on {C:attention}Boss Blinds'
@@ -39,7 +39,7 @@ return {
                 }
             },
             arm_pure = {
-                name = "Vein",
+                name = "Vein Purified",
                 text = {
                     "{C:attention}Final possible hand{} played", "is {C:attention}upgraded",
                 }
@@ -54,7 +54,7 @@ return {
                 }
             },
             water_pure = {
-                name = "Flood",
+                name = "Flood Purified",
                 text = {
                     "{C:red}+#1#{} Discards",
                 }
@@ -70,9 +70,9 @@ return {
                 }
             },
             needle_pure = {
-                name = "Thread",
+                name = "Thread Purified",
                 text = {
-                    "{C:blue}-#1#{} Hands"
+                    "{C:blue}+#1#{} Hands"
                 }
             },
 
@@ -83,7 +83,7 @@ return {
                 }
             },
             tooth_pure = {
-                name = "Cavity",
+                name = "Cavity Purified",
                 text = {
                     "Last card played", "gives {C:money}+#1#$",
                 }
@@ -96,7 +96,7 @@ return {
                 }
             },
             oxen_pure = {
-                name = "Oxen",
+                name = "Oxen Purified",
                 text = {
                     "Playing {C:attention}most played hand{}", "gives {C:money}#1#${}",
                 }
@@ -109,7 +109,7 @@ return {
                 }
             },
             manacle_pure = {
-                name = "Shackle",
+                name = "Shackle Purified",
                 text = {
                     "{C:attention}Hand size{} cannot go", 'under {C:attention}#1#'
                 }
@@ -122,7 +122,7 @@ return {
                 }
             },
             zone_pure = {
-                name = "Totem",
+                name = "Totem Purified",
                 text = {
                     "{C:green}#2# in #3#{} chance for", 'cards to have {X:dark_edition,C:white}X#1#{}','to all values'
                 }
@@ -136,7 +136,7 @@ return {
                 }
             },
             goad_pure = {
-                name = "Fuchsia",
+                name = "Fuchsia Purified",
                 text = {
                     "{C:spades}Spades{} cards are always",'{C:dark_edition}Negative{}'
                 }
@@ -150,7 +150,7 @@ return {
                 }
             },
             head_pure = {
-                name = "Begonia",
+                name = "Begonia Purified",
                 text = {
                     "{C:hearts}Heart{} cards held in hand",'give {X:mult,C:white}X#1#{} when held',
                 }
@@ -166,7 +166,7 @@ return {
                 }
             },
             club_pure = {
-                name = "Chrysanthemums",
+                name = "Chrysanthemums Purified",
                 text = {
                     "This card gains {C:chips}+#1#{} Chips", 
                     'when a {C:clubs}Club{} card is scored',
@@ -181,7 +181,7 @@ return {
                 }
             },
             window_pure = {
-                name = "Tulipa",
+                name = "Tulipa Purified",
                 text = {
                     "Gain {C:money}#1#${} when a", "{C:diamonds}Diamonds{} card is discarded"
                 }
@@ -200,7 +200,7 @@ return {
                 }
             },
             leaf_pure = {
-                name = "Garden",
+                name = "Garden Purified",
                 text = {
                     "+#1# handsize if a {C:attention}Joker",
                     "has been {C:attention}sold{} this {C:attention}Ante",
@@ -208,7 +208,7 @@ return {
             },
 
             vessel_curse = {
-                name = "Dock",
+                name = "Husk",
                 text = {
                     "This card gains {X:purple,C:white}X#1#{} blind size",
                     'when {C:attention}Boss Blind{} is defeated',
@@ -216,7 +216,7 @@ return {
                 }
             },
             vessel_pure = {
-                name = "Dock",
+                name = "Husk Purified",
                 text = {
                     "This card loses {X:purple,C:white}#1#%{} blind size",
                     'when {C:attention}Boss Blind{} is defeated',
@@ -225,7 +225,7 @@ return {
             },
 
             acorn_curse = {
-                name = "Tree",
+                name = "Kernel",
                 text = {
                     "{C:attention}Flips and shuffles",
                     "all {C:attention}Joker{} cards",
@@ -233,7 +233,7 @@ return {
                 }
             },
             acorn_pure = {
-                name = "Tree",
+                name = "Kernel Purified",
                 text = {
                     "???",
                 }
@@ -247,7 +247,7 @@ return {
                 }
             },
             heart_pure = {
-                name = "Soul",
+                name = "Soul Purified",
                 text = {
                     "Cards cannot be",
                     'debuffed on',
@@ -264,7 +264,7 @@ return {
                 }
             },
             bell_pure = {
-                name = "Carillon",
+                name = "Carillon Purified",
                 text = {
                     "A random card becomes",
                     '{C:dark_edition}Negative{} at the',
@@ -281,7 +281,7 @@ return {
                 }
             },
             hand_curse = {
-                name = "Ring",
+                name = "Ring Purified",
                 text = {
                     "{X:purple,C:white}X#1#{} Blind requirement",
                     'for every {C:attention}Hand{} you have'
@@ -296,7 +296,7 @@ return {
                 }
             },
             vanilla_pure = {
-                name = "Extract",
+                name = "Extract Purified",
                 text = {
                     "{C:legendary}Modded Jokers{} give",
                     '{X:mult,C:white}X#1#{} Mult'
@@ -311,7 +311,7 @@ return {
                 }
             },
             luck_pure = {
-                name = "Blessing",
+                name = "Blessing Purified",
                 text = {
                     "#1# in #2# chance for",
                     'cards to give {X:mult,C:white}#3#{} Mult'
@@ -327,7 +327,7 @@ return {
                 }
             },
             cerberus_pure = {
-                name = "Hound",
+                name = "Hound Purified",
                 text = {
                     "{X:purple,C:white}X#1#{} blind size",
                     "{C:attention}Duplicate{} this card when",
@@ -338,12 +338,12 @@ return {
             rainfall_curse = {
                 name = 'Tears',
                 text = {
-                    "{C:red}Debuff{} a random card",
-                    'after playing a hand'
+                    "{C:red}Debuff{} a random card in",
+                    'hand after playing a hand'
                 }
             },
             rainfall_pure = {
-                name = 'Tears',
+                name = 'Tears Purified',
                 text = {
                     "???"
                 }
@@ -358,7 +358,7 @@ return {
                 }
             },
             tax_pure = {
-                name = 'Tax Form',
+                name = 'Tax Form Filed',
                 text = {
                     "{X:mult,C:white}X#1#{} Mult if",
                     'hand scores under {C:attention}#2#%',
@@ -471,7 +471,7 @@ return {
                     "card drawn"
                 }
             },
-            bl_final_leaf = {
+            --[[bl_final_leaf = {
                 name = "Jade Garden",
                 text = {
                     "All cards debuffed",
@@ -486,7 +486,7 @@ return {
                     'X1.25 blind size when',
                     'hand is played'
                 }
-            },
+            },]]
             bl_ox = {
                 name = "The Ox?",
                 text = {
@@ -562,7 +562,7 @@ return {
                     "drawn face down"
                 }
             },
-            bl_final_acorn = {
+            --[[bl_final_acorn = {
                 name = "Ochre Kernel",
                 text = {
                     "Flips and shuffles",
@@ -583,7 +583,17 @@ return {
                     "Forces 1 card to be selected",
                     "Forced card cannot score in a hand"
                 }
-            }
+            }]]
+
+
+            bl_jimb_zone = {
+                name = "The Zone?",
+                text = {
+                    'Cards created this Ante',
+                    'spawn with Deteriorating and',
+                    'Perishable Stickers'
+                }
+            },
         },
     },
     misc = {
@@ -633,3 +643,8 @@ return {
         }
     }
 }
+table.descriptions.Other = table.descriptions.jimb_curses
+
+
+
+return table
