@@ -7121,7 +7121,8 @@ end
         sticker_atlas = 'Stickers',
         sticker_pos = {x = 1, y = 0},
         modifiers = function()
-            G.GAME.chance_summon = 1/7
+            if not (G.GAME.chance_summon and G.GAME.chance_summon > 1/7) then G.GAME.chance_summon = 1/7 end
+            print(G.GAME.chance_summon .. '_Silver')
         end,
     }
 
@@ -7182,7 +7183,8 @@ end
         atlas = 'Stakes',
         pos = {x = 2, y = 0},
         modifiers = function()
-            G.GAME.chance_summon = 1/4
+            if not (G.GAME.chance_summon and G.GAME.chance_summon > 1/4) then G.GAME.chance_summon = 1/4 end
+            print(G.GAME.chance_summon .. '_Cracked')
         end,
     }
 
@@ -7345,42 +7347,44 @@ end
             }
         },
         atlas = 'Stakes',
-        pos = {x = 0, y = 1},
+        pos = {x = 1, y = 1},
         sticker_atlas = 'Stickers',
-        sticker_pos = {x = 1, y = 1},
+        sticker_pos = {x = 2, y = 1},
         modifiers = function()
             G.GAME.chance_summon = 1
+            print(G.GAME.chance_summon .. '_Bloody')
         end,
     }
-
-    SMODS.Stake {
-        key = 'deluxe',
-        name = "Deluxe Stake",
-        pos = {x = 0, y = 0},
-        applied_stakes = {'jimb_bloody', 'orange'},
-        above_stake = 'gold',
-        loc_txt = {
-            name = "Gold Stake",
-            text = {
-                "{C:attention}Showdown Blinds{} are always {C:legendary}Summoned",
-            },
-            sticker = {
-                name = "Deluxe Sticker",
+    --[[
+        SMODS.Stake {
+            key = 'deluxe',
+            name = "Deluxe Stake",
+            pos = {x = 0, y = 0},
+            applied_stakes = {'jimb_bloody', 'orange'},
+            above_stake = 'gold',
+            loc_txt = {
+                name = "Gold Stake",
                 text = {
-                    "Used this Joker",
-                    "to win on {C:attention}Deluxe",
-                    "{C:attention}Stake{} difficulty"
+                    "{C:attention}Showdown Blinds{} are always {C:legendary}Summoned",
+                },
+                sticker = {
+                    name = "Deluxe Sticker",
+                    text = {
+                        "Used this Joker",
+                        "to win on {C:attention}Deluxe",
+                        "{C:attention}Stake{} difficulty"
+                    }
                 }
-            }
-        },
-        atlas = 'Stakes',
-        pos = {x = 0, y = 1},
-        sticker_atlas = 'Stickers',
-        sticker_pos = {x = 1, y = 1},
-        modifiers = function()
-            G.GAME.showdown_summon = true
-        end,
-    }
+            },
+            atlas = 'Stakes',
+            pos = {x = 2, y = 1},
+            sticker_atlas = 'Stickers',
+            sticker_pos = {x = 3, y = 1},
+            modifiers = function()
+                G.GAME.showdown_summon = true
+            end,
+        }
+    ]]
 --
 
 
@@ -8004,7 +8008,7 @@ end
     local oldfunc = reset_blinds
     function reset_blinds()
         if G.GAME.chance_summon then
-            if pseudorandom('chance_summon') < G.GAME.chance_summon and G.localization.descriptions['summon_blind'][G.GAME.round_resets.blind_choices.Boss] then
+            if pseudorandom('chance_summon') < G.GAME.chance_summon then
                 G.GAME.boss_summoned = true
             end
         end
@@ -8015,6 +8019,7 @@ end
             end
         end
         local ret = oldfunc()
+        
         return ret
     end
 
@@ -8066,8 +8071,8 @@ end
     function get_new_boss()
         local ret = oldfunc()
         if G.GAME.boss_summoned then
-            if not G.localization.descriptions.summon_blind[ret] then
-                print(ret)
+            if (not G.localization.descriptions.summon_blind[ret]) and (G.GAME.round_resets.ante % 8 ~= 0) then
+                --print(ret)
                 return get_new_boss()
             end
         end
