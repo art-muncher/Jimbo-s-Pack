@@ -2608,7 +2608,7 @@ end
 
 
 function jimbomod.process_loc_text()
-    G.localization.descriptions.jimb_curses = G.localization.descriptions.jimb_curses or {}
+    --G.localization.descriptions.jimb_curses = G.localization.descriptions.jimb_curses or {}
     G.localization.descriptions.summon_blind = G.localization.descriptions.summon_blind or {}
 end
 
@@ -2779,12 +2779,18 @@ local hook = SMODS.Consumable {
         local key1 = 'hook_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'hook_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'hook_pure',
+                specific_vars = {math.abs(center.ability.extra.h_size)},
+            }
         end
         return {key = key1,vars = {center.ability.extra.h_size}}
     end,
     calculate = function(self,card,context)
         if context.jimb_purify and context.other_card == card then
-            card.ability.extra.h_size = 0 - card.ability.extra.h_size
+            card.ability.extra.h_size = math.abs(card.ability.extra.h_size)
         end
         if context.setting_blind then
             card.ability.extra.active = true
@@ -2827,6 +2833,12 @@ local wall = SMODS.Consumable {
         local key1 = 'wall_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'wall_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'wall_pure',
+                specific_vars = {math.abs(center.ability.extra.pure)},
+            }
         end
         return {key = key1,vars = {center.ability.extra.b_size}}
     end,
@@ -2870,6 +2882,12 @@ local arm = SMODS.Consumable {
         local key1 = 'arm_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'arm_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'arm_pure',
+                specific_vars = {},
+            }
         end
         return {key = key1,vars = {}}
     end,
@@ -2914,7 +2932,14 @@ local water = SMODS.Consumable {
         local key1 = 'water_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'water_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'water_pure',
+                specific_vars = {math.abs(center.ability.extra.discards)},
+            }
         end
+        
         return {key = key1,vars = {center.ability.extra.discards}}
     end,
     calculate = function(self,card,context)
@@ -2965,6 +2990,12 @@ local needle = SMODS.Consumable {
         local key1 = 'needle_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'needle_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'needle_pure',
+                specific_vars = {math.abs(center.ability.extra.hands)},
+            }
         end
         return {key = key1,vars = {center.ability.extra.hands}}
     end,
@@ -3022,6 +3053,12 @@ local oxen = SMODS.Consumable {
         local key1 = 'oxen_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'oxen_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'oxen_pure',
+                specific_vars = {math.abs(center.ability.extra.dollars)},
+            }
         end
         return {key = key1,vars = {center.ability.extra.dollars}}
     end,
@@ -3039,7 +3076,7 @@ local oxen = SMODS.Consumable {
             end
         end
         if context.jimb_purify and context.other_card == card then
-            card.ability.extra.dollars = 3
+            card.ability.extra.dollars = math.abs(card.ability.extra.dollars)
         end
     end,
     can_use = function(self,card)
@@ -3074,6 +3111,12 @@ local manacle = SMODS.Consumable {
         local key1 = 'manacle_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'manacle_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'manacle_pure',
+                specific_vars = {math.abs(center.ability.extra.pure)},
+            }
         end
         return {key = key1,vars = {center.ability.extra.h_size}}
     end,
@@ -3129,12 +3172,18 @@ local tooth = SMODS.Consumable {
         local key1 = 'tooth_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'tooth_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'tooth_pure',
+                specific_vars = {math.abs(center.ability.extra.dollars)},
+            }
         end
         return {key = key1,vars = {center.ability.extra.dollars}}
     end,
     calculate = function(self,card,context)
         if context.jimb_purify and context.other_card == card then
-            card.ability.extra.dollars = card.ability.extra.dollars * -1
+            card.ability.extra.dollars = math.abs(card.ability.extra.dollars)
         end
         if context.individual and context.cardarea == G.play then
             if card.purified == false then
@@ -3180,6 +3229,12 @@ local zone = SMODS.Consumable {
         local key1 = 'zone_curse'
         if center.purified ~= nil and center.purified == true then
             key1 = 'zone_pure'
+        else
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'zone_pure',
+                specific_vars = {math.abs(center.ability.extra.pure)},
+            }
         end
         return {key = key1,vars = {center.ability.extra.cardMult, G.GAME.probabilities.normal, center.ability.extra.odds}}
     end,
@@ -3284,8 +3339,11 @@ local goad = SMODS.Consumable {
         if center.purified ~= nil and center.purified == true then
             key1 = 'goad_pure'
         else
-            info_queue[#info_queue+1] = {key = "goad_pure", set = "jimb_curses"}
-            
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'goad_pure',
+                specific_vars = {},
+            }
         end
         return {key = key1,vars = {center.ability.extra.dollars}}
     end,
@@ -3339,7 +3397,7 @@ local head = SMODS.Consumable {
     key = "head",
     purified = false,
     set = 'jimb_curses',
-    config = {extra = {Xmult = 0.9,pure = 1.1}},
+    config = {extra = {Xmult = 0.8,pure = 1.3}},
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
@@ -3357,8 +3415,11 @@ local head = SMODS.Consumable {
         if center.purified ~= nil and center.purified == true then
             key1 = 'head_pure'
         else
-            info_queue[#info_queue+1] = {key = "head_pure", set = "jimb_curses"}
-            
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'head_pure',
+                specific_vars = {center.ability.extra.pure},
+            }
         end
         return {key = key1,vars = {center.ability.extra.Xmult}}
     end,
@@ -3396,7 +3457,7 @@ local club = SMODS.Consumable {
     key = "club",
     purified = false,
     set = 'jimb_curses',
-    config = {extra = {chip_mod = 3, chips = 0}},
+    config = {extra = {chip_mod = 5, chips = 0}},
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
@@ -3414,8 +3475,11 @@ local club = SMODS.Consumable {
         if center.purified ~= nil and center.purified == true then
             key1 = 'club_pure'
         else
-            info_queue[#info_queue+1] = {key = "club_pure", set = "jimb_curses"}
-            
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'club_pure',
+                specific_vars = {center.ability.extra.chip_mod, 0},
+            }
         end
         return {key = key1,vars = {center.ability.extra.chip_mod,center.ability.extra.chips}}
     end,
@@ -3460,7 +3524,7 @@ local window = SMODS.Consumable {
     key = "window",
     purified = false,
     set = 'jimb_curses',
-    config = {extra = {dollars = -1,pure = 1}},
+    config = {extra = {dollars = -2,pure = 2}},
     no_sell = true,
     atlas = 'Curse',
     pos = { x = 1, y = 0},
@@ -3478,8 +3542,11 @@ local window = SMODS.Consumable {
         if center.purified ~= nil and center.purified == true then
             key1 = 'window_pure'
         else
-            info_queue[#info_queue+1] = {key = "window_pure", set = "jimb_curses"}
-            
+            info_queue[#info_queue + 1] = {
+                set = "Other",
+                key = 'window_pure',
+                specific_vars = {center.ability.extra.pure},
+            }
         end
         return {key = key1,vars = {center.ability.extra.dollars}}
     end,
@@ -6361,7 +6428,7 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     
     --end
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
-    if G and G.jokers then ret:calculate_joker({self_created = true}) end
+    if G and G.jokers and ret then ret:calculate_joker({self_created = true}) end
     if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 then
 
         if G.GAME.next_Gen_Cards[1].specType and G.GAME.next_Gen_Cards[1].specType ~= _type then
