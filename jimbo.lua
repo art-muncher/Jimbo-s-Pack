@@ -7206,7 +7206,7 @@ end
                     end
                 return true end })) 
             elseif self.name == 'The Wall' then
-                G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.25
+                G.GAME.blind.chips = to_big(G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.25)
                 self:juice_up()
                 G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
     
