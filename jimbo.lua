@@ -646,7 +646,7 @@ local pizzabox = SMODS.Joker{
             card.ability.extra.rounds = math.floor(card.ability.extra.rounds - 1)
         end
         if context.selling_self and card.ability.extra.rounds <= 0 then
-            for i = 1, math.min(math.max(math.floor(card.ability.extra.slices),1), G.jokers.config.card_limit-#G.jokers.cards+1) do
+            for i = 1, math.max(math.floor(card.ability.extra.slices),1) do
                 local newcard = create_card("Joker",G.jokers,nil,nil,nil,nil,'j_jimb_pizzaslice')
                 newcard:add_to_deck()
                 G.jokers:emplace(newcard)
@@ -1819,7 +1819,7 @@ local rain = SMODS.Joker{
     },
     cursed = true,
     config = {extra = {odds = 3}},
-    rarity = 3,
+    rarity = 1,
     pos = {x = 2, y = 12},
     atlas = 'Jokers',
     cost = 8,
