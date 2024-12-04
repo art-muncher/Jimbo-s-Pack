@@ -1,0 +1,29 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+
+# draw stuff
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''if G.SPLASH_LOGO then'''
+position = "before"
+payload = '''
+
+if G.summon_sprite then
+    love.graphics.push()
+    G.summon_sprite:translate_container()
+    G.summon_sprite:draw()
+    love.graphics.pop()
+end
+
+if G.table_thing then
+    love.graphics.push()
+    G.table_thing:translate_container()
+    G.table_thing:draw()
+    love.graphics.pop()
+end
+'''
+match_indent = true
