@@ -138,7 +138,7 @@ local table ={
             goad_pure = {
                 name = "Fuchsia Purified",
                 text = {
-                    "{C:spades}Spades{} cards are always",'{C:dark_edition}Negative{}'
+                    "{C:spades}Spades{} cards act like",'{C:dark_edition}Negative{} cards'
                 }
             },
 
