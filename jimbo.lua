@@ -23,6 +23,7 @@ SMODS.Atlas{
 SMODS.Atlas({key = 'Vouchers', path = 'Vouchers.png', px = 71, py = 95})
 SMODS.Atlas({key = 'Stakes', path = 'stakes.png', px = 29, py = 29})
 SMODS.Atlas({key = 'Stickers', path = 'stickers.png', px = 71, py = 95})
+--local littleguy_atlas = SMODS.Atlas({key = 'littleguy', path = 'littleguy.png', px = 177, py = 100, atlas_table = "ASSET_ATLAS",})
 
 
 if jimbomod.config.Jokers == nil then
@@ -1805,6 +1806,60 @@ local unpleasant = SMODS.Joker{
 }
 
 
+
+local rain = SMODS.Joker{
+    key = 'rainfall',
+    loc_txt = {
+        name = "Rainfall",
+        text = {
+            "Cards held in hand have",
+            'a {C:green}#1# in #2#{} chance',
+            'to score'
+        }
+    },
+    cursed = true,
+    config = {extra = {odds = 3}},
+    rarity = 3,
+    pos = {x = 2, y = 12},
+    atlas = 'Jokers',
+    cost = 8,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds }}
+    end,
+    calculate = function(self,card,context)
+        --[[if context.jimb_before then
+            
+            for i = 1, #G.hand.cards do
+                if pseudorandom('rain_joker') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                    context.scoring_hand[#context.scoring_hand+1] = G.hand.cards[i]
+                end
+            end
+            return context.scoring_hand
+        end]]
+        if context.before then
+            for i = 1, #G.hand.cards do
+                if pseudorandom('rain_joker') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                    context.scoring_hand[#context.scoring_hand+1] = G.hand.cards[i]
+                end
+            end
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+
 --[[
 local pocket = SMODS.Joker{
     key = 'pocket',
@@ -1902,11 +1957,13 @@ local oldfunc = CardArea.emplace
 CardArea.emplace = function(self,card, location, stay_flipped,idunno,b,c,d)
     if card.ability.set == 'jimb_curses' and G.jokers and self == G.consumeables then
         G.jokers:emplace(card)
+        return
+    end
+    if card.ability.set == 'jimb_curses' and G.jokers and self == G.jokers then
         card.purified = self.purified or false
         card.no_sell = true
         G.jokers.config.card_limit = G.jokers.config.card_limit + 1
         card.jimb_area = G.jokers
-        return
     end
     if card.ability.set == 'AgainstHumanity' and G.jokers and self == G.consumeables then
         G.jokers:emplace(card)
@@ -1919,6 +1976,7 @@ CardArea.emplace = function(self,card, location, stay_flipped,idunno,b,c,d)
             G.jokers.cards[i]:calculate_joker({pre_jimb_card_gain = true, other_card = card, area = self})
         end
     end
+    
     local ret = oldfunc(self,card,location,stay_flipped,idunno,b,c,d)
     
     if G and G.jokers then 
@@ -1947,6 +2005,17 @@ CardArea.emplace = function(self,card, location, stay_flipped,idunno,b,c,d)
     end
     return ret
 end
+
+--[[local oldfunc = Card.remove_from_area
+function Card:remove_from_area()
+    if next(SMODS.find_card("c_jimb_goad")).purified == true then
+        self.config.real_card_limit = (self.config.real_card_limit or self.config.card_limit) - 1
+        self.config.card_limit = math.max(0, self.config.real_card_limit)
+    end
+    local ret = oldfunc(self)
+    return ret
+end
+--]]
 
 
 
@@ -2357,6 +2426,126 @@ vision.calculate = function(self, card, context)
     end
 end
 
+local oldfunc = reset_ancient_card
+function reset_ancient_card()
+    local ret = oldfunc()
+    --reset_prism()
+    return ret
+end
+
+local isSuit = Card.is_suit
+function Card:is_suit(suit,bypass_debuff,flush_calc)
+    local check_suit = nil
+    if G and G.jokers then
+        for i = 1, #G.jokers.cards do
+            check_suit = G.jokers.cards[i]:calculate_joker({check_suit = true, other_card = self, suit = suit, bypass_debuff = bypass_debuff, flush_calc = flush_calc}) or check_suit
+        end
+    end
+    if check_suit then return check_suit end
+
+    --[[local hasCurse = false
+    if G and G.jokers then
+        for i = 1, #G.jokers.cards do
+            if G.jokers.cards[i].ability.name == 'c_jimb_goad' and G.jokers.cards[i].purified == false then hasCurse = true end
+        end
+    end
+    if (suit == 'Spades' and hasCurse == true) or (next(find_joker('Smeared Joker')) and suit == 'Clubs' and hasCurse == true) then
+        return false
+    end]]
+    local ret = isSuit(self,suit,bypass_debuff,flush_calc)
+    return ret
+end
+
+--[[
+function reset_prism()
+    if G and G.GAME and G.GAME.current_round and not G.GAME.current_round.prism_suit then G.GAME.current_round.prism_suit = 'Hearts' end
+    local suits = {}
+    for k, v in ipairs(G.playing_cards) do
+        if v.ability.effect ~= 'Stone Card' and v.base.suit and v.base.suit ~= G.GAME.current_round.prism_suit then
+            suits[#suits+1] = v.base.suit
+            --print(v.base.suit)
+        end
+    end
+    local suit = pseudorandom_element(suits, pseudoseed('prism'..G.GAME.round_resets.ante)) or 'Hearts'
+    G.GAME.current_round.prism_suit = suit
+end
+--]]
+
+local prism = SMODS.Joker{
+    key = 'prism',
+    loc_txt = {
+        name = "Prism",
+        text = {
+            "Cards with the {V:1}#1#{} suit",
+            "count as every suit",
+            "suit changes every round",
+        },
+        unlock = {
+            'Win a run',
+            'with {C:attention}Checkered Deck{}'
+        }
+    },
+    config = {extra = {suit = nil}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    soul_pos = {x=4,y=1},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {G.GAME.current_round.prism_suit or center.ability.extra.suit or "Hearts", colours = {G.C.SUITS[G.GAME.current_round.prism_suit or center.ability.extra.suit or 'Hearts']}}}
+    end,
+    calculate = function(self,card,context)
+        --[[if context.check_suit and isSuit(context.other_card, G.GAME.current_round.prism_suit) and not context.from then
+            return true
+        end]]
+        --if G and G.GAME and G.GAME.current_round and not G.GAME.current_round.prism_suit then G.GAME.current_round.prism_suit = 'Hearts' end
+        --if context.check_suit and isSuit(context.other_card, card.ability.extra.suit) then
+        --    return true
+        --end
+        if context.check_suit and isSuit(context.other_card, card.ability.extra.suit or 'Hearts') then
+            return true 
+        end
+        if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
+            local suits = {}
+            for k, v in ipairs(G.playing_cards) do
+                if v.ability.effect ~= 'Stone Card' and v.base.suit and v.base.suit ~= card.ability.extra.suit then
+                    suits[#suits+1] = v.base.suit
+                    --print(v.base.suit)
+                end
+            end
+            local suit = pseudorandom_element(suits, pseudoseed('prism'..G.GAME.round_resets.ante)) or 'Hearts'
+            card.ability.extra.suit = suit
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Checkered Deck" then
+                unlock_card(self)
+            end
+        end
+        if args.type == 'jimb_lock_all' then
+            lock_card(self)
+        end
+        if args.type == 'jimb_unlock_all' then
+            unlock_card(self)
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
 local ouroborosActive = nil
 local ouroboros = SMODS.Joker{
     key = 'ouroboros',
@@ -2465,7 +2654,7 @@ local commercial = SMODS.Joker{
         return {vars = {center.ability.extra.mult}}
     end,
     calculate = function(self,card,context)
-        if context.end_of_round then
+        if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
             card.ability.extra.active = true
         end
         if context.jimb_creating_card and card.ability.extra.active == true and not context.other_card.area then
@@ -2578,7 +2767,8 @@ function Card:add_to_deck(from_debuff)
     return ret
 end
 --]]
---[[local oldfunc = Card.start_dissolve
+--[
+local oldfunc = Card.start_dissolve
 function Card:start_dissolve(a,b,c,d)
     if self.ability.set == 'jimb_curses' and G.jokers then
         self:juice_up()
@@ -2586,7 +2776,8 @@ function Card:start_dissolve(a,b,c,d)
     end
     local ret = oldfunc(self,a,b,c,d)
     return ret
-end]]
+end
+--]]
 
 local oldfunc = Card.remove_from_deck
 function Card:remove_from_deck(a,b,c,d)
@@ -3303,21 +3494,7 @@ local zone = SMODS.Consumable {
         return false
     end,
 }]]
-local oldfunc = Card.is_suit
-function Card:is_suit(suit,bypass_debuff,flush_calc)
-    local hasCurse = false
-    if G and G.jokers then
-        for i = 1, #G.jokers.cards do
-            if G.jokers.cards[i].ability.name == 'c_jimb_goad' and G.jokers.cards[i].purified == false then hasCurse = true end
-        end
-    end
-    if (suit == 'Spades' and hasCurse == true) or (next(find_joker('Smeared Joker')) and suit == 'Clubs' and hasCurse == true) then
-        return false
-    end
-    local ret = oldfunc(self,suit,bypass_debuff,flush_calc)
-    return ret
-end
-
+--[
 local goad = SMODS.Consumable {
     key = "goad",
     purified = false,
@@ -3350,23 +3527,23 @@ local goad = SMODS.Consumable {
     end,
     calculate = function(self,card,context)
         if context.jimb_purify and context.other_card == card then
-            for i = 1, #G.deck.cards do
-                if G.deck.cards[i]:is_suit('Spades') and not (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
-                    G.deck.cards[i].flipping = 'b2f'
-                    G.deck.cards[i].facing='front'
+            card.purified = true
+            for i = 1, #G.playing_cards do
+                local cards = G.playing_cards[i]
+                if cards:is_suit('Spades') then
+                    cards.edition = cards.edition or {}
+                    cards.edition.card_limit = (cards.edition.card_limit and cards.edition.card_limit+1) or 1
                 end
             end
         end
         if card.purified == true then
-            for i = 1, #G.deck.cards do
-                if G.deck.cards[i]:is_suit('Spades') and not (G.deck.cards[i].edition and G.deck.cards[i].edition.negative) then
-                    G.deck.cards[i]:set_edition({negative = true}, true)
-                end
+            if context.jimb_post_create_card and context.other_card:is_suit('Spades') then
+                cards.edition = cards.edition or {}
+                cards.edition.card_limit = (cards.edition.card_limit and cards.edition.card_limit+1) or 1
             end
-            for i = 1, #G.hand.cards do
-                if G.hand.cards[i]:is_suit('Spades') and not (G.hand.cards[i].edition and G.hand.cards[i].edition.negative) then
-                    G.hand.cards[i]:set_edition({negative = true}, true)
-                end
+        else
+            if context.check_suit and isSuit(context.other_card, 'Spades') then
+                return false
             end
         end
     end,
@@ -3393,7 +3570,7 @@ local goad = SMODS.Consumable {
         return true
     end,
 }
-
+--]]
 local head = SMODS.Consumable {
     key = "head",
     purified = false,
@@ -4477,6 +4654,9 @@ SMODS.Edition({
             }
         }
     end,
+    in_pool = function(self,wawa,wawa2)
+        return false
+    end
 })
 
 local oldfunc = ease_ante
@@ -5469,6 +5649,116 @@ if Cryptid then
             end
         end,
     }
+
+    local N = SMODS.Joker{
+        key = 'N',
+        loc_txt = {
+            name = "N",
+            text = {
+                "When selecting blind,",
+                'the next generated card',
+                'will be a {C:blue}Perishable{} and {C:dark_edition}Negative{}', 
+                '{C:attention}m{} or {C:attention}M',
+            }
+        },
+        cursed = true,
+        config = {extra = {}},
+        rarity = 'cry_epic',
+        pos = {x = 1, y = 12},
+        atlas = 'Jokers',
+        cost = 3,
+        unlocked = true,
+        discovered = false,
+        blueprint_compat = true,
+        eternal_compat = true,
+        perishable_compat = true,
+        loc_vars = function(self, info_queue, center)
+            info_queue[#info_queue + 1] = {
+                set = "Joker",
+                key = "j_cry_M",
+                specific_vars = {},
+            }
+            info_queue[#info_queue + 1] = {
+                set = "Joker",
+                key = "j_cry_m",
+                specific_vars = {13, 1},
+            }
+            return {vars = {}}
+        end,
+        calculate = function(self,card2,context)
+            if context.setting_blind then
+                if pseudorandom('n') < 0.5 then 
+                    G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_cry_m', stickers = {perishable = true}, edition = 'negative'}
+                else
+                    G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_cry_M', stickers = {perishable = true}, edition = 'negative'}
+                end
+            end
+        end,
+        in_pool = function(self,wawa,wawa2)
+            if jimbomod.config["Jokers"] == true then
+                
+                return true
+            else
+                return false
+            end
+        end,
+    }
+
+    local n = SMODS.Joker{
+        key = 'n',
+        loc_txt = {
+            name = "n",
+            text = {
+                "When {C:attention}Jolly Joker{} is sold",
+                'the next card generated is {C:attention}Jolly Joker{}'
+            }
+        },
+        cursed = true,
+        config = {extra = { jolly = { t_mult = 8, type = "Pair" } }},
+        rarity = 'cry_epic',
+        pos = {x = 0, y = 12},
+        atlas = 'Jokers',
+        cost = 3,
+        unlocked = true,
+        discovered = false,
+        blueprint_compat = true,
+        eternal_compat = true,
+        perishable_compat = true,
+        loc_vars = function(self, info_queue, center)
+            info_queue[#info_queue + 1] = {
+                set = "Joker",
+                key = "j_jolly",
+                specific_vars = { 8, localize('Pair', "poker_hands") },
+            }
+            return {vars = {}}
+        end,
+        calculate = function(self,card2,context)
+            if context.selling_card and context.card:is_jolly() and not context.blueprint then
+                G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_jolly', }
+                if not context.retrigger_joker then
+                    card_eval_status_text(
+                        card,
+                        "extra",
+                        nil,
+                        nil,
+                        nil,
+                        { message = localize({ type = "variable", key = "a_xmult", vars = { card.ability.extra.x_mult } }) }
+                    )
+                end
+                return nil, true
+            end
+        end,
+        in_pool = function(self,wawa,wawa2)
+            if jimbomod.config["Jokers"] == true then
+                
+                return true
+            else
+                return false
+            end
+        end,
+    }
+
+
     local scoreStuff = 0
     local tax = SMODS.Consumable {
         key = "tax",
@@ -6470,6 +6760,19 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
         if G.GAME.next_Gen_Cards[1].abilityMult then
             jokerMult(ret,G.GAME.next_Gen_Cards[1].abilityMult)
         end
+        if G.GAME.next_Gen_Cards[1].stickers then
+            for k,v in pairs(G.GAME.next_Gen_Cards[1].stickers) do
+                if k == 'eternal' then ret.ability.eternal = true
+                elseif k == 'perishable' then ret.ability.perishable = true
+                    ret.ability.perish_tally = G.GAME.perishable_rounds
+                elseif k == 'rental' then ret:set_rental(true) 
+                else SMODS.Stickers[k]:apply(ret, true)
+                end
+            end
+        end
+        if G.GAME.next_Gen_Cards[1].edition then
+            ret:set_edition({[G.GAME.next_Gen_Cards[1].edition] = true})
+        end
         table.remove(G.GAME.next_Gen_Cards,1)
     end
 
@@ -6792,7 +7095,11 @@ end
 --calculate functions
 
     function Blind:jimb_calc(context)
-
+        if context.sprite then
+            if self.name == 'The Plant' then
+                return {x = 0, y = 2}
+            end
+        end
 
         --when summoned
         if context.summon then
@@ -7414,6 +7721,7 @@ end
 
         self.talking = true
         if not not_first then 
+            n = n * G.SETTINGS.GAMESPEED
             G.E_MANAGER:add_event(Event({
                 trigger = 'after',
                 delay = 0.1,
@@ -7450,78 +7758,264 @@ end
         end
     end
 
-    local oldfunc = Game.draw
-    function Game:draw()
-        local ret = oldfunc(self)
+    function Blind:start_materialize(dissolve_colours, silent, timefac)
+
+        self:juice_up()
+
         if G.summon_sprite then
-            G.summon_sprite:draw()
+            G.summon_sprite.states.visible = true
+            G.summon_sprite.dissolve = G.summon_sprite.dissolve or 1
+            local dissolve_time = 3
+            G.summon_sprite.states.visible = true
+            G.summon_sprite.states.hover.can = false
+            G.summon_sprite.dissolve = 1
+            G.summon_sprite.dissolve_colours = dissolve_colours or {G.C.GREEN}
+            self.children.particles = Particles(0, 0, 0,0, {
+                timer_type = 'TOTAL',
+                timer = 0.025*dissolve_time,
+                scale = 0.25,
+                speed = 3,
+                lifespan = 0.7*dissolve_time,
+                attach = self,
+                colours = self.dissolve_colours,
+                fill = true
+            })
+            if not silent then 
+                if not G.last_materialized or G.last_materialized +0.01 < G.TIMERS.REAL or G.last_materialized > G.TIMERS.REAL then
+                    G.last_materialized = G.TIMERS.REAL
+                    G.E_MANAGER:add_event(Event({
+                        blockable = false,
+                        func = (function()
+                                play_sound('whoosh1', math.random()*0.1 + 0.6,0.3)
+                                play_sound('crumple'..math.random(1,5), math.random()*0.2 + 1.2,0.8)
+                            return true end)
+                    }))
+                end
+            end
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  0.5*dissolve_time,
+                func = (function() if self.children.particles then self.children.particles.max = 0 end return true end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'ease',
+                blockable = false,
+                ref_table = G.summon_sprite,
+                ref_value = 'dissolve',
+                ease_to = 0,
+                delay =  1*dissolve_time,
+                func = (function(t) return t end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  1.05*dissolve_time,
+                func = (function() G.summon_sprite.states.hover.can = true; if self.children.particles then self.children.particles:remove(); self.children.particles = nil end return true end)
+            }))
         end
-        return
+
+        if G.table_thing then
+            G.table_thing.states.visible = true
+            G.table_thing.dissolve = G.table_thing.dissolve or 1
+            local dissolve_time = 3
+            G.table_thing.states.visible = true
+            G.table_thing.states.hover.can = false
+            G.table_thing.dissolve = 1
+            G.table_thing.dissolve_colours = dissolve_colours or {G.C.GREEN}
+            self.children.particles = Particles(0, 0, 0,0, {
+                timer_type = 'TOTAL',
+                timer = 0.025*dissolve_time,
+                scale = 0.25,
+                speed = 3,
+                lifespan = 0.7*dissolve_time,
+                attach = self,
+                colours = self.dissolve_colours,
+                fill = true
+            })
+            if not silent then 
+                if not G.last_materialized or G.last_materialized +0.01 < G.TIMERS.REAL or G.last_materialized > G.TIMERS.REAL then
+                    G.last_materialized = G.TIMERS.REAL
+                    G.E_MANAGER:add_event(Event({
+                        blockable = false,
+                        func = (function()
+                                play_sound('whoosh1', math.random()*0.1 + 0.6,0.3)
+                                play_sound('crumple'..math.random(1,5), math.random()*0.2 + 1.2,0.8)
+                            return true end)
+                    }))
+                end
+            end
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  0.5*dissolve_time,
+                func = (function() if self.children.particles then self.children.particles.max = 0 end return true end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'ease',
+                blockable = false,
+                ref_table = G.table_thing,
+                ref_value = 'dissolve',
+                ease_to = 0,
+                delay =  1*dissolve_time,
+                func = (function(t) return t end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  1.05*dissolve_time,
+                func = (function() G.table_thing.states.hover.can = true; if self.children.particles then self.children.particles:remove(); self.children.particles = nil end return true end)
+            }))
+        end
     end
 
-    function Blind:start_materialize(dissolve_colours, silent, timefac)
-        G.summon_sprite.dissolve = G.summon_sprite.dissolve or 1
-        local dissolve_time = 3
-        G.summon_sprite.states.visible = true
-        G.summon_sprite.states.hover.can = false
-        G.summon_sprite.dissolve = 1
-        G.summon_sprite.dissolve_colours = dissolve_colours or {G.C.GREEN}
+    function Blind:start_dissolve(dissolve_colours, silent, timefac)
+
         self:juice_up()
-        self.children.particles = Particles(0, 0, 0,0, {
-            timer_type = 'TOTAL',
-            timer = 0.025*dissolve_time,
-            scale = 0.25,
-            speed = 3,
-            lifespan = 0.7*dissolve_time,
-            attach = self,
-            colours = self.dissolve_colours,
-            fill = true
-        })
-        if not silent then 
-            if not G.last_materialized or G.last_materialized +0.01 < G.TIMERS.REAL or G.last_materialized > G.TIMERS.REAL then
-                G.last_materialized = G.TIMERS.REAL
-                G.E_MANAGER:add_event(Event({
-                    blockable = false,
-                    func = (function()
-                            play_sound('whoosh1', math.random()*0.1 + 0.6,0.3)
-                            play_sound('crumple'..math.random(1,5), math.random()*0.2 + 1.2,0.8)
-                        return true end)
-                }))
+
+        if G.summon_sprite then
+            G.summon_sprite.states.visible = true
+            G.summon_sprite.dissolve = G.summon_sprite.dissolve or 0
+            local dissolve_time = 3
+            G.summon_sprite.states.visible = true
+            G.summon_sprite.states.hover.can = false
+            G.summon_sprite.dissolve = 0
+            G.summon_sprite.dissolve_colours = dissolve_colours or {G.C.GREEN}
+            self.children.particles = Particles(0, 0, 0,0, {
+                timer_type = 'TOTAL',
+                timer = 0.025*dissolve_time,
+                scale = 0.25,
+                speed = 3,
+                lifespan = 0.7*dissolve_time,
+                attach = self,
+                colours = self.dissolve_colours,
+                fill = true
+            })
+            if not silent then 
+                if not G.last_materialized or G.last_materialized +0.01 < G.TIMERS.REAL or G.last_materialized > G.TIMERS.REAL then
+                    G.last_materialized = G.TIMERS.REAL
+                    G.E_MANAGER:add_event(Event({
+                        blockable = false,
+                        func = (function()
+                                play_sound('whoosh1', math.random()*0.1 + 0.6,0.3)
+                                play_sound('crumple'..math.random(1,5), math.random()*0.2 + 1.2,0.8)
+                            return true end)
+                    }))
+                end
             end
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  0.5*dissolve_time,
+                func = (function() if self.children.particles then self.children.particles.max = 0 end return true end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'ease',
+                blockable = false,
+                ref_table = G.summon_sprite,
+                ref_value = 'dissolve',
+                ease_to = 1,
+                delay =  1*dissolve_time,
+                func = (function(t) return t end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  1.05*dissolve_time,
+                func = (function() G.summon_sprite.states.hover.can = true; if self.children.particles then self.children.particles:remove(); self.children.particles = nil end return true end)
+            }))
         end
-        G.E_MANAGER:add_event(Event({
-            trigger = 'after',
-            blockable = false,
-            delay =  0.5*dissolve_time,
-            func = (function() if self.children.particles then self.children.particles.max = 0 end return true end)
-        }))
-        G.E_MANAGER:add_event(Event({
-            trigger = 'ease',
-            blockable = false,
-            ref_table = G.summon_sprite,
-            ref_value = 'dissolve',
-            ease_to = 0,
-            delay =  1*dissolve_time,
-            func = (function(t) return t end)
-        }))
-        G.E_MANAGER:add_event(Event({
-            trigger = 'after',
-            blockable = false,
-            delay =  1.05*dissolve_time,
-            func = (function() G.summon_sprite.states.hover.can = true; if self.children.particles then self.children.particles:remove(); self.children.particles = nil end return true end)
-        }))
+
+        if G.table_thing then
+            G.table_thing.states.visible = true
+            G.table_thing.dissolve = G.table_thing.dissolve or 0
+            local dissolve_time = 3
+            G.table_thing.states.visible = true
+            G.table_thing.states.hover.can = false
+            G.table_thing.dissolve = 0
+            G.table_thing.dissolve_colours = dissolve_colours or {G.C.GREEN}
+            self.children.particles = Particles(0, 0, 0,0, {
+                timer_type = 'TOTAL',
+                timer = 0.025*dissolve_time,
+                scale = 0.25,
+                speed = 3,
+                lifespan = 0.7*dissolve_time,
+                attach = self,
+                colours = self.dissolve_colours,
+                fill = true
+            })
+            if not silent then 
+                if not G.last_materialized or G.last_materialized +0.01 < G.TIMERS.REAL or G.last_materialized > G.TIMERS.REAL then
+                    G.last_materialized = G.TIMERS.REAL
+                    G.E_MANAGER:add_event(Event({
+                        blockable = false,
+                        func = (function()
+                                play_sound('whoosh1', math.random()*0.1 + 0.6,0.3)
+                                play_sound('crumple'..math.random(1,5), math.random()*0.2 + 1.2,0.8)
+                            return true end)
+                    }))
+                end
+            end
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  0.5*dissolve_time,
+                func = (function() if self.children.particles then self.children.particles.max = 0 end return true end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'ease',
+                blockable = false,
+                ref_table = G.table_thing,
+                ref_value = 'dissolve',
+                ease_to = 1,
+                delay =  1*dissolve_time,
+                func = (function(t) return t end)
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                blockable = false,
+                delay =  1.05*dissolve_time,
+                func = (function() G.table_thing.states.hover.can = true; if self.children.particles then self.children.particles:remove(); self.children.particles = nil end return true end)
+            }))
+        end
     end
     local SC_scale = 0.9*(G.debug_splash_size_toggle and 0.8 or 1)
     local oldfunc = Blind.init
+    --local default_atlas = SMODS.Atlas({key = 'default', path = 'default.png', px = 177, py = 100, atlas_table = "ASSET_ATLAS",})
     function Blind:init(X, Y, W, H)
         local ret = oldfunc(self,X,Y,W,H)
-        if not G.summon_sprite then
+        --[[
 
+        if not G.table_thing then
             
-            G.summon_sprite = Sprite(0, 0, 
-            13*SC_scale, 
-            13*SC_scale*(G.ASSET_ATLAS["balatro"].py/G.ASSET_ATLAS["balatro"].px),
-            G.ASSET_ATLAS["balatro"], {x=300,y=0})
+            G.table_thing = Sprite(0,2, 
+            25*SC_scale, 
+            25*SC_scale*littleguy_atlas.py/littleguy_atlas.px,
+            littleguy_atlas, {x=0,y=0}) --line 7524
+
+            G.table_thing.states.visible = false
+            G.table_thing:define_draw_steps({{
+                shader = 'dissolve',
+            }})
+            G.table_thing:set_alignment({
+                major = G.mid_screen,
+                type = 'cm',
+                bond = 'Strong',
+                offset = {x=0,y=0}
+            })
+
+
+            G.table_thing.states.hover.can = false
+            G.table_thing.dissolve = 0
+            G.table_thing.dissolve_colours = {G.C.DARK_EDITION}
+        end
+
+        if not G.summon_sprite then
+            
+            G.summon_sprite = Sprite(0,2, 
+            25*SC_scale, 
+            25*SC_scale*default_atlas.py/default_atlas.px,
+            default_atlas, {x=0,y=0}) --line 7524
 
             G.summon_sprite.states.visible = false
             G.summon_sprite:define_draw_steps({{
@@ -7539,6 +8033,7 @@ end
             G.summon_sprite.dissolve = 0
             G.summon_sprite.dissolve_colours = {G.C.DARK_EDITION}
         end
+        ]]
 
         return ret
     end
@@ -7896,8 +8391,7 @@ end
         end
         if not G.localization.descriptions.summon_blind[self.config.blind.key] then return end
         self.summoned = true
-        if G.summon_sprite then
-            G.summon_sprite.states.visible = true
+        if G.table_thing then
             self:start_materialize()
         end
 
@@ -7922,6 +8416,9 @@ end
 
 
         self:jimb_calc({summon = true})
+        local spritepos = self:jimb_calc({sprite = true})
+        G.summon_sprite:set_sprite_pos({x = 0, y = 0})
+        if G.summon_sprite and spritepos then G.summon_sprite:set_sprite_pos(spritepos) end
     end
 
 
@@ -7956,6 +8453,7 @@ end
             end
             self:add_speech_bubble(nameKey,nil,{quip = true})
             self:say_stuff(3,nil,{pitch = 1.5})
+            self:start_dissolve()
         end
         if G.GAME.manacle_handsize then
             G.hand:change_size(G.GAME.manacle_handsize)
