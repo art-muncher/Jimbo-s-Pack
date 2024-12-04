@@ -1822,7 +1822,7 @@ local rain = SMODS.Joker{
     rarity = 1,
     pos = {x = 2, y = 12},
     atlas = 'Jokers',
-    cost = 8,
+    cost = 5,
     unlocked = true,
     discovered = false,
     blueprint_compat = true,
@@ -1858,7 +1858,51 @@ local rain = SMODS.Joker{
         end
     end,
 }
+--[[
+local hurricane = SMODS.Joker{
+    key = 'hurricane',
+    loc_txt = {
+        name = "Hurricane",
+        text = {
+            "Cards in deck have a",
+            'a {C:green}#1# in #2#{} chance',
+            'to score'
+        }
+    },
+    cursed = true,
+    config = {extra = {odds = 1}},
+    rarity = 3,
+    pos = {x = 2, y = 12},
+    atlas = 'Jokers',
+    cost = 10,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds }}
+    end,
+    calculate = function(self,card,context)
 
+        if context.before then
+            for i = 1, #G.deck.cards do
+                if pseudorandom('rain_joker') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                    context.scoring_hand[#context.scoring_hand+1] = G.deck.cards[i]
+                end
+            end
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            
+            return true
+        else
+            return false
+        end
+    end,
+}
+--]]
 
 --[[
 local pocket = SMODS.Joker{
@@ -2308,7 +2352,7 @@ Card.calculate_joker = function(self,context)
             local num = 0
             for i,v in pairs(G.P_CENTER_POOLS['Joker']) do
                 num = num + 1
-                if G.P_CENTER_POOLS['Joker'][i].key == context.other_card.config.center.key and num > 150 then
+                if G.P_CENTER_POOLS['Joker'][i].key == context.card.config.center.key and num > 150 then
                     return Reverie.progress_cine_quest(self)
                 end
             end
@@ -4141,6 +4185,7 @@ function Card:say_stuff(n, not_first, args)
     self.children.speech_bubble.states.visible = true
     self.talking = true
     if not not_first then 
+        --n = n * math.max(G.SETTINGS.GAMESPEED,1)
         G.E_MANAGER:add_event(Event({
             trigger = 'after',
             delay = 0.1,
@@ -4169,15 +4214,17 @@ function Card:say_stuff(n, not_first, args)
             new_said = math.random(1, 11)
         end
         self.last_said = new_said
-        play_sound('voice'..math.random(1, 11), args and args.pitch or 1, 0.5)
-        self:juice_up()
+        --if n % math.max(G.SETTINGS.GAMESPEED,1) == 0 then
+            play_sound('voice'..math.random(1, 11), args and args.pitch or 1, 0.5)
+            self:juice_up()
+        --end
         
 
 
         G.E_MANAGER:add_event(Event({
             trigger = 'after',
             blockable = false, blocking = false,
-            delay = 0.13,
+            delay = 0.13 * G.SETTINGS.GAMESPEED,
             func = function()
                 self:say_stuff(n-1, true,args)
             return true
@@ -7720,8 +7767,7 @@ end
         --args.pitch
 
         self.talking = true
-        if not not_first then 
-            n = n * G.SETTINGS.GAMESPEED
+        if not not_first then
             G.E_MANAGER:add_event(Event({
                 trigger = 'after',
                 delay = 0.1,
@@ -7743,13 +7789,15 @@ end
                 new_said = math.random(1, 11)
             end
             self.last_said = new_said
-            play_sound('voice'..math.random(1, 11), args and args.pitch or 1, 0.5)
-            self:juice_up()
+            if n % G.SETTINGS.GAMESPEED == 0 then
+                play_sound('voice'..math.random(1, 11), args and args.pitch or 1, 0.5)
+                self:juice_up()
+            end
             
             G.E_MANAGER:add_event(Event({
                 trigger = 'after',
                 blockable = false, blocking = false,
-                delay = 0.13,
+                delay = 0.13 * G.SETTINGS.GAMESPEED,
                 func = function()
                     self:say_stuff(n-1, true,args)
                 return true
