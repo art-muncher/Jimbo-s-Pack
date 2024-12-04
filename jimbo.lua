@@ -5685,9 +5685,11 @@ if Cryptid then
         end,
         in_pool = function(self,wawa,wawa2)
             if jimbomod.config["Jokers"] == true then
-                for i = 1, #G.jokers.cards do
-                    if G.jokers.cards[i].purified ~= nil then
-                        return true
+                if G and G.jokers then
+                    for i = 1, #G.jokers.cards do
+                        if G.jokers.cards[i].purified ~= nil then
+                            return true
+                        end
                     end
                 end
                 return false
