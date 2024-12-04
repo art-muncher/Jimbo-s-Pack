@@ -8465,7 +8465,7 @@ end
 
         self:jimb_calc({summon = true})
         local spritepos = self:jimb_calc({sprite = true})
-        G.summon_sprite:set_sprite_pos({x = 0, y = 0})
+        if G.summon_sprite then G.summon_sprite:set_sprite_pos({x = 0, y = 0}) end
         if G.summon_sprite and spritepos then G.summon_sprite:set_sprite_pos(spritepos) end
     end
 
