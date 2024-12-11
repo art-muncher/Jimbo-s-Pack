@@ -7,6 +7,9 @@
 
 
 
+--to do:
+--linked cards: linked card's effects also apply to the other linked card
+
 local jimbomod = SMODS.current_mod
 
 SMODS.Atlas({key = 'Jokers', path = 'Jokers.png', px = 71, py = 95})
@@ -25,6 +28,15 @@ SMODS.Atlas({key = 'Stakes', path = 'stakes.png', px = 29, py = 29})
 SMODS.Atlas({key = 'Stickers', path = 'stickers.png', px = 71, py = 95})
 --local littleguy_atlas = SMODS.Atlas({key = 'littleguy', path = 'littleguy.png', px = 177, py = 100, atlas_table = "ASSET_ATLAS",})
 
+
+function getStake(num)
+    --code by cg or @fpschess
+    local t = {}
+    for i, v in pairs(G.P_STAKES) do
+     t[v.order] = v
+    end
+    return t[num]
+end
 
 if jimbomod.config.Jokers == nil then
     jimbomod.config.Jokers = true
@@ -177,7 +189,7 @@ SMODS.Consumable {
         if area then area:remove_from_highlighted(card) end
         if pseudorandom('antiparticle') < G.GAME.probabilities.normal*2/card.ability.extra.odds then
             for i = 1, #G.hand.highlighted do
-                G.hand.highlighted[i]:set_edition({negative = true},true)
+                if not (G.hand.highlighted.edition and G.hand.highlighted.edition.negative) then G.hand.highlighted[i]:set_edition({negative = true},true) end
             end
         else
             for i = 1, #G.hand.highlighted do
@@ -187,6 +199,75 @@ SMODS.Consumable {
     end,
     in_pool = function(self,card,wawa)
         return true
+    end,
+}
+
+local frames = 0
+SMODS.Consumable {
+    key = 'chaos',
+    set = 'Spectral',
+    loc_txt = {
+        name = 'Chaos',
+        text = {
+            '{C:legendary}Randomizes{} values of',
+            'up to {C:attention}#1#{} selected cards'
+        }
+    },
+    config = {extra = {odds = 3, cards = 3}},
+    pos = { x = 6, y = 6 },
+    cost = 6,
+    unlocked = true,
+    discovered = false,
+    atlas = 'Tarot',
+    loc_vars = function(self, info_queue, center)
+        info_queue[#info_queue+1] = G.P_CENTERS.e_negative
+        return {vars = {math.ceil(center.ability.extra.cards)}}
+    end,
+    can_use = function(self, card)
+        if #G.hand.highlighted <= math.ceil(card.ability.extra.cards) and #G.hand.highlighted ~= 0 then
+            return true
+        end
+        return false
+    end,
+    use = function(self, card, area, copier)
+        if area then area:remove_from_highlighted(card) end
+        for i = 1, #G.hand.highlighted do
+            local stats = {
+                'mult', --played mult
+                'h_mult', --held mult
+                'h_x_mult', --held xmult
+                'h_dollars', --held dollar gain
+                'p_dollars', --played dollar gain
+                'x_mult', --played xmult
+            }
+            for ii = 1, 3 do
+                local index = pseudorandom('chaos',1,#stats)
+                local min = -100
+                local max = 350
+                local operation = operationfuncs[2]
+                if stats[index] == 'x_mult' or stats[index] == 'h_x_mult' then
+                    min = 50
+                    max = 300
+                    operation = operationfuncs[1]
+                end
+                G.hand.highlighted[i].ability[stats[index]] = G.hand.highlighted[i].ability[stats[index]] == 0 and 1 or G.hand.highlighted[i].ability[stats[index]]
+                local stat = pseudorandom('chaos_stat', min, max)/100
+                G.hand.highlighted[i].ability[stats[index]] = operation(G.hand.highlighted[i].ability[stats[index]], stat)
+                table.remove(stats,index)
+            end
+        end
+    end,
+    in_pool = function(self,card,wawa)
+        return true
+    end,
+    update = function(self,card,dt)
+        frames = frames+1
+        if frames % 5 == 0 then
+            card.children.center:set_sprite_pos({x = math.random(6,8), y = 6})
+        end
+    end,
+    remove_from_deck = function(self,card,from_debuff)
+        frames = 0
     end,
 }
 
@@ -868,7 +949,7 @@ local ritual = SMODS.Joker{
             "per {C:attention}unscoring card"
         }
     },
-    config = {extra = {mult_mod = 0.15}},
+    config = {extra = {mult_mod = 0.05}},
     rarity = 3,
     pos = {x = 2, y = 10},
     atlas = 'Jokers',
@@ -882,7 +963,9 @@ local ritual = SMODS.Joker{
         return {vars = {center.ability.extra.mult_mod}}
     end,
     calculate = function(self,card,context)
+        
         if context.cardarea == G.jokers and context.before then
+            unscored = 0
             local unscoredd = {}
             for i = 1, #context.full_hand do
                 local unscoring = true
@@ -906,7 +989,6 @@ local ritual = SMODS.Joker{
 		end
             if context.individual and context.cardarea == G.play then
                     context.other_card.ability.x_mult = context.other_card.ability.x_mult + card.ability.extra.mult_mod*unscored or card.ability.extra.mult_mod*unscored
-                    unscored = 0
                     return {
                         extra = {message = localize('k_upgrade_ex'), colour = G.C.MULT},
                         colour = G.C.MULT,
@@ -1009,6 +1091,67 @@ local ambidextrous = SMODS.Joker{
     end,
 }
 
+
+local aether = SMODS.Voucher{
+    key = 'aether',
+    loc_txt = {
+        name = "Aether",
+        text = {
+            '{C:dark_edition}Negative{} playing cards may appear',
+            'and have a {C:attention}#1#% chance{}',
+            'to appear in packs'
+        },
+    },
+    cost = 10,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.chance}}
+    end,
+    in_pool = function(self,wawa,wawa2)
+        return false
+    end,
+    redeem = function(self)
+        G.GAME.allow_negative = true
+        G.GAME.negative_playing_card_spawn = self.config.extra.chance / 100
+    end,
+    config = {extra = {chance = 10,}},
+    --pos = {x = 0, y = 0},
+    --atlas = 'Vouchers',
+}
+local quintessence = SMODS.Voucher{
+    key = 'quintessence',
+    loc_txt = {
+        name = "Quintessence",
+        text = {
+            '{C:dark_edition}Negative{} playing cards',
+            'give {C:attention}+#1#{} hand size',
+        },
+    },
+    requires = {'v_jimb_aether'},
+    cost = 10,
+    unlocked = true,
+    discovered = false,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.cardlimit}}
+    end,
+    redeem = function(self)
+        for i = 1, #G.playing_cards do
+            local card = G.playing_cards[i]
+            if card.edition and card.edition.negative then
+                card.edition.card_limit = card.edition.card_limit + self.config.extra.cardlimit
+            end
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        return false
+    end,
+    config = {extra = {cardlimit = 0.5,}},
+    --pos = {x = 0, y = 0},
+    --atlas = 'Vouchers',
+}
+
+
 local annihilation = SMODS.Joker{
     key = 'annihilation',
     loc_txt = {
@@ -1065,14 +1208,13 @@ local accelerator = SMODS.Joker{
     loc_txt = {
         name = "Accelerator",
         text = {
-            "Cards in {C:attention}first played hand",
-            'are {C:red}destroyed{},',
             'Cards in {C:attention}winning hand',
             'have a {C:green}#1# in #2#{} chance', 
-            'turn {C:dark_edition}Negative'
+            'turn {C:dark_edition}Negative',
+            'otherwise {C:red}destroy them{}'
         }
     },
-    config = {extra = {cards = {}, odds = 2}},
+    config = {extra = {cards = {}, odds = 3}},
     rarity = 3,
     pos = {x = 0, y = 0},
     atlas = 'Soulj',
@@ -1086,16 +1228,6 @@ local accelerator = SMODS.Joker{
         return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds}}
     end,
     calculate = function(self,card,context)
-        if context.before then
-            if G.GAME.current_round.hands_played == 0 then
-                local num = 0
-                for i = 1, #G.play.cards do
-                    G.play.cards[i-num]:remove()
-                    num = num + 1
-                end
-            end
-        end
-
         if context.after and context.scoring_name and context.scoring_hand then
             card.ability.extra.cards = {}
             for i = 1, #context.full_hand do
@@ -1106,6 +1238,8 @@ local accelerator = SMODS.Joker{
             for i = 1, #card.ability.extra.cards do
                 if pseudorandom('accelerator') < G.GAME.probabilities.normal/card.ability.extra.odds then
                     if card.ability.extra.cards[i] then card.ability.extra.cards[i]:set_edition({negative = true},true) end
+                else
+                    if card.ability.extra.cards[i] then card.ability.extra.cards[i]:remove() end
                 end
             end
         end
@@ -1120,6 +1254,119 @@ local accelerator = SMODS.Joker{
 }
 
 
+local genetic_engineering = SMODS.Joker{
+    key = 'genetic_engineering',
+    loc_txt = {
+        name = "Genetic Engineering",
+        text = {
+            "If first hand contains",
+            'only one card,',
+            'turn the card {C:dark_edition}Negative'
+        }
+    },
+    config = {extra = {}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    atlas = 'Soulj',
+    cost = 8,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {}}
+    end,
+    calculate = function(self,card,context)
+        if context.before and context.cardarea == G.jokers then
+            if #context.full_hand == 1 then
+                context.full_hand[1]:set_edition({negative = true},true)
+                return {
+                    message = 'Negated!',
+                    colour = G.C.CHIPS,
+                    card = card,
+                }
+            end
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+local function print_table(table, num)
+    num = num or 0
+    local string = ''
+    if num ~= 0 then
+        for i = 1, num do
+            string = string .. ' >>>> '
+        end
+        
+    end
+    string = string .. 'key:  '
+
+    if table[1] then
+        for i = 1, #table do
+            local v = table[i]
+            local k = i
+            if type(v) == 'number' or type(v) == 'string' then
+                print(string .. k .. '  value: ' .. v)
+            elseif type(v) == 'table' then
+                print(string ..' TABLE:')
+                print_table(v, num+1)
+            else
+                print(string .. k)
+            end
+        end
+    else
+        for k,v in pairs(table) do
+            if type(v) == 'number' or type(v) == 'string' then
+                print(string .. k .. '  value: ' .. v)
+            elseif type(v) == 'table' then
+                print(string ..' TABLE:  ' .. k)
+                print_table(v, num+1)
+            else
+                print(string .. k)
+            end
+        end
+
+    end
+end
+--eval for i = 1, 100 do print('    ') end
+--[
+if not G.localization.descriptions.Other['card_extra_mult'] then
+    local oldfunc = generate_card_ui
+    function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end,card)
+        full_UI_table = oldfunc(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end,card)
+        if card and card.ability and card.ability.set and (card.ability.set == 'Enhanced' or card.ability.set == 'Default') then
+            local desc_nodes = full_UI_table.main
+            if card.ability.mult ~= 0 and not (_c and _c.effect == 'Mult Card') and not (_c and _c.effect == 'Lucky Card') then
+                localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {card.ability.mult}}
+            end
+            if card.ability.h_mult ~= 0 then
+                localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {card.ability.h_mult}}
+            end
+            if card.ability.x_mult ~= 1 and not (_c and _c.effect == 'Glass Card') then
+                localize{type = 'other', key = 'card_extra_x_mult', nodes = desc_nodes, vars = {card.ability.x_mult}}
+            end
+            if card.ability.h_x_mult ~= 0 and not (_c and _c.effect == 'Steel Card') then
+                localize{type = 'other', key = 'card_extra_h_x_mult', nodes = desc_nodes, vars = {card.ability.h_x_mult}}
+            end
+            if card.ability.h_dollars ~= 0 and not (_c and _c.effect == 'Gold Card') then
+                localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {card.ability.h_dollars}}
+            end
+            if card.ability.p_dollars ~= 0 and not (_c and _c.effect == 'Lucky Card') then
+                localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {card.ability.p_dollars}}
+            end
+        end
+        return full_UI_table
+    end
+end
+--]]
 
 local kunai = SMODS.Joker{
     key = 'kunai',
@@ -2109,6 +2356,98 @@ local hurricane = SMODS.Joker{
 }
 --]]
 
+local jamaisvu = SMODS.Joker{
+    key = 'jamais_vu',
+    loc_txt = {
+        name = "Jamais Vu",
+        text = {
+            "{C:attention}Red Sealed cards{}",
+            'are {C:attention}rescored{}'
+        }
+    },
+    cursed = true,
+    config = {extra = {card_ID = math.random()}},
+    rarity = 3,
+    pos = {x = 5, y = 0},
+    soul_pos = {x = 5, y = 1},
+    atlas = 'Soulj',
+    cost = 5,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = false,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {}}
+    end,
+    calculate = function(self,card,context)
+        if context.before then
+            for i = 1, #context.scoring_hand do
+                if context.scoring_hand[i].seal and context.scoring_hand[i].seal == 'Red' then
+                    context.scoring_hand[#context.scoring_hand+1] = context.scoring_hand[i]
+                end
+            end
+        end
+        if context.individual and context.cardarea == G.hand and not context.is_rescore then
+            local effects = {eval_card(context.other_card, {cardarea = G.hand, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, is_rescore = true})}
+            for k=1, #G.jokers.cards do
+                --calculate the joker individual card effects
+                local eval = G.jokers.cards[k]:calculate_joker({cardarea = G.hand, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, other_card = context.other_card, individual = true, is_rescore = true})
+                if eval then 
+                    mod_percent = true
+                    table.insert(effects, eval)
+                end
+            end
+            for ii = 1, #effects do
+                --if this effect came from a joker
+                if effects[ii].card then
+                    mod_percent = true
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = (function() effects[ii].card:juice_up(0.7);return true end)
+                    }))
+                end
+                
+                --If hold mult added, do hold mult add event and add the mult to the total
+                
+                --If dollars added, add dollars to total
+                if effects[ii].dollars then 
+                    ease_dollars(effects[ii].dollars)
+                    card_eval_status_text(context.other_card, 'dollars', effects[ii].dollars, percent)
+                end
+
+                if effects[ii].h_mult then
+                    mod_percent = true
+                    mult = mod_mult(mult + effects[ii].h_mult)
+                    update_hand_text({delay = 0}, {mult = mult})
+                    card_eval_status_text(context.other_card, 'h_mult', effects[ii].h_mult, percent)
+                end
+
+                if effects[ii].x_mult then
+                    mod_percent = true
+                    mult = mod_mult(mult*effects[ii].x_mult)
+                    update_hand_text({delay = 0}, {mult = mult})
+                    card_eval_status_text(context.other_card, 'x_mult', effects[ii].x_mult, percent)
+                end
+
+                if effects[ii].message then
+                    mod_percent = true
+                    update_hand_text({delay = 0}, {mult = mult})
+                    card_eval_status_text(context.other_card, 'extra', nil, percent, nil, effects[ii])
+                end
+            end
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            
+            return true
+        else
+            return false
+        end
+    end,
+}
+
 --[[
 local pocket = SMODS.Joker{
     key = 'pocket',
@@ -2801,6 +3140,7 @@ function reset_prism()
 end
 --]]
 
+
 local prism = SMODS.Joker{
     key = 'prism',
     loc_txt = {
@@ -2857,6 +3197,288 @@ local prism = SMODS.Joker{
             local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
             selected_back = get_deck_from_name(selected_back)
             if selected_back.name == "Checkered Deck" then
+                unlock_card(self)
+            end
+        end
+        if args.type == 'jimb_lock_all' then
+            lock_card(self)
+        end
+        if args.type == 'jimb_unlock_all' then
+            unlock_card(self)
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+
+local oldfunc = level_up_hand
+function level_up_hand(card, hand, instant, amount)
+
+    local effects = {}
+    if G and G.jokers then
+        for i = 1, #G.jokers.cards do
+            local effect = G.jokers.cards[i]:calculate_joker({pre_level_up = true, hand = hand, instant = instant, amount = amount})
+            if effect then effects[#effects+1] = effect end
+        end
+    end
+
+    for i = 1, #effects do
+        local effect = effects[i]
+        if effect.level then
+            amount = effect.level
+        end
+        if effect.hand then
+            update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {
+                handname = effect.hand,
+                chips = G.GAME.hands[effect.hand].chips,
+                mult = G.GAME.hands[effect.hand].mult,
+                level= G.GAME.hands[effect.hand].level})
+            hand = effect.hand
+        end
+        if effect.card then
+            if effect.message then
+                card_eval_status_text(effect.card, 'extra', nil, nil, nil, {message = effect.message})
+            end
+        end
+    end
+
+    local ret = oldfunc(card,hand,instant,amount)
+
+    if G and G.jokers then
+        for i = 1, #G.jokers.cards do
+            G.jokers.cards[i]:calculate_joker({level_up = true, hand = hand, instant = instant, amount = amount})
+        end
+    end
+
+    return ret
+end
+
+local conspiracy_theory = SMODS.Joker{
+    key = 'conspiracy_theory',
+    loc_txt = {
+        name = "Conspiracy Theory",
+        text = {
+            "{C:blue}Upgrading{} a hand has",
+            "a {C:green}#1# in #2#{} chance",
+            "upgrade most played",
+            'hand instead'
+        },
+        unlock = {
+            'Win a run',
+            'with {C:attention}Nebula Deck{}'
+        }
+    },
+    config = {extra = {odds = 2}},
+    rarity = 2,
+    pos = {x = 1, y = 13},
+    atlas = 'Jokers',
+    cost = 6,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds}}
+    end,
+    calculate = function(self,card,context)
+        if context.pre_level_up then
+            local quips = {
+                'Fake!',
+                'Photoshopped...',
+                'Nuh uh!',
+                'I could disprove that',
+                'Nope!',
+                'Science believers...',
+                'Liberals...',
+                'The government is lying'
+            }
+            if pseudorandom('flatearth') < G.GAME.probabilities.normal/card.ability.extra.odds then
+
+                local mostplayedhand = nil
+                local playedtimes = -420/69
+                for k, v in ipairs(G.handlist) do
+    
+                    if G.GAME.hands[v].visible and G.GAME.hands[v].played > playedtimes then
+                        playedtimes = G.GAME.hands[v].played
+                        mostplayedhand = v
+                    end
+                end
+
+                return{
+                    card = card,
+                    message = pseudorandom_element(quips, pseudoseed('flat_earth')),
+                    hand = mostplayedhand or 'High Card',
+                }
+            end
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Nebula Deck" then
+                unlock_card(self)
+            end
+        end
+        if args.type == 'jimb_lock_all' then
+            lock_card(self)
+        end
+        if args.type == 'jimb_unlock_all' then
+            unlock_card(self)
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+
+local oldfunc = mod_mult
+function mod_mult(_mult)
+    if G and G.jokers then
+        for i = 1, #G.jokers.cards do
+            local thingy = G.jokers.cards[i]:calculate_joker({jimb_modify_mult = true, mod = _mult})
+            if thingy then
+                _mult = to_big(_mult) + to_big(thingy)
+            end
+        end
+    end
+    return oldfunc(_mult)--to_big(mod_mult)
+    --local ret = oldfunc(_mult)
+    --return ret
+end
+
+local oldfunc = mod_chips
+function mod_chips(_chips)
+    if G and G.jokers then
+        for i = 1, #G.jokers.cards do
+            local thingy = G.jokers.cards[i]:calculate_joker({jimb_modify_chips = true, mod = _chips})
+            if thingy then
+                _chips = to_big(_chips) + to_big(thingy)
+            end
+        end
+    end
+    return oldfunc(_chips)--to_big(mod_mult)
+    --local ret = oldfunc(_mult)
+    --return ret
+end
+
+local ionization = SMODS.Joker{
+    key = 'ionization',
+    loc_txt = {
+        name = "Ionization",
+        text = {
+            "Whenever {C:chips}Chips{} is modified,",
+            'gain {C:attention}#1#%{} of modification',
+            'as {C:mult}Mult'
+        },
+        unlock = {
+            'Win a run',
+            'with {C:attention}Plasma Deck{}'
+        }
+    },
+    config = {extra = {percentage = 20}},
+    rarity = 3,
+    pos = {x = 0, y = 0},
+    --soul_pos = {x=4,y=1},
+    atlas = 'Soulj',
+    cost = 6,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.percentage}}
+    end,
+    calculate = function(self,card,context)
+        if context.jimb_modify_chips then
+            mult = mod_mult(mult + (context.mod-hand_chips)* to_big(card.ability.extra.percentage/100))
+            update_hand_text({delay = 0}, {mult = mult})
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Plasma Deck" then
+                unlock_card(self)
+            end
+        end
+        if args.type == 'jimb_lock_all' then
+            lock_card(self)
+        end
+        if args.type == 'jimb_unlock_all' then
+            unlock_card(self)
+        end
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+
+local cosmicray = SMODS.Joker{
+    key = 'cosmicrays',
+    loc_txt = {
+        name = "Cosmic Rays",
+        text = {
+            "{C:dark_edition}Negative{} cards held in hand",
+            'at end of round gain',
+            '{X:mult,C:white}X#1#{} held Mult'
+        }
+    },
+    config = {extra = {Xmult_mod = 0.05}},
+    rarity = 3,
+    pos = {x = 0, y = 13},
+    atlas = 'Jokers',
+    cost = 8,
+    unlocked = false,
+    discovered = false,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+    loc_vars = function(self, info_queue, center)
+        return {vars = {center.ability.extra.Xmult_mod}}
+    end,
+    calculate = function(self,card,context)
+        if context.after and context.scoring_name and context.scoring_hand then
+            card.ability.extra.cards = {}
+            for i = 1, #G.hand.cards do
+                card.ability.extra.cards[#card.ability.extra.cards+1] = G.hand.cards[i]
+            end
+        end
+        if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
+            for i = 1, #card.ability.extra.cards do
+                if card.ability.extra.cards[i].ability.h_x_mult == 0 then
+                    card.ability.extra.cards[i].ability.h_x_mult=card.ability.extra.Xmult_mod + 1
+                else
+                    card.ability.extra.cards[i].ability.h_x_mult = card.ability.extra.cards[i].ability.h_x_mult + card.ability.extra.Xmult_mod
+                end
+                -- or card.ability.extra.Xmult_mod
+            end
+            card.ability.extra.cards = nil
+        end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win' then
+            local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
+            selected_back = get_deck_from_name(selected_back)
+            if selected_back.name == "Negated Deck" then
                 unlock_card(self)
             end
         end
@@ -4117,7 +4739,7 @@ end
 
 local spectralStuff = {
     'j_jimb_amalgam',
-    'v_jimb_aether',
+    'v_jimb_release',
     'e_jimb_nil_',
 }
 
@@ -4738,12 +5360,13 @@ local amalgam = SMODS.Joker{
     end
 }
 
-local aether = SMODS.Voucher{
-    key = 'aether',
+local release = SMODS.Voucher{
+    key = 'release',
     loc_txt = {
-        name = "{C:edition}Aether{}",
+        name = "{C:edition}Release{}",
         text = {
-            'Spawn a random {C:red}Curse{}', 'and gain {C:dark_edition}+1{} Joker Slots','at the start of an Ante'
+            'All {C:attention}Boss Blinds{} are summoned',
+            'and give {C:legendary}Purified Curses'
         },
     },
     cost = 20,
@@ -4996,7 +5619,7 @@ local oldfunc = ease_ante
 ease_ante = function(num)
     local ret = oldfunc(num)
         --print('hiii')
-        if G.GAME.used_vouchers['v_jimb_aether'] then
+        if G.GAME.used_vouchers['v_jimb_release'] then
             G.jokers.config.card_limit = G.jokers.config.card_limit + 1
                 local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
                 newcard:add_to_deck()
@@ -6335,17 +6958,22 @@ end
 
 
 local neondeck = SMODS.Back{
-    key = "neon",
+    key = "neondeck",
     name = "Neon Deck",
     pos = {x = 0, y = 0},
     loc_txt = {
         name = "Neon Deck",
         text = {
-        "Switch between two joker",
-        "slots at the end of round",
+        "Switch between two sets",
+        "of jokers at the end of round",
         "{X:dark_edition,C:white}X#1#{} card values"
+        },
+        unlock = {
+            'Win a run on at least',
+            '{C:attention}Rotting Stake{} difficulty',
         }
     },
+    unlocked = false,
     config = {
         extra = {
             jokers = {}, 
@@ -6356,67 +6984,157 @@ local neondeck = SMODS.Back{
     atlas = "Decks",
     loc_vars = function(self)
         return { vars = {self.config.extra.mult} }
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'win_stake' and getStake(G.GAME.stake).key == 'stake_jimb_rotting' then
+            unlock_card(self)
+        end
+        if args.type == 'jimb_lock_all' then
+            lock_card(self)
+        end
+        if args.type == 'jimb_unlock_all' then
+            unlock_card(self)
+        end
+    end,
+    trigger_effect = function(self,args)
+        if not args then return end
+        
+        if args.context == "card" then jokerMult(args.other_card,self.config.extra.mult) end
+    
+        if args.context == 'eval' then
+            --[[configs.jokers2 = G.jokers.cards
+    
+            G.jokers.cards = {}
+            for i = 1, #configs.jokers do
+                configs.jokers[i]:add_to_deck()
+                configs.jokers[i]:start_materialize({G.C.DARK_EDITION}, nil, 5)
+                G.jokers:emplace(configs.jokers[i])
+            end
+    
+            G.jokers.cards = configs.jokers
+            configs.jokers = configs.jokers2]]
+    
+            --G.GAME.neonJokers2 = G.jokers.cards
+            G.GAME.neonJokers2 = {}
+            for i = 1, #G.jokers.cards do
+                G.GAME.neonJokers2[#G.GAME.neonJokers2+1] = {}
+                G.GAME.neonJokers2[#G.GAME.neonJokers2].key = G.jokers.cards[i].config.center.key
+                G.GAME.neonJokers2[#G.GAME.neonJokers2].saveables = {
+                    ability = G.jokers.cards[i].ability,
+                    pinned = G.jokers.cards[i].pinned,
+                    edition = G.jokers.cards[i].edition,
+                    base_cost = G.jokers.cards[i].base_cost,
+                    extra_cost = G.jokers.cards[i].extra_cost,
+                    cost = G.jokers.cards[i].cost,
+                    sell_cost = G.jokers.cards[i].sell_cost,
+                }
+                G.jokers.cards[i]:remove_from_deck()
+            end
+            G.GAME.neonJokers = G.GAME.neonJokers or {}
+    
+    
+            G.jokers.cards = {}
+            for i = 1, #G.GAME.neonJokers do
+                local card = create_card('Joker', G.jokers, nil, nil, nil, nil, G.GAME.neonJokers[i].key)
+                for k,v in pairs(G.GAME.neonJokers[i].saveables) do
+                    card[k] = G.GAME.neonJokers[i].saveables[k]
+                end
+                --card.ability = G.GAME.neonJokers[i].ability
+                card.ability.isDuped = true
+    
+                --G.GAME.neonJokers[i]:add_to_deck()
+                --G.GAME.neonJokers[i]:start_materialize({G.C.DARK_EDITION}, nil, 5)
+                G.jokers:emplace(card)
+                card:add_to_deck()
+                card:start_materialize({G.C.DARK_EDITION}, nil, 5)
+            end
+    
+            --G.jokers.cards = G.GAME.neonJokers
+            G.GAME.neonJokers = G.GAME.neonJokers2
+        end
+    
     end
 }
-local configs = neondeck.config.extra
-neondeck.trigger_effect = function(self,args)
-    if not args then return end
-    
-    if args.context == "card" then jokerMult(args.other_card,self.config.extra.mult) end
 
-    if args.context == 'eval' then
-        --[[configs.jokers2 = G.jokers.cards
-
-        G.jokers.cards = {}
-        for i = 1, #configs.jokers do
-            configs.jokers[i]:add_to_deck()
-            configs.jokers[i]:start_materialize({G.C.DARK_EDITION}, nil, 5)
-            G.jokers:emplace(configs.jokers[i])
-        end
-
-        G.jokers.cards = configs.jokers
-        configs.jokers = configs.jokers2]]
-
-        --G.GAME.neonJokers2 = G.jokers.cards
-        G.GAME.neonJokers2 = {}
-        for i = 1, #G.jokers.cards do
-            G.GAME.neonJokers2[#G.GAME.neonJokers2+1] = {}
-            G.GAME.neonJokers2[#G.GAME.neonJokers2].key = G.jokers.cards[i].config.center.key
-            G.GAME.neonJokers2[#G.GAME.neonJokers2].saveables = {
-                ability = G.jokers.cards[i].ability,
-                pinned = G.jokers.cards[i].pinned,
-                edition = G.jokers.cards[i].edition,
-                base_cost = G.jokers.cards[i].base_cost,
-                extra_cost = G.jokers.cards[i].extra_cost,
-                cost = G.jokers.cards[i].cost,
-                sell_cost = G.jokers.cards[i].sell_cost,
-            }
-            G.jokers.cards[i]:remove_from_deck()
-        end
-        G.GAME.neonJokers = G.GAME.neonJokers or {}
-
-
-        G.jokers.cards = {}
-        for i = 1, #G.GAME.neonJokers do
-            local card = create_card('Joker', G.jokers, nil, nil, nil, nil, G.GAME.neonJokers[i].key)
-            for k,v in pairs(G.GAME.neonJokers[i].saveables) do
-                card[k] = G.GAME.neonJokers[i].saveables[k]
-            end
-            --card.ability = G.GAME.neonJokers[i].ability
-            card.ability.isDuped = true
-
-            --G.GAME.neonJokers[i]:add_to_deck()
-            --G.GAME.neonJokers[i]:start_materialize({G.C.DARK_EDITION}, nil, 5)
-            G.jokers:emplace(card)
-            card:add_to_deck()
-            card:start_materialize({G.C.DARK_EDITION}, nil, 5)
-        end
-
-        --G.jokers.cards = G.GAME.neonJokers
-        G.GAME.neonJokers = G.GAME.neonJokers2
+local oldfunc = poll_edition
+function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
+    _mod = _mod or 1
+    if G.GAME.allow_negative then
+        _no_neg = nil
     end
-
+    local ret = oldfunc(_key, G.GAME.negative_appear_chance and _mod*G.GAME.negative_appear_chance or _mod, _no_neg, _guaranteed, _options)
+    if ret and ret.negative then
+        return ret
+    else
+        return oldfunc(_key, _mod, _no_neg, _guaranteed, _options)
+    end
 end
+
+local negated = SMODS.Back{
+    key = "negated",
+    name = "Negated Deck",
+    pos = {x = 2, y = 0},
+    loc_txt = {
+        name = "Negated Deck",
+        text = {
+            "{C:dark_edition}Negative{} playing cards",
+            'may naturally appear',
+            'When defeating a {C:attention}Boss Blind{}',
+            'add {C:dark_edition}Negative{} to {C:attention}3{} random cards in deck'
+        },
+        unlock = {
+            'Have atleast 15 {C:dark_edition}Negative',
+            'cards in your deck',
+        }
+    },
+    unlocked = true,
+    config = {
+        extra = {
+            
+        }
+    },
+    atlas = "Decks",
+    loc_vars = function(self)
+        return { vars = {} }
+    end,
+    apply = function(back) 
+        G.GAME.allow_negative = true
+    end,
+    trigger_effect = function(self,args)
+        if not args then return end
+            if args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+                local cards = {}
+                for i = 1, #G.playing_cards do
+                    if not G.playing_cards[i].edition then
+                        cards[#cards+1] = G.playing_cards[i]
+                    end
+                end
+                for i = 1, 3 do
+                    if cards[i] then
+                        local card = pseudorandom_element(cards,pseudoseed('negateddeck'))
+                        card:set_edition({negative = true},true)
+                    end
+                end
+            end
+    end,
+    check_for_unlock = function(self, args)
+        if args.type == 'modify_deck' then
+            local count = 0
+            for _, v in pairs(G.playing_cards) do
+                if v.edition and v.edition.negative then count = count + 1 end
+            end
+            if count >= 15 then
+                unlock_card(self)
+            end
+        end
+        if args.type == 'jimb_lock_all' then
+            lock_card(self)
+        end
+        if args.type == 'jimb_unlock_all' then
+            unlock_card(self)
+        end
+    end
+}
 
 local CAI = {
     discard_W = G.CARD_W,
@@ -6529,7 +7247,7 @@ local archeologist = SMODS.Back{
     end,
     check_for_unlock = function(self,args)
         if args.type == 'ante_up' then
-            if args.ante <= 0 then
+            if G.GAME.round_resets.ante <= 0 then
                 unlock_card(self)
             end
         end
@@ -6978,8 +7696,8 @@ local oldfunc = get_next_voucher_key
 function get_next_voucher_key()
     local ret =oldfunc()
     if jimbomod.config["Special Spectrals"] == true then
-        if pseudorandom('_'.."Voucher"..G.GAME.round_resets.ante) > 0.994 and not G.GAME.used_vouchers['v_jimb_aether'] then
-            ret = 'v_jimb_aether'
+        if pseudorandom('_'.."Voucher"..G.GAME.round_resets.ante) > 0.9994+1 and not G.GAME.used_vouchers['v_jimb_release'] then
+            ret = 'v_jimb_release'
         end
     end
     return ret
@@ -7092,6 +7810,12 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
             SMODS.Stickers['jimb_deteriorating']:apply(ret, true)
         end
     end
+    if G.GAME.negative_playing_card_spawn and  (ret.ability.set == 'Default' or ret.ability.set == 'Enhanced') then
+        print('hi')
+        if pseudorandom('editioned_playingcard') < G.GAME.negative_playing_card_spawn then
+            ret:set_edition({negative = true},true)
+        end
+    end
 
     --POST hook
     --[[local selected_back = saveTable and saveTable.BACK.name or (G.GAME.viewed_back and G.GAME.viewed_back.name) or G.GAME.selected_back and G.GAME.selected_back.name or 'Red Deck'
@@ -7125,6 +7849,11 @@ Card.set_edition = function(self,a,b,c)
             end
         end
     end
+    if G.GAME.used_vouchers['v_jimb_quintessence'] then
+        if self.edition and self.edition.negative then
+            self.edition.card_limit = self.edition.card_limit + 0.5
+        end
+    end
     return ret
 end
 
@@ -7149,12 +7878,13 @@ end]]
 
 
 if CardSleeves then
-    --[[
+    SMODS.Atlas({key = 'Sleeves', path = 'sleeves.png', px = 71, py = 95})
+    --[
     CardSleeves.Sleeve {
-        key = "jimb_neon",
+        key = "neon_sleeve",
         name = "Neon Sleeve",
-        atlas = "Jokers",
-        pos = { x = 0-1, y = 0 },
+        atlas = "Sleeves",
+        pos = { x = 2, y = 3 },
         config = { jokers = {}, jokers2 = {}, mult = 1.5 },
         loc_txt = {
             name = "Neon Sleeve",
@@ -7164,37 +7894,103 @@ if CardSleeves then
             "{X:dark_edition,C:white}X#1#{} to all card's values"
             }
         },
-        unlocked = true,
-        unlock_condition = { deck = "Neon Deck", stake = 1 },
+        unlocked = false,
+        unlock_condition = { deck = "b_jimb_neondeck", stake = 1 },
         loc_vars = function(self)
             return { vars = {self.config.mult} }
         end,
         trigger_effect = function(self,args)
             if not args then return end
+            
+            if args.context == "card" then jokerMult(args.other_card,self.config.extra.mult) end
+        
             if args.context == 'eval' then
-                if G.GAME.blind and G.GAME.blind.chips and to_big(G.GAME.chips) >= to_big(G.GAME.blind.chips) then
-                    configs.jokers2 = G.jokers.cards
-
-                    G.jokers.cards = {}
-                    for i = 1, #configs.jokers do
-                        configs.jokers[i]:add_to_deck()
-                        configs.jokers[i]:start_materialize({G.C.DARK_EDITION}, nil, 5)
-                        G.jokers:emplace(configs.jokers[i])
+                G.GAME.neonJokers2 = {}
+                for i = 1, #G.jokers.cards do
+                    G.GAME.neonJokers2[#G.GAME.neonJokers2+1] = {}
+                    G.GAME.neonJokers2[#G.GAME.neonJokers2].key = G.jokers.cards[i].config.center.key
+                    G.GAME.neonJokers2[#G.GAME.neonJokers2].saveables = {
+                        ability = G.jokers.cards[i].ability,
+                        pinned = G.jokers.cards[i].pinned,
+                        edition = G.jokers.cards[i].edition,
+                        base_cost = G.jokers.cards[i].base_cost,
+                        extra_cost = G.jokers.cards[i].extra_cost,
+                        cost = G.jokers.cards[i].cost,
+                        sell_cost = G.jokers.cards[i].sell_cost,
+                    }
+                    G.jokers.cards[i]:remove_from_deck()
+                end
+                G.GAME.neonJokers = G.GAME.neonJokers or {}
+        
+        
+                G.jokers.cards = {}
+                for i = 1, #G.GAME.neonJokers do
+                    local card = create_card('Joker', G.jokers, nil, nil, nil, nil, G.GAME.neonJokers[i].key)
+                    for k,v in pairs(G.GAME.neonJokers[i].saveables) do
+                        card[k] = G.GAME.neonJokers[i].saveables[k]
                     end
+                    --card.ability = G.GAME.neonJokers[i].ability
+                    card.ability.isDuped = true
+        
+                    --G.GAME.neonJokers[i]:add_to_deck()
+                    --G.GAME.neonJokers[i]:start_materialize({G.C.DARK_EDITION}, nil, 5)
+                    G.jokers:emplace(card)
+                    card:add_to_deck()
+                    card:start_materialize({G.C.DARK_EDITION}, nil, 5)
+                end
+        
+                --G.jokers.cards = G.GAME.neonJokers
+                G.GAME.neonJokers = G.GAME.neonJokers2
+            end
+        
+        end
+    }
+    CardSleeves.Sleeve {
+        key = "negated_sleeve",
+        name = "Negated Sleeve",
+        atlas = "Sleeves",
+        pos = { x = 3, y = 3 },
 
-                    G.jokers.cards = configs.jokers
-                    configs.jokers = configs.jokers2
+        loc_txt = {
+            name = "Negated Sleeve",
+            text = {
+                "{C:dark_edition}Negative{} playing cards",
+                'may naturally appear',
+                'When defeating a {C:attention}Boss Blind,',
+                'add {C:dark_edition}Negative{} to 3 random cards in deck'
+            },
+        },
+        unlocked = false,
+        unlock_condition = { deck = "b_jimb_negated", stake = 1 },
 
-                    return true
-
+        config = {
+            extra = {
+            }
+        },
+        apply = function(back) 
+            G.GAME.allow_negative = true
+        end,
+        trigger_effect = function(self,args)
+            if not args then return end
+            if args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+                local cards = {}
+                for i = 1, #G.playing_cards do
+                    if not G.playing_cards[i].edition then
+                        cards[#cards+1] = G.playing_cards[i]
+                    end
+                end
+                for i = 1, 3 do
+                    if cards[i] then
+                        local card = pseudorandom_element(cards,pseudoseed('negateddeck'))
+                        card:set_edition({negative = true},true)
+                    end
                 end
             end
-            if args.context.newcard then
-                --print(args.context.newcard.ability.name)
-                jokerMult(args.context.newcard,self.config.mult)
-            end
         end,
-    }]]
+        loc_vars = function(self)
+            return { vars = {self.config.extra.negativity} }
+        end,
+    }
 end
 
 
