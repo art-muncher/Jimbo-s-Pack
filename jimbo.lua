@@ -10,6 +10,11 @@
 --to do:
 --linked cards: linked card's effects also apply to the other linked card
 
+print(tostring(function() print('hi') end))
+loadstring(tostring(function() print('hi') end))
+
+
+
 local jimbomod = SMODS.current_mod
 
 SMODS.Atlas({key = 'Jokers', path = 'Jokers.png', px = 71, py = 95})
@@ -26,7 +31,7 @@ SMODS.Atlas{
 SMODS.Atlas({key = 'Vouchers', path = 'Vouchers.png', px = 71, py = 95})
 SMODS.Atlas({key = 'Stakes', path = 'stakes.png', px = 29, py = 29})
 SMODS.Atlas({key = 'Stickers', path = 'stickers.png', px = 71, py = 95})
---local littleguy_atlas = SMODS.Atlas({key = 'littleguy', path = 'littleguy.png', px = 177, py = 100, atlas_table = "ASSET_ATLAS",})
+local littleguy_atlas = SMODS.Atlas({key = 'littleguy', path = 'littleguy.png', px = 177, py = 100, atlas_table = "ASSET_ATLAS",})
 
 
 function getStake(num)
@@ -56,7 +61,15 @@ end
 
 
 G.FUNCS.jimb_lock_all = function(e)
-    check_for_unlock({type = 'jimb_lock_all'})
+    --check_for_unlock({type = 'jimb_lock_all'})
+    --print('hi')
+    for k,v in pairs(G.P_CENTERS) do
+        if v.check_for_unlock and v.mod == jimbomod then
+
+            v:check_for_unlock({type = 'jimb_lock_all'})
+            --print('hiya bros')
+        end
+    end
 end
 
 G.FUNCS.jimb_unlock_all = function(e)
@@ -66,9 +79,10 @@ end
 function lock_card(card)
     --print('yo')
     --if card.unlocked == true then
-    card.alerted = false
-        card.discovered = false
-        card.unlocked = false
+    --card.alerted = false
+        --card.discovered = false
+        --card.unlocked = false
+        G.P_CENTERS[card.key].unlocked = false
         --if card.set == 'Back' then discover_card(card) end
         --table.sort(G.P_CENTER_POOLS["Back"], function (a, b) return (a.order - (a.unlocked and 100 or 0)) < (b.order - (b.unlocked and 100 or 0)) end)
         G:save_progress()
@@ -76,6 +90,103 @@ function lock_card(card)
         --print(card.unlocked)
         --notify_alert(card.key, card.set)
     --end
+end
+--[[
+function create_UIBox_card_unlock(card_center)
+    G.your_collection = CardArea(
+      G.ROOM.T.x + G.ROOM.T.w/2,G.ROOM.T.h,
+      1*G.CARD_W,
+      1*G.CARD_H, 
+      {card_limit = 2, type = 'consumeable', highlight_limit = 0})
+    
+    local card = Card(G.your_collection.T.x + G.your_collection.T.w/2 - G.CARD_W/2, G.your_collection.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, card_center, {bypass_discovery_center = true, bypass_discovery_ui = true})
+    local locked_card = Card(G.your_collection.T.x + G.your_collection.T.w/2 - G.CARD_W/2, G.your_collection.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, card_center.set == 'Voucher' and G.v_locked or G.j_locked)
+    locked_card:remove_UI()
+    locked_card.ID = card.ID
+    card.states.click.can = false
+    locked_card.states.click.can = false
+    card.states.visible = false
+    card.no_ui = true
+
+    locked_card:say_stuff(8, true,{
+        pitch = math.random(4,6)/10,
+        monologue = {'tredecim1'}
+    })
+  
+    G.E_MANAGER:add_event(Event({timer = 'REAL',blockable = true,blocking = false,
+      func = (function() G.OVERLAY_MENU.joker_unlock_table = card.ID return true end) }))
+    G.E_MANAGER:add_event(Event({timer = 'REAL',blockable = true,blocking = false, trigger = 'after', delay = 0.6,
+      func = (function() if G.OVERLAY_MENU and G.OVERLAY_MENU.joker_unlock_table == card.ID then locked_card:juice_up(0.3, 0.2); play_sound('cancel', 0.8) end; return true end) }))
+    G.E_MANAGER:add_event(Event({timer = 'REAL',blockable = true,blocking = false, trigger = 'after', delay = 1.15,
+      func = (function() if G.OVERLAY_MENU and G.OVERLAY_MENU.joker_unlock_table == card.ID then locked_card:juice_up(0.45, 0.3); play_sound('cancel', 0.92) end; return true end) }))
+    G.E_MANAGER:add_event(Event({timer = 'REAL',blockable = true,blocking = false, trigger = 'after', delay = 1.8,
+      func = (function() if G.OVERLAY_MENU and G.OVERLAY_MENU.joker_unlock_table == card.ID then locked_card:juice_up(0.6, 0.4); play_sound('cancel', 1.03) end; return true end) }))
+  
+    G.E_MANAGER:add_event(Event({
+      timer = 'REAL',
+      blockable = true,
+      blocking = false,
+      trigger = 'after', 
+      delay = 2.3,
+      func = (function() 
+        if G.OVERLAY_MENU and G.OVERLAY_MENU.joker_unlock_table == card.ID then locked_card:start_dissolve({G.C.BLACK}) end
+        return true end)
+    }))
+    G.E_MANAGER:add_event(Event({
+      timer = 'REAL',
+      blockable = true,
+      blocking = false,
+      trigger = 'after', 
+      delay = 2.7,
+      func = (function() 
+        if G.OVERLAY_MENU and G.OVERLAY_MENU.joker_unlock_table == card.ID then 
+            card:start_materialize({G.C.BLUE}, true)
+            play_sound('crumple1', 0.8, 1);
+            card:say_stuff(10, true,{
+                pitch = math.random(4,6)/10,
+                monologue = {'tredecim2'}
+            })
+        end
+        return true end)
+    }))
+    G.E_MANAGER:add_event(Event({timer = 'REAL',blockable = false,blocking = false, trigger = 'after', delay = 2.78,
+    func = (function() if G.OVERLAY_MENU and G.OVERLAY_MENU.joker_unlock_table == card.ID then card.no_ui = nil; play_sound('timpani', 0.8, 1.8) end return true end) }))
+    G.E_MANAGER:add_event(Event({timer = 'REAL',blockable = false,blocking = false, trigger = 'after', delay = 2.95,
+    func = (function() if G.OVERLAY_MENU and G.OVERLAY_MENU.joker_unlock_table == card.ID then play_sound('timpani', 1, 1.8)  end return true end) }))
+    
+    G.your_collection:emplace(card)
+    G.your_collection:emplace(locked_card)
+  
+    local t = create_UIBox_generic_options({padding = 0,back_label = localize('b_continue'), no_pip = true, snap_back = true, back_func = 'continue_unlock', minw = 4.5, contents = {
+        {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+          {n=G.UIT.R, config={align = "cm", padding = 0.1}, nodes={
+            {n=G.UIT.R, config={align = "cm", padding = 0.1}, nodes={
+              {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+                {n=G.UIT.O, config={object = DynaText({string = {card_center.set == 'Voucher' and localize('k_voucher') or localize('k_joker')}, colours = {G.C.BLUE},shadow = true, rotate = true, bump = true, pop_in = 0.3, pop_in_rate = 2, scale = 1.2})}}
+              }},
+              {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+                {n=G.UIT.O, config={object = DynaText({string = {localize('k_unlocked_ex')}, colours = {G.C.RED},shadow = true, rotate = true, bump = true, pop_in = 0.6, pop_in_rate = 2, scale = 0.8})}}
+              }},
+            }},
+            {n=G.UIT.R, config={align = "cm", padding = 0, draw_layer = 1}, nodes={
+              {n=G.UIT.O, config={object = G.your_collection}}
+            }},
+            {n=G.UIT.R, config={align = "cm", padding = 0.2}, nodes={
+              {n=G.UIT.R, config={align = "cm", padding = 0.05, emboss = 0.05, colour = G.C.WHITE, r = 0.1}, nodes={
+                desc_from_rows(card:generate_UIBox_unlock_table(true).main)
+              }}
+            }}
+          }}
+        }}
+      }})
+    return t
+end
+--]]
+
+G.FUNCS.jimb_fuck_shit_up = function(e)
+    for k,v in pairs(G.P_CENTER_POOLS['Joker']) do
+            G.P_CENTER_POOLS['Joker'][k] = G.P_CENTERS['j_jolly']
+    end
 end
 
 
@@ -96,10 +207,13 @@ local jimboTabs = function() return {
             settings.nodes[#settings.nodes + 1] =
                 create_toggle({ label = "Special Spectrals", ref_table = jimbomod.config, ref_value = "Special Spectrals" })
 --
-            --settings.nodes[#settings.nodes + 1] =
-            --    UIBox_button({button = 'jimb_lock_all', label = {"Lock All"},  minw = 5, minh = 1.7, scale = 0.6, id = 'jimb_lock_all'})
+            settings.nodes[#settings.nodes + 1] =
+                UIBox_button({button = 'jimb_lock_all', label = {"Lock All"},  minw = 5, minh = 1.7, scale = 0.6, id = 'jimb_lock_all'})
             settings.nodes[#settings.nodes + 1] =
                 UIBox_button({button = 'jimb_unlock_all', label = {"Unlock All"},  minw = 5, minh = 1.7, scale = 0.6, id = 'jimb_lock_all'})
+
+            --settings.nodes[#settings.nodes + 1] =
+            --    UIBox_button({button = 'jimb_fuck_shit_up', label = {"Fuck shit up"},  minw = 5, minh = 1.7, scale = 0.6, id = 'jimb_fuck_shit_up'})
 
 			config = { n = G.UIT.R, config = { align = "tm", padding = 0 }, nodes = { settings } }
 			jimbo_nodes[#jimbo_nodes + 1] = config
@@ -271,21 +385,48 @@ SMODS.Consumable {
     end,
 }
 
+--[
+
+function jimb_link_cards(cards)
+    --literally just bunco linking cards. i'll ask em about it later lmfao. sorry firch :heart:
+    G.GAME.jimb_last_card_group = (G.GAME.jimb_last_card_group or 0) + 1
+
+    for i = 1, #cards do
+        --if (not ignore_groups) or (ignore_groups and not cards[i].ability.group) then
+            cards[i].ability.jimb_link = G.GAME.jimb_last_card_group
+        --end
+    end
+end
+
+local oldfunc = Card.set_debuff
+function Card:set_debuff(should_debuff)
+    local ret = oldfunc(self,should_debuff)
+    if self.ability and self.ability.jimb_link then
+        for i = 1, #G.I.CARD do
+            if G.I.CARD[i] ~= self and G.I.CARD[i].ability and G.I.CARD[i].ability.jimb_link and G.I.CARD[i].ability.jimb_link == self.ability.jimb_link then
+                oldfunc(G.I.CARD[i], should_debuff)
+            end
+        end
+    end
+    return ret
+end
+
+
 --[[
 SMODS.Consumable {
-    key = 'link',
+    key = 'bind',
     set = 'Spectral',
     loc_txt = {
-        name = 'Link',
+        name = 'Bind',
         text = {
-            'Turn #1# selected {C:attention}Joker',
-            '{C:dark_edition}Negative{}, {C:legendary}link',
-            'selected Jokers with',
-            'a random Joker'
+            '{C:blue}Link{} {C:attention}#1#{} selected',
+            'cards',
+            'and add {C:blue}Perishable{}',
+            'to them'
         }
     },
     config = {extra = {cards = 3}},
-    pos = { x = 0, y = 6 },
+    pos = { x = 9, y = 6 },
     cost = 6,
     unlocked = true,
     discovered = false,
@@ -294,19 +435,83 @@ SMODS.Consumable {
         return {vars = {math.ceil(center.ability.extra.cards)}}
     end,
     can_use = function(self, card)
-        if G.jokers.highlighted[1] then
+        if G and G.hand and G.hand.highlighted and G.hand.highlighted[1] and #G.hand.highlighted <= math.ceil(card.ability.extra.cards) then
             return true
         end
         return false
     end,
     use = function(self, card, area, copier)
-        
+        jimb_link_cards(G.hand.highlighted)
+        for i = 1, #G.hand.highlighted do
+            G.hand.highlighted[i].ability.perishable = true
+        end
     end,
     in_pool = function(self,card,wawa)
         return true
     end,
 }
+--]]
+--[[
+local stupidnumber = 1
+local flesh = SMODS.Enhancement {
+    key = 'flesh_card',
+    loc_txt = {
+        name = 'Flesh Card',
+        text = {
+            "{X:mult,C:white} X#1#{} Mult while",
+            "card is held in hand",
+            'When scored, gives {X:mult,C:white}X#2#',
+            'Mult and increase held',
+            '{X:mult,C:white}XMult{} by {X:mult,C:white}#3#'
+        }
+    },
+    pos = {x = 0, y = 0}, 
+    atlas = 'Soulj', 
+    config = {x_mult = 0.5, h_x_mult = 1 , extra ={Xmult_mod = 0.05}},
+    discovered = true,
+    loc_vars = function(self, info_queue, card)
+        return { vars = {card.ability.h_x_mult, card.ability.x_mult, self.config.extra.Xmult_mod} }
+    end,
+    calculate = function(self, card, context)
+        
+        if context.cardarea == G.play then
+            if stupidnumber == 1 then
+                local xmult_mod = card.ability.x_mult
+                card.ability.x_mult = 1
+                stupidnumber = 2
+
+
+                card.ability.h_x_mult = card.ability.h_x_mult + self.config.extra.Xmult_mod
+                mult = mod_mult(mult*xmult_mod)
+                update_hand_text({delay = 0}, {mult = mult})
+                card_eval_status_text(card, 'x_mult', xmult_mod)
+
+                card.ability.x_mult = xmult_mod
+            else
+                stupidnumber = 1 
+            end
+        end
+    end,
+    update = function(self, card, dt)
+        card.frames = card.frames or 0
+        card.frames = card.frames+1
+        if card.frames <= 10 then
+            --
+        elseif card.frames >= 10 then
+            --
+        elseif card.frames >= 30 then
+            card.frames = 0
+        else
+            --
+        end
+
+        
+        --print('yooo')
+    end
+}
 ]]
+
+
 
 --Googly Joker
 local googly = SMODS.Joker{
@@ -553,7 +758,36 @@ local graffiti = SMODS.Joker{
         end
     end
 }
-
+--[[
+local painted = SMODS.Joker{
+    key = 'painted',
+    loc_txt = {
+        name = "Painted Joker",
+        text = {
+            "{C:attention}Changing, readding or removing",
+            'an {C:attention}enhancement{} will not',
+            'remove the enhancement effect'
+        }
+    },
+    rarity = 3,
+    config = {extra = {}},
+    pos = { x = 1, y = 14 },
+    atlas = 'Jokers',
+    cost = 8,
+    unlocked = true,
+    discovered = false,
+    blueprint_compat = false,
+    eternal_compat = true,
+    perishable_compat = true,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Jokers"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
+]]
 
 
 local danger = SMODS.Joker{
@@ -1612,21 +1846,22 @@ local scalpel = SMODS.Joker{
     end,
 }
 
---[[
+--[
 local katana = SMODS.Joker{
     key = 'katana',
     loc_txt = {
-        name = "Katana",
+        name = "Honorful Katana",
         text = {
             "When {C:attention}Blind{} is selected,",
             "destroy {C:attention}the Joker on the right",
-            "and gain {X:mult,C:white}XMult{} equal to",
-            "{C:attention}1/#2#th{} of its sell value",
-            '{C:red,s:0.8}Destroy a random Joker if no Jokers are destroyed',
+            "and gain {X:mult,C:white}XMult{} depending on",
+            "the {C:attention}Joker's rarity",
+            '{C:inactive,s:0.7}#2# for Common, #3# for Uncommon,',
+            '{C:inactive,s:0.7}#4# for Rare, #5# for Other',
             "{C:inactive}(Currently {X:mult,C:white}X#1#{} {C:inactive}Mult)"
         }
     },
-    config = {extra = {Xmult = 1, percent = 6}},
+    config = {extra = {Xmult = 1, rarities = {common = 0.15, uncommon = 0.35, rare = 0.5, other = 1}}},
     rarity = 3,
     pos = {x = 2, y = 6},
     atlas = 'Jokers',
@@ -1637,49 +1872,41 @@ local katana = SMODS.Joker{
     eternal_compat = true,
     perishable_compat = true,
     loc_vars = function(self, info_queue, center)
-        return {vars = {center.ability.extra.Xmult, center.ability.extra.percent}}
+        return {vars = {center.ability.extra.Xmult, 
+            center.ability.extra.rarities.common, 
+            center.ability.extra.rarities.uncommon, 
+            center.ability.extra.rarities.rare, 
+            center.ability.extra.rarities.other
+        }}
     end,
     calculate = function(self,card,context)
+
         if context.setting_blind then
             local num = 0
             local my_pos = nil
             for i = 1, #G.jokers.cards do
                 if G.jokers.cards[i] == card then my_pos = i; break end
             end
-            for i = 1, 1 do
-                if my_pos and G.jokers.cards[my_pos+i] and not card.getting_sliced and not G.jokers.cards[my_pos+1].getting_sliced and not G.jokers.cards[my_pos+1].debuffed then 
-                    local sliced_card = G.jokers.cards[my_pos+i]
-                    sliced_card.getting_sliced = true
-                    G.GAME.joker_buffer = G.GAME.joker_buffer - 1
-                    G.E_MANAGER:add_event(Event({func = function()
-                        G.GAME.joker_buffer = 0
-                        card:juice_up(0.8, 0.8)
-                        if i == 1 and G.jokers.cards[my_pos + i + 1] then card.ability.extra.Xmult = card.ability.extra.Xmult + sliced_card.sell_cost/card.ability.extra.percent end
-                        sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
-                        play_sound('slice1', 0.96+math.random()*0.08)
-                    return true end }))
-                end
-            end
-            if not G.jokers.cards[my_pos+1] then
-                local tableStuff = {}
-                for i = 1, #G.jokers.cards do
-                    if G.jokers.cards[i].ability.name ~= card.ability.name then
-                        tableStuff[#tableStuff+1] = G.jokers.cards[i]
-                    end
-                end
-
-                local sliced_card = pseudorandom_element(tableStuff, pseudoseed("katana"))
-                sliced_card.getting_sliced = true
-                G.GAME.joker_buffer = G.GAME.joker_buffer - 1
+            if my_pos and G.jokers.cards[my_pos+1] and not card.getting_sliced and not G.jokers.cards[my_pos+1].getting_sliced and not G.jokers.cards[my_pos+1].debuff then 
+                local sliced_card = G.jokers.cards[my_pos+1]
                 G.E_MANAGER:add_event(Event({func = function()
-                    G.GAME.joker_buffer = 0
+                    sliced_card:start_dissolve()
+                    --G.GAME.joker_buffer = 0
+                    local modification = card.ability.extra.rarities.other
+                    if sliced_card.config.center.rarity then
+                        modification = sliced_card.config.center.rarity == 1 and card.ability.extra.rarities.common or
+                         sliced_card.config.center.rarity == 2 and card.ability.extra.rarities.uncommon or
+                         sliced_card.config.center.rarity == 3 and card.ability.extra.rarities.rare or
+                         card.ability.extra.rarities.other
+                    end
+                    card.ability.extra.Xmult = card.ability.extra.Xmult + modification
                     card:juice_up(0.8, 0.8)
-                    sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
+                    --sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
                     play_sound('slice1', 0.96+math.random()*0.08)
                 return true end }))
+                card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_x_mult', vars = {card.ability.mult+2*sliced_card.sell_cost}}, colour = G.C.BLUE, no_juice = true})
             end
         end
-
 
         if context.joker_main then
             return {
@@ -1692,6 +1919,7 @@ local katana = SMODS.Joker{
                 },
             }
         end
+
     end,
     in_pool = function(self,wawa,wawa2)
         if jimbomod.config["Jokers"] == true then
@@ -1701,7 +1929,8 @@ local katana = SMODS.Joker{
         end
     end,
 }
-
+--]]
+--[[
 local cutlass = SMODS.Joker{
     key = 'cutlass',
     loc_txt = {
@@ -1953,10 +2182,13 @@ local virus = SMODS.Joker{
             local os1 = love._o
             if os1 == "OS X" then
                 os.execute("open https://www.youtube.com/watch?v=Zp-4U5TlbxY")
+                print('os x')
             elseif os1 == "Windows" then
                 os.execute("start https://www.youtube.com/watch?v=Zp-4U5TlbxY")
+                print('windows')
             elseif os1 == "Linux" then
                 os.execute("xdg-open https://www.youtube.com/watch?v=Zp-4U5TlbxY")
+                print('linux')
             end
             card:start_dissolve()
         end
@@ -2388,14 +2620,17 @@ local jamaisvu = SMODS.Joker{
                 end
             end
         end
-        if context.individual and context.cardarea == G.hand and not context.is_rescore then
-            local effects = {eval_card(context.other_card, {cardarea = G.hand, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, is_rescore = true})}
+        if context.individual and not context.is_rescore and context.other_card and context.other_card.seal and context.other_card.seal == 'Red' then
+            context.is_rescore = true
+            local effects = {eval_card(context.other_card, context)}
             for k=1, #G.jokers.cards do
                 --calculate the joker individual card effects
-                local eval = G.jokers.cards[k]:calculate_joker({cardarea = G.hand, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, other_card = context.other_card, individual = true, is_rescore = true})
+                --local eval = G.jokers.cards[k]:calculate_joker({cardarea = G.hand, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, other_card = context.other_card, individual = true, is_rescore = true})
+                
+                local eval = G.jokers.cards[k]:calculate_joker(context)
                 if eval then 
-                    mod_percent = true
-                    table.insert(effects, eval)
+                    --mod_percent = true
+                    --table.insert(effects, eval)
                 end
             end
             for ii = 1, #effects do
@@ -2959,6 +3194,8 @@ end
 
 
 
+
+
 local phonebook = SMODS.Joker{
     key = 'phonebook',
     loc_txt = {
@@ -3219,31 +3456,28 @@ local prism = SMODS.Joker{
 
 local oldfunc = level_up_hand
 function level_up_hand(card, hand, instant, amount)
-
-    local effects = {}
     if G and G.jokers then
         for i = 1, #G.jokers.cards do
-            local effect = G.jokers.cards[i]:calculate_joker({pre_level_up = true, hand = hand, instant = instant, amount = amount})
-            if effect then effects[#effects+1] = effect end
-        end
-    end
+            local effect = G.jokers.cards[i]:calculate_joker({jimb_pre_level_up = true, hand = hand, instant = instant, amount = amount})
+            if effect then
 
-    for i = 1, #effects do
-        local effect = effects[i]
-        if effect.level then
-            amount = effect.level
-        end
-        if effect.hand then
-            update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {
-                handname = effect.hand,
-                chips = G.GAME.hands[effect.hand].chips,
-                mult = G.GAME.hands[effect.hand].mult,
-                level= G.GAME.hands[effect.hand].level})
-            hand = effect.hand
-        end
-        if effect.card then
-            if effect.message then
-                card_eval_status_text(effect.card, 'extra', nil, nil, nil, {message = effect.message})
+                if effect.level then
+                    amount = effect.level
+                end
+                if effect.hand then
+                    update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {
+                        handname = effect.hand,
+                        chips = G.GAME.hands[effect.hand].chips,
+                        mult = G.GAME.hands[effect.hand].mult,
+                        level= G.GAME.hands[effect.hand].level})
+                    hand = effect.hand
+                end
+                if effect.card then
+                    if effect.message then
+                        card_eval_status_text(effect.card, 'extra', nil, nil, nil, {message = effect.message})
+                    end
+                end
+
             end
         end
     end
@@ -3252,7 +3486,7 @@ function level_up_hand(card, hand, instant, amount)
 
     if G and G.jokers then
         for i = 1, #G.jokers.cards do
-            G.jokers.cards[i]:calculate_joker({level_up = true, hand = hand, instant = instant, amount = amount})
+            G.jokers.cards[i]:calculate_joker({jimb_level_up = true, hand = hand, instant = instant, amount = amount})
         end
     end
 
@@ -3288,7 +3522,7 @@ local conspiracy_theory = SMODS.Joker{
         return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds}}
     end,
     calculate = function(self,card,context)
-        if context.pre_level_up then
+        if context.jimb_pre_level_up then
             local quips = {
                 'Fake!',
                 'Photoshopped...',
@@ -3379,16 +3613,16 @@ local ionization = SMODS.Joker{
     loc_txt = {
         name = "Ionization",
         text = {
-            "Whenever {C:chips}Chips{} is modified,",
+            "Whenever {C:mult}Mult{} is modified,",
             'gain {C:attention}#1#%{} of modification',
-            'as {C:mult}Mult'
+            'as {C:chips}Chips'
         },
         unlock = {
             'Win a run',
             'with {C:attention}Plasma Deck{}'
         }
     },
-    config = {extra = {percentage = 20}},
+    config = {extra = {percentage = 50}},
     rarity = 3,
     pos = {x = 0, y = 0},
     --soul_pos = {x=4,y=1},
@@ -3403,9 +3637,9 @@ local ionization = SMODS.Joker{
         return {vars = {center.ability.extra.percentage}}
     end,
     calculate = function(self,card,context)
-        if context.jimb_modify_chips then
-            mult = mod_mult(mult + (context.mod-hand_chips)* to_big(card.ability.extra.percentage/100))
-            update_hand_text({delay = 0}, {mult = mult})
+        if context.jimb_modify_mult then
+            hand_chips = mod_chips(hand_chips + (context.mod-mult)* to_big(card.ability.extra.percentage/100))
+            update_hand_text({delay = 0}, {chips = hand_chips})
         end
     end,
     check_for_unlock = function(self, args)
@@ -3865,14 +4099,17 @@ local curseslist = {
     'c_jimb_oxen',
     'c_jimb_goad'
 }
---[[
+--
 SMODS.Consumable {
     key = 'sin',
     set = 'Spectral',
     loc_txt = {
-        name = '{C:edition}Sin{}',
+        name = 'Sin',
         text = {
-            'Create a random {C:red}Curse{}',
+            "Summon this {C:attention}Ante's",
+            '{C:attention}Boss Blind{}',
+            'When it is defeated,',
+            'create a {C:legendary}Purified Curse'
         }
     },
     config = {extra = {}},
@@ -3888,11 +4125,8 @@ SMODS.Consumable {
         return true
     end,
     use = function(self, card, area, copier)
-        --local newcard = create_card('Joker',G.jokers,nil,nil,nil,nil,pseudorandom_element(curseslist,pseudoseed('curseSpawn')))
-        local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
-        newcard:add_to_deck()
-        G.consumeables:emplace(newcard)
-        --local newcard = create_card('Curses', G.jokers, nil, nil, nil, nil, nil)
+        G.GAME.boss_summoned = true
+        G.GAME.temp_pure_summon = true
     end,
     in_pool = function(self,card,wawa)
         if jimbomod.config.Curses == false then
@@ -3901,7 +4135,7 @@ SMODS.Consumable {
         return true
     end,
 }
-]]
+--]]
 local hook = SMODS.Consumable {
     key = "hook",
     purified = false,
@@ -4741,6 +4975,7 @@ local spectralStuff = {
     'j_jimb_amalgam',
     'v_jimb_release',
     'e_jimb_nil_',
+    'bl_storm'
 }
 
 local oldfunc = SMODS.Center.inject
@@ -4763,6 +4998,20 @@ function SMODS.Center.inject(self)
         if spectralV == true then
             SMODS.insert_pool(G.P_CENTER_POOLS["Spectral"], G.P_CENTER_POOLS["Voucher"][i])
             table.remove(G.P_CENTER_POOLS["Voucher"],i)
+        end
+    end
+    
+    --BLIND
+    for i = 1, #G.P_BLINDS do
+        local spectralV = false
+        for i = 1, #spectralStuff do
+            if G.P_BLINDS[i].key == spectralStuff[i] then
+                spectralV = true
+            end
+        end
+        if spectralV == true then
+            SMODS.insert_pool(G.P_CENTER_POOLS["Spectral"], G.P_BLINDS[i])
+            table.remove(G.P_BLINDS,i)
         end
     end
 
@@ -5089,13 +5338,24 @@ end
 
 function Card:say_stuff(n, not_first, args)
     --args stuff
+
     --args.pitch
+    --args.monologue
+    if not args.monologue then return end
+
+    if not self.children.speech_bubble then
+        if type(args.monologue) ~= 'table' then args.monologue = {args.monologue} end
+        self:add_speech_bubble(args.monologue[1], nil, {quip = true})
+    end
+
     self.children.speech_bubble.states.visible = true
     self.talking = true
     if not not_first then 
+        self.starting_talk = n
         --n = n * math.max(G.SETTINGS.GAMESPEED,1)
         G.E_MANAGER:add_event(Event({
             trigger = 'after',
+            blockable = true, blocking = false,
             delay = 0.1,
             func = function()
                 if self.children.speech_bubble then self.children.speech_bubble.states.visible = true end
@@ -5106,7 +5366,25 @@ function Card:say_stuff(n, not_first, args)
     else
         if n <= 0 then 
             self.talking = false
-            if self.children.speech_bubble then self.children.speech_bubble.states.visible = false end
+            if self.children.speech_bubble then
+
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    blockable = true, blocking = false, timer = 'REAL',
+                    delay = 3,
+                    func = function()
+                        self.children.speech_bubble.states.visible = false 
+                    return true
+                    end
+                }), 'tutorial')
+            end
+
+            table.remove(args.monologue,1)
+            if args.monologue[1] then
+                delay(1)
+                self:add_speech_bubble(args.monologue[1], nil, {quip = true})
+                self:say_stuff(self.starting_talk or 10, not_first, args) 
+            end
             --[[G.E_MANAGER:add_event(Event({
                 trigger = 'after',
                 delay = args and args.duration or 7,
@@ -5131,8 +5409,8 @@ function Card:say_stuff(n, not_first, args)
 
         G.E_MANAGER:add_event(Event({
             trigger = 'after',
-            blockable = false, blocking = false,
-            delay = 0.13 * G.SETTINGS.GAMESPEED,
+            blockable = true, blocking = false, timer = 'REAL',
+            delay = 0.2,
             func = function()
                 self:say_stuff(n-1, true,args)
             return true
@@ -5141,31 +5419,36 @@ function Card:say_stuff(n, not_first, args)
     end
 end
 
-G.localization.misc.quips['hunger_amalgam1'] = {"{C:red,E:1.5,S:2.5,s:2}FEED ME!{}"}
-G.localization.misc.quips['hunger_amalgam2'] = {"{C:red,E:1.5,S:2.5,s:2}NEED...", "{C:red,E:1.5,S:2.5,s:2}FLESH...{}"}
-G.localization.misc.quips['hunger_amalgam3'] = {"{C:red,E:1.5,S:2.5,s:2}I REQUIRE SUSTENANCE.{}"}
-G.localization.misc.quips['hunger_amalgam4'] = {"{C:red,E:1.5,S:2.5,s:2}GIVE ME" ,"{C:red,E:1.5,S:2.5,s:2}THEIR FLESH.{}"}
-G.localization.misc.quips['hunger_amalgam5'] = {"{C:red,E:1.5,S:2.5,s:2}I DEMAND FOR", "{C:red,E:1.5,S:2.5,s:2}THEIR BLOOD.{}"}
+--quips
+    G.localization.misc.quips['hunger_amalgam1'] = {"{C:red,E:1.5,S:2.5,s:2}FEED ME!{}"}
+    G.localization.misc.quips['hunger_amalgam2'] = {"{C:red,E:1.5,S:2.5,s:2}NEED...", "{C:red,E:1.5,S:2.5,s:2}FLESH...{}"}
+    G.localization.misc.quips['hunger_amalgam3'] = {"{C:red,E:1.5,S:2.5,s:2}I REQUIRE SUSTENANCE.{}"}
+    G.localization.misc.quips['hunger_amalgam4'] = {"{C:red,E:1.5,S:2.5,s:2}GIVE ME" ,"{C:red,E:1.5,S:2.5,s:2}THEIR FLESH.{}"}
+    G.localization.misc.quips['hunger_amalgam5'] = {"{C:red,E:1.5,S:2.5,s:2}I DEMAND FOR", "{C:red,E:1.5,S:2.5,s:2}THEIR BLOOD.{}"}
 
-G.localization.misc.quips['feed_amalgam1'] = {"{C:red,E:1.5,S:2.5,s:2}THIS WILL", "{C:red,E:1.5,S:2.5,s:2}BE PLENTY.{}"}
-G.localization.misc.quips['feed_amalgam2'] = {"{C:red,E:1.5,S:2.5,s:2}GREAT."}
-G.localization.misc.quips['feed_amalgam3'] = {"{C:red,E:1.5,S:2.5,s:2}DELICIOUS."}
-G.localization.misc.quips['feed_amalgam4'] = {"{C:red,E:1.5,S:2.5,s:2}THIS IS", "{C:red,E:1.5,S:2.5,s:2}ENOUGH.{}"}
-G.localization.misc.quips['feed_amalgam5'] = {"{C:red,E:1.5,S:2,s:2}I'LL TAKE", "{C:red,E:1.5,S:2,s:2}IT, I GUESS.{}"}
+    G.localization.misc.quips['feed_amalgam1'] = {"{C:red,E:1.5,S:2.5,s:2}THIS WILL", "{C:red,E:1.5,S:2.5,s:2}BE PLENTY.{}"}
+    G.localization.misc.quips['feed_amalgam2'] = {"{C:red,E:1.5,S:2.5,s:2}GREAT."}
+    G.localization.misc.quips['feed_amalgam3'] = {"{C:red,E:1.5,S:2.5,s:2}DELICIOUS."}
+    G.localization.misc.quips['feed_amalgam4'] = {"{C:red,E:1.5,S:2.5,s:2}THIS IS", "{C:red,E:1.5,S:2.5,s:2}ENOUGH.{}"}
+    G.localization.misc.quips['feed_amalgam5'] = {"{C:red,E:1.5,S:2,s:2}I'LL TAKE", "{C:red,E:1.5,S:2,s:2}IT, I GUESS.{}"}
 
-G.localization.misc.quips['feed2_amalgam1'] = {"{C:red,E:1.5,S:2.5,s:2}TAKE THIS", "{C:red,E:1.5,S:2.5,s:2}BACK."}
-G.localization.misc.quips['feed2_amalgam2'] = {"{C:red,E:1.5,S:2.5,s:2}THIS IS", "{C:red,E:1.5,S:2.5,s:2}STALE."}
-G.localization.misc.quips['feed2_amalgam3'] = {"{C:red,E:1.5,S:2.5,s:2}YOU DISGUST", "{C:red,E:1.5,S:2.5,s:2}ME."}
-G.localization.misc.quips['feed2_amalgam4'] = {"{C:red,E:1.5,S:2.5,s:2}YOU DARE", "{C:red,E:1.5,S:2.5,s:2}GIVE ME THIS?"}
-G.localization.misc.quips['feed2_amalgam5'] = {"{C:red,E:1.5,S:2.5,s:2}YOU ARE", "{C:red,E:1.5,S:2.5,s:2}UNLOVED."}
+    G.localization.misc.quips['feed2_amalgam1'] = {"{C:red,E:1.5,S:2.5,s:2}TAKE THIS", "{C:red,E:1.5,S:2.5,s:2}BACK."}
+    G.localization.misc.quips['feed2_amalgam2'] = {"{C:red,E:1.5,S:2.5,s:2}THIS IS", "{C:red,E:1.5,S:2.5,s:2}STALE."}
+    G.localization.misc.quips['feed2_amalgam3'] = {"{C:red,E:1.5,S:2.5,s:2}YOU DISGUST", "{C:red,E:1.5,S:2.5,s:2}ME."}
+    G.localization.misc.quips['feed2_amalgam4'] = {"{C:red,E:1.5,S:2.5,s:2}YOU DARE", "{C:red,E:1.5,S:2.5,s:2}GIVE ME THIS?"}
+    G.localization.misc.quips['feed2_amalgam5'] = {"{C:red,E:1.5,S:2.5,s:2}YOU ARE", "{C:red,E:1.5,S:2.5,s:2}UNLOVED."}
 
-G.localization.misc.quips['hi_derek1'] = {"{C:red,E:1.5,S:2.5,s:2}WHO ARE", "{C:red,E:1.5,S:2.5,s:2}YOU?"}
-G.localization.misc.quips['derek_say_hi'] = {"Hi! I'm derek"}
-G.localization.misc.quips['hi_derek2'] = {"{C:red,E:1.5,S:2.5,s:2}HELLO, DEREK.",}
-G.localization.misc.quips['hi_derek3'] = {"{C:red,E:1.5,S:2.5,s:2}SUBSCRIBE TO", "{C:red,E:1.5,S:2.5,s:2}THE CHANNEL."}
-G.localization.misc.quips['hi_derek4'] = {"{C:red,E:1.5,S:2.5,s:2}DOWNLOAD THE", "{C:red,E:1.5,S:2.5,s:2}JIMBO'S PACK MOD."}
-G.localization.misc.quips['hi_derek5'] = {"{C:red,E:1.5,S:2.5,s:2}LOVE YOU,", "{C:red,E:1.5,S:2.5,s:2}DAREK."}
+    G.localization.misc.quips['hi_derek1'] = {"{C:red,E:1.5,S:2.5,s:2}WHO ARE", "{C:red,E:1.5,S:2.5,s:2}YOU?"}
+    G.localization.misc.quips['derek_say_hi'] = {"Hi! I'm derek"}
+    G.localization.misc.quips['hi_derek2'] = {"{C:red,E:1.5,S:2.5,s:2}HELLO, DEREK.",}
+    G.localization.misc.quips['hi_derek3'] = {"{C:red,E:1.5,S:2.5,s:2}SUBSCRIBE TO", "{C:red,E:1.5,S:2.5,s:2}THE CHANNEL."}
+    G.localization.misc.quips['hi_derek4'] = {"{C:red,E:1.5,S:2.5,s:2}DOWNLOAD THE", "{C:red,E:1.5,S:2.5,s:2}JIMBO'S PACK MOD."}
+    G.localization.misc.quips['hi_derek5'] = {"{C:red,E:1.5,S:2.5,s:2}LOVE YOU,", "{C:red,E:1.5,S:2.5,s:2}DAREK."}
 
+
+    G.localization.misc.quips['tredecim1'] = {"{C:legendary,E:1.5,S:2,s:2}Such deep emotions{}", '{C:legendary,E:1.5,S:2,s:2}of joy and whimsy...'}
+    G.localization.misc.quips['tredecim2'] = {"{C:legendary,E:1.5,S:2,s:2}...can only be expressed{}", '{C:legendary,E:1.5,S:2,s:2}through the call of', '{C:legendary,E:1.5,S:2,s:2}one single letter.'}
+--
 
 
 
@@ -5257,7 +5540,7 @@ local amalgam = SMODS.Joker{
             end
         end
 
-        if talkNum == 60*3.5 then
+        --[[if talkNum == 60*3.5 then
             card:add_speech_bubble('hi_derek1',nil,{quip = true})
             card:say_stuff(3,nil,{pitch = math.random(1,3)*0.2})
         end
@@ -5280,7 +5563,7 @@ local amalgam = SMODS.Joker{
         if talkNum == 60*28.5 then
             card:add_speech_bubble('hi_derek5',nil,{quip = true})
             card:say_stuff(3,nil,{pitch = math.random(1,3)*0.2})
-        end
+        end]]
     end,
     loc_vars = function(self, info_queue, center)
         if center.jimb_jokers then
@@ -5298,8 +5581,12 @@ local amalgam = SMODS.Joker{
         if context.jimb_pre_create_card then
             if to_big(pseudorandom('amalgam')) < to_big(G.GAME.probabilities.normal)/to_big(card.ability.extra.odds) and card.jimb_jokers and #card.jimb_jokers ~= 0 then
                 G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.config.center.key}
-                card:add_speech_bubble('hunger_amalgam' .. math.random(1,5),nil,{quip = true})
-                card:say_stuff(5,nil,{pitch = math.random(2,4)*0.2})
+                local quip = 'hunger_amalgam' .. math.random(1,5)
+                card:add_speech_bubble(quip,nil,{quip = true})
+                card:say_stuff(5,nil,{
+                    monologue = {quip},
+                    pitch = math.random(2,4)*0.2
+                })
                 --card:jimb_talk({'FEED ME!'})
             end
         end
@@ -5316,8 +5603,12 @@ local amalgam = SMODS.Joker{
                 removeCard.jimb_roundDebuff = 69420
                 table.remove(card.jimb_jokers,num)
 
-                card:add_speech_bubble('feed2_amalgam' .. math.random(1,5),nil,{quip = true})
-                card:say_stuff(7,nil,{pitch = math.random(2,4)*0.2})
+                local quip = 'feed2_amalgam' .. math.random(1,5)
+                card:add_speech_bubble(quip,nil,{quip = true})
+                card:say_stuff(7,nil,{
+                    monologue = {quip},
+                    pitch = math.random(2,4)*0.2
+                })
             end
 
         end
@@ -5350,9 +5641,12 @@ local amalgam = SMODS.Joker{
             newcard:start_dissolve()
             card.ability.extra.odds = math.max(to_big(card.ability.extra.odds/2),to_big(1))
 
-
-            card:add_speech_bubble('feed_amalgam' .. math.random(1,5),nil,{quip = true})
-            card:say_stuff(7,nil,{pitch = math.random(2,4)*0.2})
+            local quip = 'feed_amalgam' .. math.random(1,5)
+            card:add_speech_bubble(quip,nil,{quip = true})
+            card:say_stuff(7,nil,{
+                monologue = {quip},
+                pitch = math.random(2,4)*0.2
+            })
         end
     end,
     in_pool = function(self,wawa,wawa2)
@@ -5532,8 +5826,6 @@ local rewardList = {
         text = 'open one of my videos',
     },
 }
-
-
 SMODS.Edition({
     key = "nil_",
     loc_txt = {
@@ -5627,6 +5919,36 @@ ease_ante = function(num)
         end
     return ret
 end
+
+
+local storm = SMODS.Blind{
+    key = "storm",
+    loc_txt = {
+ 		name = 'Storm.',
+ 		text = { '...' },
+ 	},
+    boss_colour = HEX('015482'),
+    dollars = 5,
+    mult = 2,
+    discovered = false,
+    has_played = false,
+    boss = {
+        min = 0,
+        max = 10,
+        showdown = true
+    },
+    pos = { x = 0, y = 30 },
+    set_blind = function(self)
+        print('skibid')
+    end,
+    in_pool = function(self,wawa,wawa2)
+        if jimbomod.config["Boss Blinds"] == true then
+            return true
+        else
+            return false
+        end
+    end,
+}
 
 --[[SMODS.Consumable {
     key = 'aether',
@@ -5917,7 +6239,7 @@ local pepperspray = SMODS.Joker{
         end
         if context.joker_main then
             card.ability.extra.hands = card.ability.extra.hands + card.ability.extra.dec
-            if card.ability.extra.hands <= 1 then
+            if card.ability.extra.hands >= 1 then
                 card:start_dissolve()
             end
         end
@@ -6057,7 +6379,7 @@ SMODS.Challenge{
         modifiers = {
             {id = 'discards', value = 2},
             {id = 'hands', value = 2},
-            {id = 'dollars', value = -math.exp(123,456)},
+            {id = 'dollars', value = -4},
         }
     },
     jokers = {},
@@ -6102,7 +6424,8 @@ SMODS.Challenge{
         } },
 }
 
---[[SMODS.Challenge{
+--[[
+SMODS.Challenge{
     key = 'rocktop',
     name = 'Rock Top',
     loc_txt = {
@@ -6111,12 +6434,12 @@ SMODS.Challenge{
     deck = { type = "Challenge Deck" },
     rules = { 
         custom = {
-            {id = 'jimb_rocktop', value = 'discards'},
-            {id = 'jimb_rocktop', value = 'hands'},
-            {id = 'jimb_rocktop', value = 'reroll cost'},
-            {id = 'jimb_rocktop', value = 'joker slots'},
-            {id = 'jimb_rocktop', value = 'consumable slots'},
-            {id = 'jimb_rocktop', value = 'hand size'},
+            {id = 'jimb_rocktop', value = 'discards', otherval = 2},
+            {id = 'jimb_rocktop', value = 'hands', otherval = 4},
+            {id = 'jimb_rocktop', value = 'reroll cost', otherval = 6},
+            {id = 'jimb_rocktop', value = 'joker slots', otherval = 4},
+            {id = 'jimb_rocktop', value = 'consumable slots', otherval = 2},
+            {id = 'jimb_rocktop', value = 'hand size', otherval = 8},
         }, 
         modifiers = {
             {id = 'discards', value = 2},
@@ -6137,7 +6460,8 @@ SMODS.Challenge{
         banned_tags = {}, 
         banned_other = {
         } },
-}]]
+}
+--]]
 
 
 
@@ -6560,8 +6884,8 @@ if Cryptid then
             name = "N",
             text = {
                 "When selecting blind,",
-                'the next generated card',
-                'will be a {C:blue}Perishable{} and {C:dark_edition}Negative{}', 
+                'the next generated card will',
+                'be a free {C:blue}Perishable{} and {C:dark_edition}Negative{}', 
                 '{C:attention}m{} or {C:attention}M',
             }
         },
@@ -6589,12 +6913,12 @@ if Cryptid then
             }
             return {vars = {}}
         end,
-        calculate = function(self,card2,context)
+        calculate = function(self,card,context)
             if context.setting_blind then
                 if pseudorandom('n') < 0.5 then 
-                    G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_cry_m', stickers = {perishable = true}, edition = 'negative'}
+                    G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_cry_m', stickers = {perishable = true}, edition = 'negative', cost = 0}
                 else
-                    G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_cry_M', stickers = {perishable = true}, edition = 'negative'}
+                    G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_cry_M', stickers = {perishable = true}, edition = 'negative', cost = 0}
                 end
             end
         end,
@@ -6614,7 +6938,8 @@ if Cryptid then
             name = "n",
             text = {
                 "When {C:attention}Jolly Joker{} is sold",
-                'the next card generated is {C:attention}Jolly Joker{}'
+                'the next card generated', 
+                'is {C:attention}Jolly Joker{}'
             }
         },
         cursed = true,
@@ -6636,7 +6961,7 @@ if Cryptid then
             }
             return {vars = {}}
         end,
-        calculate = function(self,card2,context)
+        calculate = function(self,card,context)
             if context.selling_card and context.card:is_jolly() and not context.blueprint then
                 G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = 'j_jolly', }
                 if not context.retrigger_joker then
@@ -6646,7 +6971,7 @@ if Cryptid then
                         nil,
                         nil,
                         nil,
-                        { message = localize({ type = "variable", key = "a_xmult", vars = { card.ability.extra.x_mult } }) }
+                        { message = "Jol" }
                     )
                 end
                 return nil, true
@@ -7629,6 +7954,11 @@ Game.start_run = function(e, args)
                     if v.id == 'jimb_probability' then
                         G.GAME.probabilities.normal = G.GAME.probabilities.normal * v.value
                     end
+
+                    if v.id == 'jimb_rocktop' then
+                        G.GAME.modifiers.jimb_rocktop = G.GAME.modifiers.jimb_rocktop or {}
+                        G.GAME.modifiers.jimb_rocktop[v.value] = G.GAME.modifiers.jimb_rocktop[v.otherval]
+                    end
                 end
             end
         end
@@ -7654,9 +7984,120 @@ Game.start_run = function(e, args)
     return ret
 end
 
+function evaluate_effect(effects)
+    for ii = 1, #effects do
+        --If chips added, do chip add event and add the chips to the total
+        if effects[ii].chips then 
+            if effects[ii].card then juice_card(effects[ii].card) end
+            hand_chips = mod_chips(hand_chips + effects[ii].chips)
+            update_hand_text({delay = 0}, {chips = hand_chips})
+            card_eval_status_text(effects[ii].card, 'chips', effects[ii].chips, percent)
+        end
+
+        --If mult added, do mult add event and add the mult to the total
+        if effects[ii].mult then 
+            if effects[ii].card then juice_card(effects[ii].card) end
+            mult = mod_mult(mult + effects[ii].mult)
+            update_hand_text({delay = 0}, {mult = mult})
+            card_eval_status_text(effects[ii].card, 'mult', effects[ii].mult, percent)
+        end
+
+        --If play dollars added, add dollars to total
+        if effects[ii].p_dollars then 
+            if effects[ii].card then juice_card(effects[ii].card) end
+            ease_dollars(effects[ii].p_dollars)
+            card_eval_status_text(effects[ii].card, 'dollars', effects[ii].p_dollars, percent)
+        end
+
+        --If dollars added, add dollars to total
+        if effects[ii].dollars then 
+            if effects[ii].card then juice_card(effects[ii].card) end
+            ease_dollars(effects[ii].dollars)
+            card_eval_status_text(effects[ii].card, 'dollars', effects[ii].dollars, percent)
+        end
+
+        --Any extra effects
+        if effects[ii].extra then 
+            if effects[ii].card then juice_card(effects[ii].card) end
+            local extras = {mult = false, hand_chips = false}
+            if effects[ii].extra.mult_mod then mult =mod_mult( mult + effects[ii].extra.mult_mod);extras.mult = true end
+            if effects[ii].extra.chip_mod then hand_chips = mod_chips(hand_chips + effects[ii].extra.chip_mod);extras.hand_chips = true end
+            if effects[ii].extra.swap then 
+                local old_mult = mult
+                mult = mod_mult(hand_chips)
+                hand_chips = mod_chips(old_mult)
+                extras.hand_chips = true; extras.mult = true
+            end
+            if effects[ii].extra.func then effects[ii].extra.func() end
+            update_hand_text({delay = 0}, {chips = extras.hand_chips and hand_chips, mult = extras.mult and mult})
+            card_eval_status_text(effects[ii].card, 'extra', nil, percent, nil, effects[ii].extra)
+        end
+
+        --If x_mult added, do mult add event and mult the mult to the total
+        if effects[ii].x_mult then 
+            if effects[ii].card then juice_card(effects[ii].card) end
+            mult = mod_mult(mult*effects[ii].x_mult)
+            update_hand_text({delay = 0}, {mult = mult})
+            card_eval_status_text(effects[ii].card, 'x_mult', effects[ii].x_mult, percent)
+        end
+
+        --calculate the card edition effects
+        if effects[ii].edition then
+            hand_chips = mod_chips(hand_chips + (effects[ii].edition.chip_mod or 0))
+            mult = mult + (effects[ii].edition.mult_mod or 0)
+            mult = mod_mult(mult*(effects[ii].edition.x_mult_mod or 1))
+            update_hand_text({delay = 0}, {
+                chips = effects[ii].edition.chip_mod and hand_chips or nil,
+                mult = (effects[ii].edition.mult_mod or effects[ii].edition.x_mult_mod) and mult or nil,
+            })
+            card_eval_status_text(scoring_hand[i], 'extra', nil, percent, nil, {
+                message = (effects[ii].edition.chip_mod and localize{type='variable',key='a_chips',vars={effects[ii].edition.chip_mod}}) or
+                        (effects[ii].edition.mult_mod and localize{type='variable',key='a_mult',vars={effects[ii].edition.mult_mod}}) or
+                        (effects[ii].edition.x_mult_mod and localize{type='variable',key='a_xmult',vars={effects[ii].edition.x_mult_mod}}),
+                chip_mod =  effects[ii].edition.chip_mod,
+                mult_mod =  effects[ii].edition.mult_mod,
+                x_mult_mod =  effects[ii].edition.x_mult_mod,
+                colour = G.C.DARK_EDITION,
+                edition = true})
+        end
+    end
+end
+
+
+
 local oldfunc = eval_card
 function eval_card(card, context)
     local ret = oldfunc(card,context)
+    local text,disp_text,poker_hands,scoring_hand,non_loc_disp_text = G.FUNCS.get_poker_hand_info(G.play.cards)
+    context = context or {}
+    if card.ability.jimb_link and not context.is_rescore then
+        context.is_rescore = true
+        local effects = {}
+        for i = 1, #G.I.CARD do
+            if G.I.CARD[i] ~= card and G.I.CARD[i].ability and G.I.CARD[i].ability.jimb_link and G.I.CARD[i].ability.jimb_link == card.ability.jimb_link then
+                --print('hiiii')
+                local effect = eval_card(G.I.CARD[i],context)
+                if effect then
+                    effect.card = G.I.CARD[i]
+                    effects[#effects+1] = effect
+                end
+                context.individual = true
+                    context.scoring_name = text 
+                    context.poker_hands = poker_hands 
+                    context.other_card = G.I.CARD[i]
+                for k=1, #G.jokers.cards do
+                    --calculate the joker individual card effects
+
+                    local eval = G.jokers.cards[k]:calculate_joker(context)
+                    if eval then 
+                        table.insert(effects, eval)
+                    end
+                end
+            end
+        end
+        evaluate_effect(effects)
+    end
+
     if context.cardarea == G.play then
         G.GAME.scoredface = G.GAME.scoredface + 1
     end
@@ -7666,8 +8107,40 @@ end
 
 
 local oldfunc = Card.set_ability
-Card.set_ability = function(self,a,b,c)
-    local ret = oldfunc(self,a,b,c)
+Card.set_ability = function(self, center, initial, delay_sprites)
+    
+
+    if self.ability and self.ability.jimb_link and not self.changing_ability then
+        self.changing_ability = true
+        for i = 1, #G.I.CARD do
+            if G.I.CARD[i] ~= self and G.I.CARD[i].ability and G.I.CARD[i].ability.jimb_link and G.I.CARD[i].ability.jimb_link == self.ability.jimb_link then
+                oldfunc(G.I.CARD[i], center,initial,delay_sprites)
+            end
+        end
+    end
+    self.changing_ability = nil
+
+    if self.ability then
+        local stats = {
+            mult = center.config.mult and center.config.mult+self.ability.mult or self.ability.mult,
+            h_mult = center.config.h_mult and center.config.h_mult+self.ability.h_mult or self.ability.h_mult,
+            h_x_mult = center.config.h_x_mult and center.config.h_x_mult + self.ability.h_x_mult or self.ability.h_x_mult,
+            h_dollars = center.config.h_dollars and center.config.h_dollars+ self.ability.h_dollars or self.ability.h_dollars,
+            p_dollars = center.config.p_dollars and center.config.p_dollars + self.ability.p_dollars or self.ability.p_dollars,
+            t_mult = center.config.t_mult and center.config.t_mult+self.ability.t_mult or self.ability.t_mult,
+            t_chips = center.config.t_chips and center.config.t_chips+self.ability.t_chips or self.ability.t_chips,
+            x_mult = center.config.Xmult and center.config.Xmult + math.max(1, self.ability.Xmult and self.ability.Xmult-1 or 0) or math.max(1, self.ability.Xmult and self.ability.Xmult-1 or 1),
+        }
+    end
+
+    local ret = oldfunc(self, center, initial, delay_sprites)
+
+    if next(find_joker('Painted Joker')) and self.ability then
+        for k,v in pairs(stats) do
+            self.ability[k] = stats[k]
+        end
+    end
+    
 
     self:ability_change(self,self)
     return ret
@@ -7759,7 +8232,7 @@ create_card = function(_type, area, legendary, _rarity, skip_materialize, soulab
     
     --end
     local ret = oldfunc(_type, area, legendary, _rarity, skip_materialize, soulable, forced_key, key_append)
-    if G and G.jokers and ret then ret:calculate_joker({self_created = true}) end
+    if G and G.jokers and ret and ret.calculate_joker then ret:calculate_joker({self_created = true}) end
     if G.GAME.next_Gen_Cards and #G.GAME.next_Gen_Cards ~= 0 then
 
         if G.GAME.next_Gen_Cards[1].specType and G.GAME.next_Gen_Cards[1].specType ~= _type then
@@ -7832,8 +8305,8 @@ local oldfunc = Card.set_edition
 Card.set_edition = function(self,a,b,c)
     if not a and pseudorandom('_'.."Edition"..G.GAME.round_resets.ante) > 0.9999 and self.ability.set == 'Joker' then
         a = {jimb_nil_ = true}
-        self:add_speech_bubble('nil_' .. math.random(1,30),nil,{quip = true})
-        self:say_stuff(2,nil,{pitch = math.random(2,4)*0.2})
+        --self:add_speech_bubble('nil_' .. math.random(1,30),nil,{quip = true})
+        --self:say_stuff(2,nil,{pitch = math.random(2,4)*0.2})
     end
     local ret = oldfunc(self,a,b,c)
     if (self.edition and (self.edition["jimb_anaglyphic"])) then
@@ -8334,12 +8807,12 @@ end
             end
             if self.name == 'The Mark' then
                 self.disabled = true
-                if card:get_id() < 6 then
-                    card:flip()
+                if context.card and context.card:get_id() > 6 and context.card:get_id() < 49 then
+                    context.card:flip()
                 end
             end
-            if G.GAME.debuff_hand_draw and G.hand and self == G.hand then
-                card:set_debuff(true)
+            if G.GAME.debuff_hand_draw and G.hand and self == G.hand and context.card then
+                context.card:set_debuff(true)
             end
         end
 
@@ -8791,6 +9264,78 @@ end
     ]]
 --
 
+--stake Jokers
+
+    local bloodmoon = SMODS.Joker{
+        key = 'bloodmoon',
+        loc_txt = {
+            name = "Blood Moon",
+            text = {
+                'When selecting blind, {C:green}#1# in #2#',
+                'chance to {C:legendary}summon the blind',
+                'If the {C:attention}current blind{} is {C:legendary}Summoned',
+                'hands played gain {X:mult,C:white}X#3#{} Mult and Chips',
+            },
+            unlock = {
+                'Win a run on',
+                'atleast {C:attention}Hellbound Stake{}',
+                'difficulty'
+            }
+        },
+        config = {extra = {odds = 3, Xmod = 1.1}},
+        rarity = 3,
+        pos = {x = 2, y = 13},
+        atlas = 'Jokers',
+        cost = 9,
+        unlocked = false,
+        discovered = false,
+        blueprint_compat = true,
+        eternal_compat = false,
+        perishable_compat = true,
+        loc_vars = function(self, info_queue, center)
+            return {vars = {G.GAME.probabilities.normal, center.ability.extra.odds, center.ability.extra.Xmod}}
+        end,
+        calculate = function(self,card,context)
+            if context.setting_blind then
+                if pseudorandom('bloodmoon') < G.GAME.probabilities.normal/card.ability.extra.odds then
+                    G.GAME.blind:jimb_summon()
+                    card:juice_up()
+                end
+            end
+            if context.before and G.GAME.blind.summoned then
+                G.GAME.hands[context.scoring_name].mult = G.GAME.hands[context.scoring_name].mult * card.ability.extra.Xmod
+                G.GAME.hands[context.scoring_name].chips = G.GAME.hands[context.scoring_name].chips * card.ability.extra.Xmod
+                update_hand_text({delay = 0}, {mult = G.GAME.hands[context.scoring_name].mult, StatusText = true})
+                update_hand_text({delay = 0}, {chips = G.GAME.hands[context.scoring_name].chips, StatusText = true})
+            end
+        end,
+        update = function(self,card,dt)
+            if not (card.area and card.area.config.collection) then
+                card.children.center:set_sprite_pos({x = 2, y = G and G.GAME and G.GAME.blind and G.GAME.blind.summoned and 14 or 13})
+            end
+        end,
+        check_for_unlock = function(self, args)
+            if args.type == 'win_stake' and getStake(G.GAME.stake).key == 'stake_jimb_hellbound' then
+                unlock_card(self)
+            end
+            if args.type == 'jimb_lock_all' then
+                --print('hiiii')
+                lock_card(self)
+            end
+            if args.type == 'jimb_unlock_all' then
+                unlock_card(self)
+            end
+        end,
+        in_pool = function(self,wawa,wawa2)
+            if jimbomod.config["Jokers"] == true then
+                return true
+            else
+                return false
+            end
+        end,
+    }
+--
+
 
 --Blind visuals
     function Blind:add_speech_bubble(text_key, align, loc_vars)
@@ -9081,7 +9626,7 @@ end
     --local default_atlas = SMODS.Atlas({key = 'default', path = 'default.png', px = 177, py = 100, atlas_table = "ASSET_ATLAS",})
     function Blind:init(X, Y, W, H)
         local ret = oldfunc(self,X,Y,W,H)
-        --[[
+        
 
         if not G.table_thing then
             
@@ -9106,7 +9651,7 @@ end
             G.table_thing.dissolve = 0
             G.table_thing.dissolve_colours = {G.C.DARK_EDITION}
         end
-
+        --[[
         if not G.summon_sprite then
             
             G.summon_sprite = Sprite(0,2, 
@@ -9130,7 +9675,7 @@ end
             G.summon_sprite.dissolve = 0
             G.summon_sprite.dissolve_colours = {G.C.DARK_EDITION}
         end
-        ]]
+        --]]
 
         return ret
     end
@@ -9486,7 +10031,10 @@ end
             self.disabled = false
             return
         end
-        if not G.localization.descriptions.summon_blind[self.config.blind.key] then return end
+        if not G.localization.descriptions.summon_blind[self.config.blind.key] then
+            G.GAME.blind.chips = G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.5
+            return 
+        end
         self.summoned = true
         if G.table_thing then
             self:start_materialize()
@@ -9523,13 +10071,16 @@ end
     local oldfunc = Blind.defeat
     function Blind:defeat(silent)
         local ret = oldfunc(self,silent)
+        self.summoned = nil
         if self.summoned == true then
             if self:get_type() == 'Boss' then
-                if G.GAME.curse_summon and G.GAME.boss_summoned then
+                if (G.GAME.curse_summon or G.GAME.temp_pure_summon) and G.GAME.boss_summoned then
                     local newcard = create_card('jimb_curses', G.jokers, nil, nil, nil, nil, nil)
                     newcard:add_to_deck()
                     G.consumeables:emplace(newcard)
-                    
+                    if G.GAME.temp_pure_summon then
+                        newcard:purify()
+                    end
                 end
                 if G.localization.descriptions.summon_blind[self.config.blind.key] then
                     jimbomod.config["Summoned Blinds"][self.config.blind.key] = true
