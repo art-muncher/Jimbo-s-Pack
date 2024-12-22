@@ -475,8 +475,9 @@ local table ={
                 name = "Jade Garden",
                 text = {
                     "All cards debuffed",
-                    "Undebuff 3 random ranks",
-                    'whenever a card is sold'
+                    "until specific Joker",
+                    'is sold',
+                    '(They are jiggling)'
                 }
             },
             bl_final_vessel = {
@@ -574,14 +575,18 @@ local table ={
                 name = "Cardinal Soul",
                 text = {
                     "One random Joker",
-                    "cannot score",
+                    "cannot triggered",
+                    'if triggered, disallow',
+                    'hand'
                 }
             },
             bl_final_bell = {
                 name = "Azure Chime",
                 text = {
-                    "Forces 1 card to be selected",
-                    "Forced card cannot score in a hand"
+                    "Forces 1 card",
+                    'to be selected'
+                    "Forced card cannot", 
+                    "score in a hand"
                 }
             }]]
 
