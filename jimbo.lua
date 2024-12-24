@@ -412,7 +412,7 @@ function Card:set_debuff(should_debuff)
 end
 
 
---[[
+--[[]
 SMODS.Consumable {
     key = 'bind',
     set = 'Spectral',
@@ -450,43 +450,109 @@ SMODS.Consumable {
         return true
     end,
 }
+local bindeddeck = SMODS.Back{
+    key = "binded",
+    name = "Binded Deck",
+    pos = {x = 0, y = 0},
+    unlocked = true,
+    loc_txt = {
+        name = "Binded Deck",
+        text = {
+        "Start with a",
+        "linked deck",
+        },
+    },
+    atlas = "Decks",
+    apply = function(back) 
+        G.E_MANAGER:add_event(Event({
+            trigger = 'after',
+            blockable = false,
+            delay =  1,
+            func = (function()
+                for i = 1, #G.playing_cards do
+                    --if (not ignore_groups) or (ignore_groups and not cards[i].ability.group) then
+                    G.playing_cards[i].ability.jimb_link = 1
+                    --end
+                end
+                return true 
+            end)
+        }))
+    end,
+    trigger_effect = function(self,args)
+        if args.context == "card" then
+            args.other_card.ability.jimb_link = 1
+        end
+    end
+}
+
 --]]
+
 --[[
+
+
+
+
+SMODS.Consumable {
+    key = 'mutilate',
+    set = 'Spectral',
+    loc_txt = {
+        name = 'Mutilate',
+        text = {
+            "Enhances {C:attention}#1#",
+            "selected cards to",
+            "{C:red}Flesh Cards"
+        }
+    },
+    config = {extra = {cards = 3}},
+    pos = { x = 9, y = 5 },
+    cost = 6,
+    unlocked = true,
+    discovered = false,
+    atlas = 'Tarot',
+    loc_vars = function(self, info_queue, center)
+        info_queue[#info_queue+1] = G.P_CENTERS['m_jimb_flesh']
+        return {vars = {math.ceil(center.ability.extra.cards)}}
+    end,
+    can_use = function(self, card)
+        if #G.hand.highlighted <= math.ceil(card.ability.extra.cards) and #G.hand.highlighted ~= 0 then
+            return true
+        end
+        return false
+    end,
+    use = function(self, card, area, copier)
+        if area then area:remove_from_highlighted(card) end
+        for i = 1, #G.hand.highlighted do
+            G.hand.highlighted[i]:set_ability(G.P_CENTERS['m_jimb_flesh'])
+        end
+    end,
+    in_pool = function(self,card,wawa)
+        return true
+    end,
+}
+
+
 local stupidnumber = 1
 local flesh = SMODS.Enhancement {
-    key = 'flesh_card',
+    key = 'flesh',
     loc_txt = {
         name = 'Flesh Card',
         text = {
-            "{X:mult,C:white} X#1#{} Mult while",
-            "card is held in hand",
-            'When scored, gives {X:mult,C:white}X#2#',
-            'Mult and increase held',
-            '{X:mult,C:white}XMult{} by {X:mult,C:white}#3#'
+            "I don't know :("
         }
     },
     pos = {x = 0, y = 0}, 
     atlas = 'Soulj', 
-    config = {x_mult = 0.5, h_x_mult = 1 , extra ={Xmult_mod = 0.05}},
-    discovered = true,
+    config = {x_mult = 1, extra ={Xmult_mod = 0.2}},
+    discovered = false,
     loc_vars = function(self, info_queue, card)
-        return { vars = {card.ability.h_x_mult, card.ability.x_mult, self.config.extra.Xmult_mod} }
+        return { vars = {card and card.ability.x_mult or 1, self and self.config and self.config.extra and self.config.extra.Xmult_mod or 0.2} }
     end,
     calculate = function(self, card, context)
         
-        if context.cardarea == G.play then
+        if context.cardarea == G.play and not card.getting_sliced then
             if stupidnumber == 1 then
-                local xmult_mod = card.ability.x_mult
-                card.ability.x_mult = 1
                 stupidnumber = 2
-
-
-                card.ability.h_x_mult = card.ability.h_x_mult + self.config.extra.Xmult_mod
-                mult = mod_mult(mult*xmult_mod)
-                update_hand_text({delay = 0}, {mult = mult})
-                card_eval_status_text(card, 'x_mult', xmult_mod)
-
-                card.ability.x_mult = xmult_mod
+                
             else
                 stupidnumber = 1 
             end
@@ -509,7 +575,7 @@ local flesh = SMODS.Enhancement {
         --print('yooo')
     end
 }
-]]
+--]]
 
 
 
@@ -1999,61 +2065,122 @@ local cutlass = SMODS.Joker{
         end
     end,
 }
-
-local claymore = SMODS.Joker{
-    key = 'claymore',
-    loc_txt = {
-        name = "Claymore",
-        text = {
-            "When {C:attention}Boss Blind{} is selected,",
-            "destroy {C:attention}the Joker on the right",
-            "and disable the {C:attention}Boss Blind",
-        }
-    },
-    config = {extra = {}},
-    rarity = 3,
-    pos = {x = 2, y = 3},
-    atlas = 'Jokers',
-    cost = 6,
-    unlocked = true,
-    discovered = false,
-    blueprint_compat = true,
-    eternal_compat = true,
-    perishable_compat = true,
-    loc_vars = function(self, info_queue, center)
-        return {vars = {}}
-    end,
-    calculate = function(self,card,context)
-        if context.setting_blind and context.blind:get_type() == 'Boss' then
-            local num = 0
-            local my_pos = nil
-            for i = 1, #G.jokers.cards do
-                if G.jokers.cards[i] == card then my_pos = i; break end
-            end
-            for i = 1, 1 do
-                if my_pos and G.jokers.cards[my_pos+i] and not card.getting_sliced and not G.jokers.cards[my_pos+1].getting_sliced and not G.jokers.cards[my_pos+1].debuffed then 
-                    local sliced_card = G.jokers.cards[my_pos+i]
-                    sliced_card.getting_sliced = true
-                    G.GAME.joker_buffer = G.GAME.joker_buffer - 1
-                    G.E_MANAGER:add_event(Event({func = function()
-                        G.GAME.joker_buffer = 0
-                        card:juice_up(0.8, 0.8)
-                        G.GAME.blind:disable()
-                        sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
-                        play_sound('slice1', 0.96+math.random()*0.08)
-                    return true end }))
+--]]
+if SMODS.Mods['Bunco'] then
+    local claymore = SMODS.Joker{
+        key = 'claymore',
+        loc_txt = {
+            name = "Claymore",
+            text = {
+                "When {C:attention}Boss Blind{} is selected,",
+                "destroy {C:attention}the Joker on the right",
+                "and create a {C:attention}Breaking Tag",
+            }
+        },
+        config = {extra = {}},
+        rarity = 3,
+        pos = {x = 0, y = 15},
+        atlas = 'Jokers',
+        cost = 6,
+        unlocked = true,
+        discovered = false,
+        blueprint_compat = true,
+        eternal_compat = true,
+        perishable_compat = true,
+        loc_vars = function(self, info_queue, center)
+            info_queue[#info_queue + 1] = {key = 'tag_bunc_breaking', set = 'Tag'}
+            if self.mod then self.mod.display_name = "JimbosPack/Bunco" end
+            return {vars = {}}
+        end,
+        calculate = function(self,card,context)
+            
+            if context.setting_blind and G.GAME.blind:get_type() == 'Boss' then
+                local num = 0
+                local my_pos = nil
+                for i = 1, #G.jokers.cards do
+                    if G.jokers.cards[i] == card then my_pos = i; break end
+                end
+                for i = 1, 1 do
+                    if my_pos and G.jokers.cards[my_pos+i] and not card.getting_sliced and not G.jokers.cards[my_pos+1].getting_sliced and not G.jokers.cards[my_pos+1].debuffed then 
+                        local sliced_card = G.jokers.cards[my_pos+i]
+                        sliced_card.getting_sliced = true
+                        G.GAME.joker_buffer = G.GAME.joker_buffer - 1
+                        G.E_MANAGER:add_event(Event({func = function()
+                            G.GAME.joker_buffer = 0
+                            card:juice_up(0.8, 0.8)
+                            --G.GAME.blind:disable()
+                            add_tag(Tag('tag_bunc_breaking'))
+                            sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
+                            play_sound('slice1', 0.96+math.random()*0.08)
+                        return true end }))
+                    end
                 end
             end
-        end
-    end,
-    in_pool = function(self,wawa,wawa2)
-        if jimbomod.config["Jokers"] == true then
-            return true
-        else
-            return false
-        end
-    end,
-}
+        end,
+        in_pool = function(self,wawa,wawa2)
+            if jimbomod.config["Jokers"] == true then
+                return true
+            else
+                return false
+            end
+        end,
+    }
+else
+    local claymore = SMODS.Joker{
+        key = 'claymore',
+        loc_txt = {
+            name = "Claymore",
+            text = {
+                "When {C:attention}Boss Blind{} is selected,",
+                "destroy {C:attention}the Joker on the right",
+                "and disable the {C:attention}Boss Blind",
+            }
+        },
+        config = {extra = {}},
+        rarity = 3,
+        pos = {x = 0, y = 15},
+        atlas = 'Jokers',
+        cost = 6,
+        unlocked = true,
+        discovered = false,
+        blueprint_compat = true,
+        eternal_compat = true,
+        perishable_compat = true,
+        loc_vars = function(self, info_queue, center)
+            return {vars = {}}
+        end,
+        calculate = function(self,card,context)
+            if context.setting_blind and G.GAME.blind:get_type() == 'Boss' then
+                local num = 0
+                local my_pos = nil
+                for i = 1, #G.jokers.cards do
+                    if G.jokers.cards[i] == card then my_pos = i; break end
+                end
+                for i = 1, 1 do
+                    if my_pos and G.jokers.cards[my_pos+i] and not card.getting_sliced and not G.jokers.cards[my_pos+1].getting_sliced and not G.jokers.cards[my_pos+1].debuffed then 
+                        local sliced_card = G.jokers.cards[my_pos+i]
+                        sliced_card.getting_sliced = true
+                        G.GAME.joker_buffer = G.GAME.joker_buffer - 1
+                        G.E_MANAGER:add_event(Event({func = function()
+                            G.GAME.joker_buffer = 0
+                            card:juice_up(0.8, 0.8)
+                            G.GAME.blind:disable()
+                            sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
+                            play_sound('slice1', 0.96+math.random()*0.08)
+                        return true end }))
+                    end
+                end
+            end
+        end,
+        in_pool = function(self,wawa,wawa2)
+            if jimbomod.config["Jokers"] == true then
+                return true
+            else
+                return false
+            end
+        end,
+    }
+end
 --]]
 
 
@@ -3064,7 +3191,7 @@ local cardboard = SMODS.Joker{
                 info_queue[#info_queue + 1] = {
                     set = "Joker",
                     key = center.jimb_jokers[i].config.center.key,
-                    specific_vars = center.jimb_jokers[i].ability.extra or center.jimb_jokers[i].ability or {'???','???','???','???'},
+                    specific_vars = {'???','???','???','???'},
                 }
             end
         end
@@ -3126,6 +3253,15 @@ end
 
 local oldfunc = Card.calculate_joker
 Card.calculate_joker = function(self,context)
+
+    if self.ability and self.ability.jimb_link then
+        for i = 1, #G.I.CARD do
+            if G.I.CARD[i] ~= self and G.I.CARD[i].ability and G.I.CARD[i].ability.jimb_link and G.I.CARD[i].ability.jimb_link == self.ability.jimb_link then
+                oldfunc(G.I.CARD[i], context)
+            end
+        end
+    end
+
     if self.debuff then
         return nil
     end
@@ -8325,6 +8461,15 @@ Card.set_edition = function(self,a,b,c)
     if G.GAME.used_vouchers['v_jimb_quintessence'] then
         if self.edition and self.edition.negative then
             self.edition.card_limit = self.edition.card_limit + 0.5
+        end
+    end
+
+
+    if self.ability and self.ability.jimb_link then
+        for i = 1, #G.I.CARD do
+            if G.I.CARD[i] ~= self and G.I.CARD[i].ability and G.I.CARD[i].ability.jimb_link and G.I.CARD[i].ability.jimb_link == self.ability.jimb_link then
+                oldfunc(G.I.CARD[i], a,b,c)
+            end
         end
     end
     return ret
