@@ -48,6 +48,26 @@
     end
 --necessities
 
+
+local operationfuncs = {
+    function(value,mult)
+        value = value * mult
+        return value
+    end,
+    function(value,add)
+        value = value + add
+        return value
+    end,
+    function(value,div)
+        value = value/div
+        return value
+    end,
+    function(value,sub)
+        value = value-sub
+        return value
+    end,
+}
+
 ----functions
     --
 
@@ -1660,25 +1680,6 @@
     SMODS.current_mod.extra_tabs = jimboTabs
 
 
-
-    local operationfuncs = {
-        function(value,mult)
-            value = value * mult
-            return value
-        end,
-        function(value,add)
-            value = value + add
-            return value
-        end,
-        function(value,div)
-            value = value/div
-            return value
-        end,
-        function(value,sub)
-            value = value-sub
-            return value
-        end,
-    }
 ----functions
 
 
@@ -2527,16 +2528,18 @@
             }
         end,
         calculate = function(self,card,context)
-            if card.jimb_jokers and #card.jimb_jokers ~= 0 then
-                for i = 1, #card.jimb_jokers do
-                    if card.jimb_jokers[i].calculate_joker then
-                        local other_joker = card.jimb_jokers[i]
-                        context.blueprint_card = context.blueprint_card or self
-                        local other_joker_ret = other_joker:calculate_joker(context)
-                        if other_joker_ret then 
-                            other_joker_ret.card = context.blueprint_card or self
-                            other_joker_ret.colour = G.C.BLUE
-                            --return other_joker_ret
+            if not context.selling_card then
+                if card.jimb_jokers and #card.jimb_jokers ~= 0 then
+                    for i = 1, #card.jimb_jokers do
+                        if card.jimb_jokers[i].calculate_joker then
+                            local other_joker = card.jimb_jokers[i]
+                            context.blueprint_card = context.blueprint_card or self
+                            local other_joker_ret = other_joker:calculate_joker(context)
+                            if other_joker_ret then 
+                                other_joker_ret.card = context.blueprint_card or self
+                                other_joker_ret.colour = G.C.BLUE
+                                --return other_joker_ret
+                            end
                         end
                     end
                 end
@@ -4632,17 +4635,19 @@
                 }
             end,
             calculate = function(self,card,context)
-                local other_jokerr = card.jimb_jokers
-                if other_jokerr and other_jokerr[1] and other_jokerr[1].calculate_joker then
-                    --local other_joker = card.ability.extra.fakejoker
-                    local other_joker = card.jimb_jokers[1]
-                    context.blueprint = (context.blueprint and (context.blueprint + 1)) or 0
-                    context.blueprint_card = context.blueprint_card or self
-                    local other_joker_ret = other_joker:calculate_joker(context)
-                    if other_joker_ret then 
-                        other_joker_ret.card = context.blueprint_card or self
-                        other_joker_ret.colour = G.C.BLUE
-                        --return other_joker_ret
+                if not context.selling_card then
+                    local other_jokerr = card.jimb_jokers
+                    if other_jokerr and other_jokerr[1] and other_jokerr[1].calculate_joker then
+                        --local other_joker = card.ability.extra.fakejoker
+                        local other_joker = card.jimb_jokers[1]
+                        context.blueprint = (context.blueprint and (context.blueprint + 1)) or 0
+                        context.blueprint_card = context.blueprint_card or self
+                        local other_joker_ret = other_joker:calculate_joker(context)
+                        if other_joker_ret then 
+                            other_joker_ret.card = context.blueprint_card or self
+                            other_joker_ret.colour = G.C.BLUE
+                            --return other_joker_ret
+                        end
                     end
                 end
                 if context.selling_card and context.card.ability.set == 'Joker' and context.card.ability.name ~= card.ability.name then
