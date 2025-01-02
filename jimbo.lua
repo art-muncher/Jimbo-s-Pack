@@ -370,6 +370,7 @@ local operationfuncs = {
     local oldfunc = eval_card
     function eval_card(card, context)
         local ret = oldfunc(card,context)
+        --[[
         local text,disp_text,poker_hands,scoring_hand,non_loc_disp_text = G.FUNCS.get_poker_hand_info(G.play.cards)
         context = context or {}
         if card.ability.jimb_link and not context.is_rescore then
@@ -399,7 +400,7 @@ local operationfuncs = {
             end
             evaluate_effect(effects)
         end
-
+        ]]
         if context.cardarea == G.play then
             G.GAME.scoredface = G.GAME.scoredface + 1
         end
@@ -604,7 +605,7 @@ local operationfuncs = {
 
     local oldfunc = Card.set_edition
     Card.set_edition = function(self,a,b,c)
-        if not a and pseudorandom('_'.."Edition"..G.GAME.round_resets.ante) > 0.9999 and self.ability.set == 'Joker' then
+        if not a and pseudorandom('_'.."Edition"..G.GAME.round_resets.ante) > 0.9999999 and self.ability.set == 'Joker' then
             a = {jimb_nil_ = true}
             --self:add_speech_bubble('nil_' .. math.random(1,30),nil,{quip = true})
             --self:say_stuff(2,nil,{pitch = math.random(2,4)*0.2})
@@ -1050,9 +1051,9 @@ local operationfuncs = {
         if G and G.jokers then
             for i = 1, #G.jokers.cards do
                 local thingy = G.jokers.cards[i]:calculate_joker({jimb_modify_mult = true, mod = _mult})
-                if thingy then
+                --[[if thingy then
                     _mult = to_big(_mult) + to_big(thingy)
-                end
+                end]]
             end
         end
         return oldfunc(_mult)--to_big(mod_mult)
@@ -1065,9 +1066,9 @@ local operationfuncs = {
         if G and G.jokers then
             for i = 1, #G.jokers.cards do
                 local thingy = G.jokers.cards[i]:calculate_joker({jimb_modify_chips = true, mod = _chips})
-                if thingy then
+                --[[if thingy then
                     _chips = to_big(_chips) + to_big(thingy)
-                end
+                end]]
             end
         end
         return oldfunc(_chips)--to_big(mod_mult)
@@ -1316,6 +1317,10 @@ local operationfuncs = {
 
     local oldfunc = Card.calculate_joker
     Card.calculate_joker = function(self,context)
+
+        if context.check_suit and context.blueprint then return end
+        if context.jimb_modify_mult and context.blueprint then return end
+        if context.jimb_modify_chips and context.blueprint then return end
 
         if self.ability and self.ability.jimb_link then
             for i = 1, #G.I.CARD do
@@ -2399,26 +2404,26 @@ local operationfuncs = {
         eternal_compat = false,
         perishable_compat = false,
         loc_vars = function(self, info_queue, center)
-            --if center.jimb_jokers then
-            local cardkeys = {}
-            for i = 1, #center.jimb_jokers do
-                cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
+            if center.jimb_jokers then
+                local cardkeys = {}
+                for i = 1, #center.jimb_jokers do
+                    cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
+                end
+
+                local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+
+
+                for i = 1, #center.jimb_jokers do
+                    info_queue[#info_queue + 1] = {
+                        set = "Joker",
+                        key = center.jimb_jokers[i].config.center.key,
+                        specific_vars = false and center.jimb_jokers[i].config.center.loc_vars and center.jimb_jokers[i].config.center:loc_vars(info_queue, center.jimb_jokers[i]) or {'???','???','???','???'},
+                    }
+                end
             end
-
-            local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
-
-
-            for i = 1, #center.jimb_jokers do
-                info_queue[#info_queue + 1] = {
-                    set = "Joker",
-                    key = center.jimb_jokers[i].config.center.key,
-                    specific_vars = false and center.jimb_jokers[i].config.center.loc_vars and center.jimb_jokers[i].config.center:loc_vars(info_queue, center.jimb_jokers[i]) or {'???','???','???','???'},
-                }
-            end
-        --end
             return {
                 vars = {G.GAME.probabilities.normal, center.ability.extra.odds},
-                main_end = {card_example}
+                main_end = center and center.jimb_jokers and {card_example}
             }
         end,
         calculate = function(self,card,context)
@@ -2505,7 +2510,7 @@ local operationfuncs = {
         eternal_compat = false,
         perishable_compat = false,
         loc_vars = function(self, info_queue, center)
-            --if center.jimb_jokers then
+            if center.jimb_jokers then
                 local cardkeys = {}
                 for i = 1, #center.jimb_jokers do
                     cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
@@ -2521,10 +2526,10 @@ local operationfuncs = {
                         specific_vars = false and center.jimb_jokers[i].config.center.loc_vars and center.jimb_jokers[i].config.center:loc_vars(info_queue, center.jimb_jokers[i]) or {'???','???','???','???'},
                     }
                 end
-            --end
+            end
             return {
                 vars = {G.GAME.probabilities.normal, center.ability.extra.odds},
-                main_end = {card_example}
+                main_end = center and center.jimb_jokers and {card_example}
             }
         end,
         calculate = function(self,card,context)
@@ -3361,13 +3366,13 @@ local operationfuncs = {
             eternal_compat = true,
             perishable_compat = true,
             loc_vars = function(self, info_queue, center)
-                --if center.jimb_jokers then
+                if center.jimb_jokers then
                     local cardkeys = {}
                     for i = 1, #center.jimb_jokers do
                         cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                     end
     
-                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
     
     
                     for i = 1, #center.jimb_jokers do
@@ -3377,10 +3382,10 @@ local operationfuncs = {
                             specific_vars = false and center.jimb_jokers[i].config.center.loc_vars and center.jimb_jokers[i].config.center:loc_vars(info_queue, center.jimb_jokers[i]) or {'???','???','???','???'},
                         }
                     end
-                --end
+                end
                 return {
                     vars = {},
-                    main_end = {card_example}
+                    main_end = center and center.jimb_jokers and {card_example}
                 }
             end,
             calculate = function(self,card,context)
@@ -4076,13 +4081,13 @@ local operationfuncs = {
             eternal_compat = true,
             perishable_compat = true,
             loc_vars = function(self, info_queue, center)
-                --if center.jimb_jokers then
+                if center.jimb_jokers then
                     local cardkeys = {}
                     for i = 1, #center.jimb_jokers do
                         cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                     end
     
-                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
     
     
                     for i = 1, #center.jimb_jokers do
@@ -4092,10 +4097,10 @@ local operationfuncs = {
                             specific_vars = false and center.jimb_jokers[i].config.center.loc_vars and center.jimb_jokers[i].config.center:loc_vars(info_queue, center.jimb_jokers[i]) or {'???','???','???','???'},
                         }
                     end
-                --end
+                end
                 return {
                     vars = {center.ability.extra.rounds,center.ability.extra.currentrounds},
-                    main_end = {card_example}
+                    main_end = center and center.jimb_jokers and {card_example}
                 }
             end,
             calculate = function(self,card,context)
@@ -4612,13 +4617,13 @@ local operationfuncs = {
             eternal_compat = true,
             perishable_compat = true,
             loc_vars = function(self, info_queue, center)
-                --if center.jimb_jokers then
+                if center.jimb_jokers then
                     local cardkeys = {}
                     for i = 1, #center.jimb_jokers do
                         cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                     end
     
-                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
     
     
                     for i = 1, #center.jimb_jokers do
@@ -4628,10 +4633,10 @@ local operationfuncs = {
                             specific_vars = false and center.jimb_jokers[i].config.center.loc_vars and center.jimb_jokers[i].config.center:loc_vars(info_queue, center.jimb_jokers[i]) or {'???','???','???','???'},
                         }
                     end
-                --end
+                end
                 return {
                     vars = {},
-                    main_end = {card_example}
+                    main_end = center and center.jimb_jokers and {card_example}
                 }
             end,
             calculate = function(self,card,context)
@@ -5110,7 +5115,7 @@ local operationfuncs = {
             cost = 6,
             unlocked = false,
             discovered = false,
-            blueprint_compat = true,
+            blueprint_compat = false,
             eternal_compat = true,
             perishable_compat = true,
             loc_vars = function(self, info_queue, center)
@@ -5298,15 +5303,16 @@ local operationfuncs = {
             loc_txt = {
                 name = "Commercial",
                 text = {
-                    "First Joker in shop", 
-                    "has {X:dark_edition,C:white}X#1#{} to all values",
+                    "Jokers in first slot", 
+                    'of the shop have',
+                    "{X:dark_edition,C:white}X#1#{} to all values",
                 },
                 unlock = {
                     'Win a run with',
                     '{C:attention}Neon Deck{}'
                 }
             },
-            config = {extra = {mult = 1.5, active = true}},
+            config = {extra = {mult = 1.25, active = true}},
             rarity = 3,
             pos = {x = 2, y = 7},
             atlas = 'Jokers',
@@ -5320,13 +5326,15 @@ local operationfuncs = {
                 return {vars = {center.ability.extra.mult}}
             end,
             calculate = function(self,card,context)
-                if context.end_of_round and not context.blueprint and not context.individual and not context.repetition then
-                    card.ability.extra.active = true
-                end
-                if context.jimb_creating_card and card.ability.extra.active == true and not context.other_card.area then
+                if context.jimb_card_gain and G.shop_jokers and context.other_card.ability.set == 'Joker' and context.other_card == G.shop_jokers.cards[1]  then
                     jokerMult(context.other_card, card.ability.extra.mult)
                     context.other_card.cost = context.other_card.cost * card.ability.extra.mult
-                    card.ability.extra.active = false
+                    context.other_card:juice_up()
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = (function() card:juice_up(0.7);return true end)
+                    }))
+                    return {}
                 end
             end,
             check_for_unlock = function(self, args)
@@ -7482,7 +7490,7 @@ local operationfuncs = {
                 if G.GAME.round_resets.blind_choices and G.GAME.round_resets.blind_choices.Boss and G.GAME.round_resets.blind_choices.Boss == 'bl_club' and not next(find_joker('Chicot')) then
                     for i = 1, #G.playing_cards do
                         local card = G.playing_cards[i]
-                        if card:is_suit('Clubs',true) then
+                        if card and card:is_suit('Clubs',true) then
                             card:set_debuff(true)
                         end
                     end
@@ -7695,12 +7703,14 @@ local operationfuncs = {
                 }
             },
             atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = true}},
             pos = {x = 0, y = 0},
             sticker_atlas = 'Stickers',
             sticker_pos = {x = 1, y = 0},
             modifiers = function()
                 if not (G.GAME.chance_summon and G.GAME.chance_summon > 1/7) then G.GAME.chance_summon = 1/7 end
-                print(G.GAME.chance_summon .. '_Silver')
+                --print(G.GAME.chance_summon .. '_Silver')
             end,
         }
 
@@ -7725,6 +7735,7 @@ local operationfuncs = {
                 }
             },
             atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
             pos = {x = 1, y = 0},
             sticker_atlas = 'Stickers',
             sticker_pos = {x = 2, y = 0},
@@ -7759,6 +7770,7 @@ local operationfuncs = {
             sticker_atlas = 'Stickers',
             sticker_pos = {x = 3, y = 0},
             atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
             pos = {x = 2, y = 0},
             modifiers = function()
                 if not (G.GAME.chance_summon and G.GAME.chance_summon > 1/4) then G.GAME.chance_summon = 1/4 end
@@ -7787,6 +7799,7 @@ local operationfuncs = {
                 }
             },
             atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
             pos = {x = 4, y = 0},
             sticker_atlas = 'Stickers',
             sticker_pos = {x = 0, y = 1},
@@ -7819,6 +7832,7 @@ local operationfuncs = {
             sticker_atlas = 'Stickers',
             sticker_pos = {x = 4, y = 0},
             atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
             pos = {x = 3, y = 0},
             modifiers = function()
                 G.GAME.enable_impure_sticker = true
@@ -7872,6 +7886,7 @@ local operationfuncs = {
                 }
             },
             atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
             pos = {x = 0, y = 1},
             sticker_atlas = 'Stickers',
             sticker_pos = {x = 1, y = 1},
@@ -7925,6 +7940,7 @@ local operationfuncs = {
                 }
             },
             atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
             pos = {x = 1, y = 1},
             sticker_atlas = 'Stickers',
             sticker_pos = {x = 2, y = 1},
@@ -7955,6 +7971,7 @@ local operationfuncs = {
                     }
                 },
                 atlas = 'Stakes',
+            prefix_config = {above_stake = {mod = false}, applied_stakes = {mod = false}},
                 pos = {x = 2, y = 1},
                 sticker_atlas = 'Stickers',
                 sticker_pos = {x = 3, y = 1},
@@ -10458,13 +10475,13 @@ local operationfuncs = {
             end]]
         end,
         loc_vars = function(self, info_queue, center)
-            --if center.jimb_jokers then
+            if center.jimb_jokers then
                 local cardkeys = {}
                 for i = 1, #center.jimb_jokers do
                     cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                 end
 
-                local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
 
 
                 for i = 1, #center.jimb_jokers do
@@ -10474,10 +10491,10 @@ local operationfuncs = {
                         specific_vars = false and center.jimb_jokers[i].config.center.loc_vars and center.jimb_jokers[i].config.center:loc_vars(info_queue, center.jimb_jokers[i]) or {'???','???','???','???'},
                     }
                 end
-            --end
+            end
             return {
                 vars = {center.ability.extra.rounds,center.ability.extra.currentrounds},
-                main_end = {card_example}
+                main_end = center and center.jimb_jokers and {card_example}
             }
         end,
         calculate = function(self,card,context)
@@ -10557,6 +10574,7 @@ local operationfuncs = {
         end
     }
 
+    --[[
     local release = SMODS.Voucher{
         key = 'release',
         loc_txt = {
@@ -10579,7 +10597,7 @@ local operationfuncs = {
         pos = {x = 0, y = 0},
         soul_pos = {x = 1, y = 0},
         atlas = 'Vouchers',
-    }
+    }]]
 
     local contextList = {
         --end_of_round = 
@@ -10729,6 +10747,8 @@ local operationfuncs = {
             text = 'open one of my videos',
         },
     }
+
+    --[[
     SMODS.Edition({
         key = "nil_",
         loc_txt = {
@@ -10809,7 +10829,7 @@ local operationfuncs = {
             return false
         end
     })
-
+    --]]
     local oldfunc = ease_ante
     ease_ante = function(num)
         local ret = oldfunc(num)
