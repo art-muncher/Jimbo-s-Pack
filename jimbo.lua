@@ -2404,13 +2404,14 @@ local operationfuncs = {
         eternal_compat = false,
         perishable_compat = false,
         loc_vars = function(self, info_queue, center)
+            local card_example = nil
             if center.jimb_jokers then
                 local cardkeys = {}
                 for i = 1, #center.jimb_jokers do
                     cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                 end
 
-                local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
 
 
                 for i = 1, #center.jimb_jokers do
@@ -2510,13 +2511,14 @@ local operationfuncs = {
         eternal_compat = false,
         perishable_compat = false,
         loc_vars = function(self, info_queue, center)
+            local card_example = nil
             if center.jimb_jokers then
                 local cardkeys = {}
                 for i = 1, #center.jimb_jokers do
                     cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                 end
 
-                local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
 
 
                 for i = 1, #center.jimb_jokers do
@@ -2529,7 +2531,7 @@ local operationfuncs = {
             end
             return {
                 vars = {G.GAME.probabilities.normal, center.ability.extra.odds},
-                main_end = center and center.jimb_jokers and {card_example}
+                main_end = center and center.jimb_jokers and center.jimb_jokers[1] and {card_example}
             }
         end,
         calculate = function(self,card,context)
@@ -3366,13 +3368,14 @@ local operationfuncs = {
             eternal_compat = true,
             perishable_compat = true,
             loc_vars = function(self, info_queue, center)
-                if center.jimb_jokers then
+                local card_example = nil
+            if center.jimb_jokers then
                     local cardkeys = {}
                     for i = 1, #center.jimb_jokers do
                         cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                     end
     
-                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                    card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
     
     
                     for i = 1, #center.jimb_jokers do
@@ -4081,13 +4084,14 @@ local operationfuncs = {
             eternal_compat = true,
             perishable_compat = true,
             loc_vars = function(self, info_queue, center)
-                if center.jimb_jokers then
+                local card_example = nil
+            if center.jimb_jokers then
                     local cardkeys = {}
                     for i = 1, #center.jimb_jokers do
                         cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                     end
     
-                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                    card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
     
     
                     for i = 1, #center.jimb_jokers do
@@ -4617,13 +4621,14 @@ local operationfuncs = {
             eternal_compat = true,
             perishable_compat = true,
             loc_vars = function(self, info_queue, center)
-                if center.jimb_jokers then
+                local card_example = nil
+            if center.jimb_jokers then
                     local cardkeys = {}
                     for i = 1, #center.jimb_jokers do
                         cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                     end
     
-                    local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                    card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
     
     
                     for i = 1, #center.jimb_jokers do
@@ -10223,6 +10228,7 @@ local operationfuncs = {
             return true
         end,
         loc_vars = function(self, info_queue, center)
+            local card_example = nil
             if center.jimb_jokers then
                 for i = 1, #center.jimb_jokers do
                     info_queue[#info_queue + 1] = {
@@ -10475,13 +10481,14 @@ local operationfuncs = {
             end]]
         end,
         loc_vars = function(self, info_queue, center)
+            local card_example = nil
             if center.jimb_jokers then
                 local cardkeys = {}
                 for i = 1, #center.jimb_jokers do
                     cardkeys[#cardkeys+1]=center.jimb_jokers[i].config.center.key
                 end
 
-                local card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
+                card_example, cards = center and center.jimb_jokers and center.jimb_jokers[1] and create_card_example(cardkeys) or ((not (G and G.jokers)) and create_card_example({'j_joker'})) or nil
 
 
                 for i = 1, #center.jimb_jokers do
