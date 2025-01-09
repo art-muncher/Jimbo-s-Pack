@@ -753,7 +753,7 @@ local operationfuncs = {
             return 'bl_jimb_cerberus3'
         end
         if ret == 'bl_jimb_zone' then
-            if to_big(G.GAME.round_resets.ante) < to_big(4) then
+            if maybe_big(G.GAME.round_resets.ante) < maybe_big(4) then
                 return get_new_boss()
             end
         end
@@ -833,9 +833,9 @@ local operationfuncs = {
         end
     end
 
-    local oldfunc = to_big
-    function to_big(num)
-        if oldfunc then return oldfunc(num) end
+    local talisman_to_big = to_big
+    function maybe_big(num)
+        if talisman_to_big then return talisman_to_big(num) end
         return num
     end
 
@@ -4723,7 +4723,7 @@ local operationfuncs = {
             end,
             check_for_unlock = function(self, args)
                 if args.type == 'chip_score' then
-                    if to_big(G.GAME.chips) >= to_big(G.GAME.blind.chips * 100) then
+                    if maybe_big(G.GAME.chips) >= maybe_big(G.GAME.blind.chips * 100) then
                         unlock_card(self)
                     end
                 end
@@ -4781,7 +4781,7 @@ local operationfuncs = {
             end,
             check_for_unlock = function(self, args)
                 if args.type == 'chip_score' then
-                    if to_big(G.GAME.chips) >= to_big(G.GAME.blind.chips * 200) then
+                    if maybe_big(G.GAME.chips) >= maybe_big(G.GAME.blind.chips * 200) then
                         unlock_card(self)
                     end
                 end
@@ -5128,7 +5128,7 @@ local operationfuncs = {
             end,
             calculate = function(self,card,context)
                 if context.jimb_modify_mult then
-                    hand_chips = mod_chips(hand_chips + (context.mod-mult)* to_big(card.ability.extra.percentage/100))
+                    hand_chips = mod_chips(hand_chips + (context.mod-mult)* maybe_big(card.ability.extra.percentage/100))
                     update_hand_text({delay = 0}, {chips = hand_chips})
                 end
             end,
@@ -6927,17 +6927,17 @@ local operationfuncs = {
             calculate = function(self,card,context)
                 if context.joker_main then
                     if card.purified == true then
-                        if to_big(hand_chips * mult)/G.GAME.blind.chips < to_big(card.ability.extra.req) then
+                        if maybe_big(hand_chips * mult)/G.GAME.blind.chips < maybe_big(card.ability.extra.req) then
                             return{
                                 card = card,
                                 Xmult_mod = card.ability.extra.Xmult,
                                 message = 'X' .. card.ability.extra.Xmult
                             }
                         end
-                        
+
                     else
 
-                        if to_big(hand_chips * mult)/G.GAME.blind.chips > to_big(card.ability.extra.req) then
+                        if maybe_big(hand_chips * mult)/G.GAME.blind.chips > maybe_big(card.ability.extra.req) then
                             return{
                                 card = card,
                                 Xmult_mod = card.ability.extra.Xmult,
@@ -7442,7 +7442,7 @@ local operationfuncs = {
                         end
                     return true end })) 
                 elseif self.name == 'The Wall' then
-                    G.GAME.blind.chips = to_big(G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.25)
+                    G.GAME.blind.chips = maybe_big(G.GAME.blind.chips + get_blind_amount(G.GAME.round_resets.ante)*G.GAME.starting_params.ante_scaling*0.25)
                     self:juice_up()
                     G.GAME.blind.chip_text = number_format(G.GAME.blind.chips)
         
@@ -10506,7 +10506,7 @@ local operationfuncs = {
         end,
         calculate = function(self,card,context)
             if context.jimb_pre_create_card then
-                if to_big(pseudorandom('amalgam')) < to_big(G.GAME.probabilities.normal)/to_big(card.ability.extra.odds) and card.jimb_jokers and #card.jimb_jokers ~= 0 then
+                if maybe_big(pseudorandom('amalgam')) < maybe_big(G.GAME.probabilities.normal)/maybe_big(card.ability.extra.odds) and card.jimb_jokers and #card.jimb_jokers ~= 0 then
                     G.GAME.next_Gen_Cards[#G.GAME.next_Gen_Cards+1] = {key = card.config.center.key}
                     local quip = 'hunger_amalgam' .. math.random(1,5)
                     card:add_speech_bubble(quip,nil,{quip = true})
@@ -10520,7 +10520,7 @@ local operationfuncs = {
 
             if context.jimb_card_gain and context.area == G.jokers and context.other_card and context.other_card.ability.name == card.ability.name and context.other_card ~= card then
                 context.other_card:start_dissolve()
-                card.ability.extra.odds = math.min(card.ability.extra.odds * 2,to_big(30))
+                card.ability.extra.odds = math.min(card.ability.extra.odds * 2,maybe_big(30))
                 if card.jimb_jokers and #card.jimb_jokers > 0 then
                     local num = math.random(1,#card.jimb_jokers)
                     local removeCard = card.jimb_jokers[num]
@@ -10566,7 +10566,7 @@ local operationfuncs = {
                 card.jimb_jokers = card.jimb_jokers or {}
                 card.jimb_jokers[#card.jimb_jokers+1] = newcard
                 newcard:start_dissolve()
-                card.ability.extra.odds = math.max(to_big(card.ability.extra.odds/2),to_big(1))
+                card.ability.extra.odds = math.max(maybe_big(card.ability.extra.odds/2),maybe_big(1))
 
                 local quip = 'feed_amalgam' .. math.random(1,5)
                 card:add_speech_bubble(quip,nil,{quip = true})
