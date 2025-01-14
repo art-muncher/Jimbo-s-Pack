@@ -424,7 +424,7 @@ local operationfuncs = {
         end
         self.changing_ability = nil
 
-        if self.ability then
+        if self.ability and center then
             local stats = {
                 mult = center.config.mult and center.config.mult+self.ability.mult or self.ability.mult,
                 h_mult = center.config.h_mult and center.config.h_mult+self.ability.h_mult or self.ability.h_mult,
